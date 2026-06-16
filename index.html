@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facturas — Almacén Olivilla Tres</title>
+  <title>Panel de Gestión — Almacén Olivilla Tres</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
     body { background:#f7f9fa; color:#4a3b68; min-height:100vh; display:flex; flex-direction:column; }
@@ -14,7 +15,7 @@
     .login-card { background:#fff; border-radius:14px; box-shadow:0 4px 24px rgba(74,59,104,.12); padding:2.5rem 2rem; width:100%; max-width:360px; }
     .login-card img { height:48px; margin-bottom:1.5rem; display:block; }
     .login-card h2 { font-size:1.15rem; font-weight:600; color:#4a3b68; margin-bottom:.3rem; }
-    .login-card p { font-size:.83rem; color:#999; margin-bottom:1.5rem; }
+    .login-card p  { font-size:.83rem; color:#999; margin-bottom:1.5rem; }
     .login-card label { font-size:.82rem; font-weight:500; color:#4a3b68; display:block; margin-bottom:5px; }
     .login-card input { width:100%; padding:10px 14px; border:1.5px solid #ddd; border-radius:8px; font-size:.93rem; color:#4a3b68; margin-bottom:1rem; transition:border-color .2s; }
     .login-card input:focus { outline:none; border-color:#b53987; }
@@ -22,13 +23,17 @@
     .btn-login:hover { background:#4a3b68; }
     .login-error { color:#b53987; font-size:.82rem; margin-top:8px; display:none; }
 
-    .topbar { background:#35284f; padding:6px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-    .topbar-left { color:#c9b8e8; font-size:.8rem; display:flex; align-items:center; gap:10px; }
-    .topbar-left img { height:26px; }
-    .btn-salir { background:transparent; border:1px solid #5a4878; border-radius:6px; color:#c9b8e8; font-size:.78rem; padding:4px 12px; cursor:pointer; transition:all .2s; }
+    .topbar { background:#35284f; padding:10px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+    .topbar-left { color:#c9b8e8; font-size:.9rem; display:flex; align-items:center; gap:12px; }
+    .topbar-left img { height:32px; }
+    .nav-principal { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn-nav { background:transparent; border:1px solid #5a4878; border-radius:6px; color:#c9b8e8; font-size:.85rem; padding:6px 14px; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:6px; }
+    .btn-nav:hover { border-color:#b53987; color:#f386cc; background:rgba(181,57,135,0.1); }
+    .btn-nav.active { background:#b53987; color:#fff; border-color:#b53987; font-weight:600; }
+    .btn-salir { background:transparent; border:1px solid #5a4878; border-radius:6px; color:#c9b8e8; font-size:.78rem; padding:6px 12px; cursor:pointer; transition:all .2s; }
     .btn-salir:hover { border-color:#b53987; color:#f386cc; }
 
-    .main-wrap { flex:1; max-width:1100px; margin:0 auto; width:100%; padding:24px 16px 60px; }
+    .main-wrap { flex:1; max-width:1400px; margin:0 auto; width:100%; padding:24px 16px 60px; }
     .page-title { font-size:1.4rem; font-weight:700; color:#4a3b68; margin-bottom:1.5rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
     .alertas-wrap { margin-bottom:1.25rem; }
@@ -42,13 +47,8 @@
     .stat .slabel { font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#999; margin-bottom:4px; }
     .stat .sval { font-size:1.6rem; font-weight:700; color:#4a3b68; line-height:1; }
     .stat.verde .sval { color:#2d7a4f; }
-    .stat.rojo .sval { color:#b53987; }
+    .stat.rojo  .sval { color:#b53987; }
     .stat.naranja .sval { color:#c47a00; }
-
-    .tabs { display:flex; gap:4px; margin-bottom:1.25rem; border-bottom:2px solid #ede5f5; }
-    .tab-btn { background:transparent; border:none; padding:10px 22px; font-size:.9rem; font-weight:500; color:#999; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .2s; }
-    .tab-btn.active { color:#b53987; border-bottom-color:#b53987; }
-    .tab-btn:hover { color:#4a3b68; }
 
     .filtros { display:flex; gap:10px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
     .filtros input, .filtros select { padding:8px 12px; border:1.5px solid #ddd; border-radius:8px; font-size:.88rem; color:#4a3b68; background:#fff; transition:border-color .2s; }
@@ -56,87 +56,113 @@
     .filtros input[type=text] { flex:1; min-width:160px; }
     .btn-nueva { background:#b53987; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:.88rem; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; transition:background .2s; }
     .btn-nueva:hover { background:#4a3b68; }
+    .btn-exportar { background:#2d7a4f; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:.88rem; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; transition:background .2s; }
+    .btn-exportar:hover { background:#1a4d32; }
 
-    .tabla-wrap { background:#fff; border-radius:12px; border:1.5px solid #ede5f5; overflow:hidden; }
-    table { width:100%; border-collapse:collapse; font-size:.85rem; }
-    thead th { background:#f7f0f5; color:#4a3b68; font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; padding:10px 14px; text-align:left; border-bottom:1.5px solid #ede5f5; white-space:nowrap; }
+    .tabla-wrap { background:#fff; border-radius:12px; border:1.5px solid #ede5f5; overflow:hidden; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    thead th { background:#f7f0f5; color:#4a3b68; font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; padding:9px 10px; text-align:left; border-bottom:1.5px solid #ede5f5; white-space:nowrap; }
     tbody tr { border-bottom:1px solid #f0eaf8; transition:background .15s; }
     tbody tr:hover { background:#fdf8fc; }
-    tbody td { padding:10px 14px; vertical-align:middle; }
-    .td-nombre { font-weight:500; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .td-total { font-weight:700; color:#4a3b68; white-space:nowrap; }
-    .td-acciones { display:flex; gap:6px; align-items:center; }
+    tbody td { padding:8px 10px; vertical-align:middle; }
+    .td-nombre { font-weight:500; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .td-total  { font-weight:700; color:#4a3b68; white-space:nowrap; }
+    .td-acciones { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 
-    .badge-estado { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:600; white-space:nowrap; }
+    .badge-estado    { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:600; white-space:nowrap; }
     .badge-pendiente { background:#fff3e0; color:#c47a00; }
-    .badge-pagado { background:#e8f5e9; color:#2d7a4f; }
-    .badge-vencido { background:#fce4ec; color:#b53987; }
-    .badge-tipo-cobro { background:#e3f2fd; color:#1565c0; font-size:.7rem; padding:2px 7px; border-radius:20px; }
-    .badge-tipo-pago { background:#f3e5f5; color:#6a1b9a; font-size:.7rem; padding:2px 7px; border-radius:20px; }
+    .badge-pagado    { background:#e8f5e9; color:#2d7a4f; }
+    .badge-vencido   { background:#fce4ec; color:#b53987; }
+    .badge-puntos    { background:#ede5f5; color:#4a3b68; font-size:.75rem; font-weight:700; padding:4px 10px; border-radius:20px; }
 
-    .btn-pagar { background:#2d7a4f; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:.78rem; cursor:pointer; transition:background .2s; white-space:nowrap; }
-    .btn-pagar:hover { background:#1e5c39; }
-    .btn-ver { background:transparent; border:1.5px solid #ddd; border-radius:6px; padding:5px 9px; font-size:.78rem; color:#4a3b68; cursor:pointer; transition:all .2s; }
-    .btn-ver:hover { border-color:#b53987; color:#b53987; }
+    .btn-toggle-pago { border:none; border-radius:6px; padding:5px 11px; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .btn-toggle-pago.pendiente { background:#fff3e0; color:#c47a00; border:1.5px solid #f0c060; }
+    .btn-toggle-pago.pendiente:hover { background:#c47a00; color:#fff; }
+    .btn-toggle-pago.pagado    { background:#e8f5e9; color:#2d7a4f; border:1.5px solid #81c784; }
+    .btn-toggle-pago.pagado:hover    { background:#2d7a4f; color:#fff; }
+    .btn-toggle-pago.vencido   { background:#fce4ec; color:#b53987; border:1.5px solid #f48fb1; }
+    .btn-toggle-pago.vencido:hover   { background:#b53987; color:#fff; }
+
+    .btn-toggle-facturado     { border:none; border-radius:6px; padding:5px 11px; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .btn-toggle-facturado.no  { background:#fce4ec; color:#c0392b; border:1.5px solid #f48fb1; }
+    .btn-toggle-facturado.no:hover   { background:#c0392b; color:#fff; }
+    .btn-toggle-facturado.si  { background:#e8f5e9; color:#2d7a4f; border:1.5px solid #81c784; }
+    .btn-toggle-facturado.si:hover   { background:#2d7a4f; color:#fff; }
+
+    .btn-puntos { background:#ede5f5; color:#4a3b68; border:1.5px solid #c9b8e8; border-radius:6px; padding:5px 10px; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .btn-puntos:hover { background:#b53987; color:#fff; border-color:#b53987; }
     .btn-eliminar { background:transparent; border:none; color:#ccc; font-size:.9rem; cursor:pointer; padding:4px 6px; transition:color .2s; }
     .btn-eliminar:hover { color:#e53e3e; }
+    .link-badge { display:inline-flex; align-items:center; gap:5px; background:#f3e5f5; color:#6a1b9a; border-radius:20px; padding:3px 9px; font-size:.73rem; font-weight:600; cursor:pointer; transition:background .2s; white-space:nowrap; }
+    .link-badge:hover { background:#6a1b9a; color:#fff; }
+    .link-badge.factura { background:#e3f2fd; color:#1565c0; }
+    .link-badge.factura:hover { background:#1565c0; color:#fff; }
 
+    /* AUTOCOMPLETE */
+    .ac-wrap { position:relative; }
+    .ac-list { position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid #b53987; border-top:none; border-radius:0 0 8px 8px; z-index:9999; max-height:220px; overflow-y:auto; box-shadow:0 6px 18px rgba(74,59,104,.18); }
+    .ac-item { padding:9px 14px; cursor:pointer; font-size:.87rem; color:#4a3b68; border-bottom:1px solid #f0eaf8; display:flex; flex-direction:column; gap:2px; }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:hover, .ac-item.focused { background:#f7f0f5; }
+    .ac-item .ac-nombre { font-weight:600; }
+    .ac-item .ac-nif { font-size:.74rem; color:#999; }
+
+    /* MODALES */
     .modal-overlay { position:fixed; inset:0; background:rgba(74,59,104,.5); z-index:1000; display:none; align-items:flex-start; justify-content:center; padding:1rem; overflow-y:auto; }
     .modal-overlay.visible { display:flex; }
-    .modal-box { background:#fff; border-radius:14px; padding:2rem; width:100%; max-width:700px; box-shadow:0 8px 32px rgba(74,59,104,.2); margin:auto; }
-    .modal-box h3 { font-size:1.1rem; font-weight:600; color:#4a3b68; margin-bottom:1.25rem; display:flex; align-items:center; gap:8px; }
-    .modal-tabs { display:flex; gap:4px; margin-bottom:1.25rem; border-bottom:2px solid #ede5f5; }
-    .modal-tab { background:transparent; border:none; padding:8px 18px; font-size:.85rem; font-weight:500; color:#999; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .2s; }
-    .modal-tab.active { color:#b53987; border-bottom-color:#b53987; }
-    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .modal-box    { background:#fff; border-radius:14px; padding:2rem; width:100%; max-width:900px; box-shadow:0 8px 32px rgba(74,59,104,.2); margin:auto; }
+    .modal-box-sm { background:#fff; border-radius:14px; padding:1.75rem; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(74,59,104,.2); margin:auto; }
+    .modal-box h3, .modal-box-sm h3 { font-size:1.1rem; font-weight:600; color:#4a3b68; margin-bottom:1.25rem; display:flex; align-items:center; gap:8px; }
+
+    .form-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
     .form-grid .span2 { grid-column:span 2; }
+    .form-grid .span3 { grid-column:span 3; }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .form-grid-2 .span2 { grid-column:span 2; }
+    .form-group { margin:0; }
     .form-group label { font-size:.78rem; font-weight:500; color:#4a3b68; display:block; margin-bottom:4px; }
-    .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px 11px; border:1.5px solid #ddd; border-radius:7px; font-size:.88rem; color:#4a3b68; transition:border-color .2s; }
+    .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px 11px; border:1.5px solid #ddd; border-radius:7px; font-size:.88rem; color:#4a3b68; transition:border-color .2s; background:#fff; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline:none; border-color:#b53987; }
-    .form-group textarea { resize:vertical; min-height:60px; }
-    .form-seccion { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#b53987; margin:1rem 0 .5rem; grid-column:span 2; border-top:1.5px solid #ede5f5; padding-top:.75rem; }
+    .form-group input[readonly] { background:#f7f0f5; }
+    .form-seccion { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#b53987; margin:1rem 0 .5rem; padding-top:.75rem; border-top:1.5px solid #ede5f5; }
+    .form-seccion:first-child { border-top:none; padding-top:0; margin-top:0; }
+
     .modal-btns { display:flex; gap:10px; justify-content:flex-end; margin-top:1.5rem; flex-wrap:wrap; }
     .btn-cancelar { background:transparent; border:1.5px solid #ddd; border-radius:8px; padding:9px 18px; font-size:.88rem; color:#888; cursor:pointer; }
     .btn-cancelar:hover { border-color:#b53987; color:#b53987; }
-    .btn-guardar { background:#b53987; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:.88rem; font-weight:500; cursor:pointer; transition:background .2s; }
+    .btn-guardar  { background:#b53987; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:.88rem; font-weight:500; cursor:pointer; transition:background .2s; }
     .btn-guardar:hover { background:#4a3b68; }
 
-    /* AUTOCOMPLETE */
-    .autocomplete-wrap { position:relative; }
-    .autocomplete-list { position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid #b53987; border-radius:0 0 8px 8px; max-height:200px; overflow-y:auto; z-index:9999; box-shadow:0 4px 12px rgba(74,59,104,.15); }
-    .autocomplete-item { padding:8px 12px; font-size:.86rem; cursor:pointer; border-bottom:1px solid #f0eaf8; display:flex; justify-content:space-between; align-items:center; }
-    .autocomplete-item:hover, .autocomplete-item.selected { background:#f7f0f5; }
-    .autocomplete-item .ac-nif { font-size:.75rem; color:#aaa; }
-    .autocomplete-item:last-child { border-bottom:none; }
-    .autocomplete-nueva { padding:8px 12px; font-size:.84rem; cursor:pointer; color:#b53987; font-weight:500; display:flex; align-items:center; gap:6px; background:#fff8fc; }
-    .autocomplete-nueva:hover { background:#f7e8f2; }
+    .linea-prod { display:grid; grid-template-columns:1fr 90px 80px auto; gap:8px; align-items:end; margin-bottom:8px; }
+    .btn-add-linea { width:100%; margin-top:6px; background:transparent; border:1.5px dashed #b53987; border-radius:7px; padding:7px 14px; color:#b53987; font-size:.84rem; cursor:pointer; }
+    .btn-add-linea:hover { background:#fff0f8; }
 
-    .detalle-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f0eaf8; font-size:.88rem; }
-    .detalle-row:last-child { border-bottom:none; }
-    .detalle-label { color:#888; }
-    .detalle-val { font-weight:500; color:#4a3b68; text-align:right; }
-    .detalle-total { font-size:1.1rem; font-weight:700; color:#b53987; }
+    .mini-table { width:100%; border-collapse:collapse; font-size:.83rem; margin-top:8px; }
+    .mini-table th { background:#f7f0f5; padding:7px 10px; text-align:left; font-size:.73rem; color:#4a3b68; font-weight:600; text-transform:uppercase; }
+    .mini-table td { padding:7px 10px; border-bottom:1px solid #f0eaf8; vertical-align:middle; }
 
     .toast-wrap { position:fixed; bottom:24px; right:24px; z-index:2000; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
     .toast { background:#4a3b68; color:#fff; border-radius:8px; padding:10px 18px; font-size:.88rem; box-shadow:0 4px 14px rgba(74,59,104,.25); opacity:0; transform:translateY(10px); transition:all .3s; }
     .toast.show { opacity:1; transform:translateY(0); }
-    .toast.ok { background:#2d7a4f; }
-    .toast.err { background:#c0392b; }
+    .toast.ok   { background:#2d7a4f; }
+    .toast.err  { background:#c0392b; }
+    .toast.info { background:#1565c0; }
 
     .empty-state { text-align:center; padding:3rem 1rem; color:#bbb; }
     .empty-state i { font-size:2.5rem; margin-bottom:.75rem; display:block; }
+    .td-concepto { max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; color:#666; }
+    .num-cell { text-align:right; white-space:nowrap; }
+    .pct-cell { text-align:center; font-size:.75rem; color:#888; }
 
-    /* MODAL NUEVA EMPRESA */
-    .modal-box-sm { background:#fff; border-radius:14px; padding:1.75rem; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(74,59,104,.2); margin:auto; }
-    .modal-box-sm h3 { font-size:1rem; font-weight:600; color:#4a3b68; margin-bottom:1.25rem; display:flex; align-items:center; gap:8px; }
-
-    @media(max-width:700px) {
+    @media(max-width:900px) {
+      .form-grid { grid-template-columns:1fr 1fr; }
+      .form-grid .span3 { grid-column:span 2; }
+    }
+    @media(max-width:600px) {
       .form-grid { grid-template-columns:1fr; }
-      .form-grid .span2 { grid-column:span 1; }
-      .form-seccion { grid-column:span 1; }
-      table { font-size:.78rem; }
-      thead th:nth-child(n+5) { display:none; }
-      tbody td:nth-child(n+5) { display:none; }
+      .form-grid .span2, .form-grid .span3 { grid-column:span 1; }
+      .form-grid-2 { grid-template-columns:1fr; }
+      .form-grid-2 .span2 { grid-column:span 1; }
     }
   </style>
 </head>
@@ -160,275 +186,100 @@
   <div class="topbar">
     <div class="topbar-left">
       <img src="logonuevo2.png" alt="" onerror="this.style.display='none'">
-      <span>Almacén Olivilla Tres — Facturas</span>
+      <span>Almacén Olivilla Tres</span>
+    </div>
+    <div class="nav-principal">
+      <button class="btn-nav active" onclick="cambiarSeccion('facturas_tienda')"><i class="fa-solid fa-shop"></i>Facturas Tienda</button>
+      <button class="btn-nav" onclick="cambiarSeccion('facturas_almacen')"><i class="fa-solid fa-warehouse"></i>Facturas Almacén</button>
+      <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i class="fa-solid fa-file-signature"></i>Albaranes</button>
+      <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
+      <button class="btn-nav" onclick="cambiarSeccion('inventario')"><i class="fa-solid fa-boxes-stacked"></i>Inventario</button>
     </div>
     <button class="btn-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
   </div>
 
   <div class="main-wrap">
     <div class="page-title">
-      <i class="fa-solid fa-file-invoice" style="color:#b53987"></i>
-      Gestión de Facturas y Albaranes
+      <i id="iconoSeccion" class="fa-solid fa-file-invoice" style="color:#b53987"></i>
+      <span id="txtSeccionTitulo">Facturas de Tienda</span>
     </div>
-
     <div class="alertas-wrap" id="alertasWrap"></div>
-
-    <div class="stats-grid">
-      <div class="stat"><div class="slabel">Total facturas</div><div class="sval" id="sTot">—</div></div>
+    <div id="statsContenedor" class="stats-grid" style="display:none">
+      <div class="stat"><div class="slabel">Total registros</div><div class="sval" id="sTot">—</div></div>
       <div class="stat naranja"><div class="slabel">Pendientes</div><div class="sval" id="sPend">—</div></div>
       <div class="stat rojo"><div class="slabel">Vencidas</div><div class="sval" id="sVenc">—</div></div>
-      <div class="stat verde"><div class="slabel">Cobrado</div><div class="sval" id="sCobrado">—</div></div>
+      <div class="stat verde"><div class="slabel">Total pagado</div><div class="sval" id="sCobrado">—</div></div>
       <div class="stat rojo"><div class="slabel">Por pagar</div><div class="sval" id="sPagar">—</div></div>
     </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" onclick="cambiarTab('todos')">Todas</button>
-      <button class="tab-btn" onclick="cambiarTab('cobro')"><i class="fa-solid fa-arrow-down me-1" style="color:#1565c0"></i>Cobros (clientes)</button>
-      <button class="tab-btn" onclick="cambiarTab('pago')"><i class="fa-solid fa-arrow-up me-1" style="color:#6a1b9a"></i>Pagos (proveedores)</button>
-    </div>
-
     <div class="filtros">
-      <input type="text" id="searchInput" placeholder="Buscar por nº factura, empresa..." oninput="renderTabla()">
+      <input type="text" id="searchInput" placeholder="Buscar..." oninput="renderTabla()">
       <select id="filtroEstado" onchange="renderTabla()">
         <option value="">Todos los estados</option>
-        <option value="pendiente">Pendientes</option>
-        <option value="pagado">Pagadas</option>
-        <option value="vencido">Vencidas</option>
       </select>
-      <button class="btn-nueva" onclick="abrirModal()"><i class="fa-solid fa-plus"></i>Nueva factura</button>
+      <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i>Añadir Nuevo</button>
+      <button class="btn-exportar" id="btnExportar" onclick="exportarExcel()" style="display:none"><i class="fa-solid fa-file-excel"></i>Exportar Excel</button>
     </div>
-
     <div class="tabla-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Nº Factura</th>
-            <th>Empresa</th>
-            <th>Fecha</th>
-            <th>Vencimiento</th>
-            <th>Total</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
+        <thead id="tablaHeader"></thead>
         <tbody id="tablaBody">
-          <tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>
+          <tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- MODAL NUEVA FACTURA -->
+<!-- MODAL NUEVO REGISTRO -->
 <div class="modal-overlay" id="modalNueva">
   <div class="modal-box">
-    <h3><i class="fa-solid fa-file-invoice" style="color:#b53987"></i><span id="modalTitulo">Nueva Factura</span></h3>
-
-    <div class="modal-tabs">
-      <button class="modal-tab active" onclick="cambiarModalTab('basico')">Datos básicos</button>
-      <button class="modal-tab" onclick="cambiarModalTab('importes')">Importes e IVA</button>
-    </div>
-
-    <!-- TAB BÁSICO -->
-    <div id="tabBasico">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Tipo *</label>
-          <select id="fTipo">
-            <option value="cobro">Cobro (cliente nos paga)</option>
-            <option value="pago">Pago (pagamos a proveedor)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Nº Factura</label>
-          <input type="text" id="fFactura" placeholder="Ej: F-2026-001">
-        </div>
-        <div class="form-group">
-          <label>Numeración interna</label>
-          <input type="text" id="fNumeracion" placeholder="Ej: 001">
-        </div>
-        <div class="form-group">
-          <label>Fecha *</label>
-          <input type="date" id="fFecha">
-        </div>
-
-        <!-- NOMBRE CON AUTOCOMPLETE -->
-        <div class="form-group span2">
-          <label>Nombre empresa *</label>
-          <div class="autocomplete-wrap">
-            <input type="text" id="fNombre" placeholder="Escribe para buscar empresa..." autocomplete="off"
-              oninput="onNombreInput()" onkeydown="onNombreKeydown(event)" onfocus="onNombreInput()">
-            <div class="autocomplete-list" id="acList" style="display:none"></div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>NIF empresa</label>
-          <input type="text" id="fNif" placeholder="Se rellena automáticamente">
-        </div>
-        <div class="form-group">
-          <label>Concepto</label>
-          <input type="text" id="fConceptoShort" placeholder="Descripción breve...">
-        </div>
-        <div class="form-group span2">
-          <label>Concepto detallado</label>
-          <textarea id="fConcepto" placeholder="Descripción del servicio o material..."></textarea>
-        </div>
-        <div class="form-group">
-          <label><i class="fa-solid fa-bell me-1" style="color:#b53987"></i>Fecha de vencimiento</label>
-          <input type="date" id="fVencimiento">
-        </div>
-        <div class="form-group">
-          <label>Email para avisos</label>
-          <input type="email" id="fEmail" value="almacen@olivillatres.com">
-        </div>
-        <div class="form-group span2">
-          <label>Notas internas</label>
-          <input type="text" id="fNotas" placeholder="Observaciones opcionales...">
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB IMPORTES -->
-    <div id="tabImportes" style="display:none">
-      <div class="form-grid">
-        <div class="form-seccion">Base 1 + IVA principal</div>
-        <div class="form-group">
-          <label>Base 1 (€)</label>
-          <input type="number" id="fBase1" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-        <div class="form-group">
-          <label>% IVA 1</label>
-          <select id="fIva1Pct" onchange="calcularTotal()">
-            <option value="0">0%</option>
-            <option value="4">4%</option>
-            <option value="10" selected>10%</option>
-            <option value="21">21%</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Total IVA 1 (€)</label>
-          <input type="number" id="fIva1Total" value="0" step="0.01" readonly style="background:#f7f9fa">
-        </div>
-        <div class="form-group">
-          <label>% Recargo equiv.</label>
-          <input type="number" id="fRe1Pct" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-        <div class="form-group">
-          <label>Total recargo (€)</label>
-          <input type="number" id="fRe1Total" value="0" step="0.01" readonly style="background:#f7f9fa">
-        </div>
-        <div class="form-group">
-          <label>Tasas (€)</label>
-          <input type="number" id="fTasas" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-
-        <div class="form-seccion">Base 2 + IVA reducido</div>
-        <div class="form-group">
-          <label>Base 2 (€)</label>
-          <input type="number" id="fBase2" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-        <div class="form-group">
-          <label>% IVA 2</label>
-          <select id="fIva2Pct" onchange="calcularTotal()">
-            <option value="0">0%</option>
-            <option value="4">4%</option>
-            <option value="10">10%</option>
-            <option value="21">21%</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Total IVA 2 (€)</label>
-          <input type="number" id="fIva2Total" value="0" step="0.01" readonly style="background:#f7f9fa">
-        </div>
-
-        <div class="form-seccion">Base 3 y otros</div>
-        <div class="form-group">
-          <label>Base 3 (€)</label>
-          <input type="number" id="fBase3" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-        <div class="form-group">
-          <label>% IVA 3</label>
-          <select id="fIva3Pct" onchange="calcularTotal()">
-            <option value="0">0%</option>
-            <option value="4">4%</option>
-            <option value="10">10%</option>
-            <option value="21">21%</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Total IVA 3 (€)</label>
-          <input type="number" id="fIva3Total" value="0" step="0.01" readonly style="background:#f7f9fa">
-        </div>
-        <div class="form-group">
-          <label>Exento (€)</label>
-          <input type="number" id="fExento" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-        <div class="form-group">
-          <label>Descuento (€)</label>
-          <input type="number" id="fDescuento" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-
-        <div class="form-seccion">Retención</div>
-        <div class="form-group">
-          <label>Base retención (€)</label>
-          <input type="number" id="fBaseRet" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-        <div class="form-group">
-          <label>% Retención</label>
-          <input type="number" id="fPctRet" value="0" step="0.01" oninput="calcularTotal()">
-        </div>
-        <div class="form-group">
-          <label>Total retención (€)</label>
-          <input type="number" id="fTotalRet" value="0" step="0.01" readonly style="background:#f7f9fa">
-        </div>
-
-        <div class="form-seccion">Total</div>
-        <div class="form-group span2" style="background:#f7f0f5;border-radius:8px;padding:14px;">
-          <label style="font-size:.9rem;font-weight:700;color:#b53987">TOTAL FACTURA (€)</label>
-          <input type="number" id="fTotal" value="0" step="0.01" style="font-size:1.3rem;font-weight:700;color:#b53987;border-color:#b53987;background:#fff">
-        </div>
-      </div>
-    </div>
-
+    <h3><i class="fa-solid fa-plus-circle" style="color:#b53987"></i><span id="modalTitulo">Nuevo Registro</span></h3>
+    <div id="modalFormContenido"></div>
     <div class="modal-btns">
-      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-guardar" onclick="guardarFactura()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+      <button class="btn-cancelar" onclick="cerrarModal('modalNueva')">Cancelar</button>
+      <button class="btn-guardar" id="btnGuardar" onclick="guardarRegistro()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL DETALLE -->
 <div class="modal-overlay" id="modalDetalle">
-  <div class="modal-box" style="max-width:500px">
-    <h3><i class="fa-solid fa-file-lines" style="color:#b53987"></i>Detalle de factura</h3>
-    <div id="detalleContenido"></div>
+  <div class="modal-box" style="max-width:680px">
+    <h3 id="modalDetalleTitulo"><i class="fa-solid fa-list" style="color:#b53987"></i>Detalle</h3>
+    <div id="modalDetalleContenido"></div>
     <div class="modal-btns">
-      <button class="btn-cancelar" onclick="cerrarDetalle()">Cerrar</button>
-      <button class="btn-guardar" id="btnPagarDetalle" onclick="pagarDesdeDetalle()"><i class="fa-solid fa-check me-1"></i>Marcar como pagada</button>
+      <button class="btn-cancelar" onclick="cerrarModal('modalDetalle')">Cerrar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL NUEVA EMPRESA -->
-<div class="modal-overlay" id="modalEmpresa">
+<!-- MODAL COMPRA CLIENTE -->
+<div class="modal-overlay" id="modalPuntos">
   <div class="modal-box-sm">
-    <h3><i class="fa-solid fa-building-circle-arrow-right" style="color:#b53987"></i>Añadir nueva empresa</h3>
+    <h3><i class="fa-solid fa-star" style="color:#b53987"></i>Registrar Compra de Cliente</h3>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div class="form-group">
-        <label>Nombre empresa *</label>
-        <input type="text" id="eNombre" placeholder="Nombre de la empresa">
+        <label>Cliente</label>
+        <input type="text" id="pClienteNombre" readonly>
       </div>
       <div class="form-group">
-        <label>NIF</label>
-        <input type="text" id="eNif" placeholder="Ej: B45123456">
+        <label>Puntos actuales</label>
+        <input type="text" id="pClientePuntosActuales" readonly>
       </div>
-      <p style="font-size:.78rem;color:#999;margin-top:4px;"><i class="fa-solid fa-info-circle me-1"></i>Se guardará en la base de datos de proveedores para autocompletar en el futuro.</p>
+      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Productos comprados</div>
+      <p style="font-size:.78rem;color:#888;margin-top:-8px"><i class="fa-solid fa-info-circle me-1"></i>Cada producto descuenta stock y suma sus puntos al cliente automáticamente.</p>
+      <div id="lineasCompra"></div>
+      <button type="button" class="btn-add-linea" onclick="addLineaCompra()">
+        <i class="fa-solid fa-plus me-1"></i>Añadir producto
+      </button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:10px;border-top:1.5px solid #ede5f5">
+        <span style="font-size:.85rem;color:#888;font-weight:600">Puntos que se añadirán:</span>
+        <span id="totalPuntosCompra" style="font-size:1.3rem;font-weight:700;color:#b53987">0 pts</span>
+      </div>
     </div>
     <div class="modal-btns">
-      <button class="btn-cancelar" onclick="cerrarModalEmpresa()">Cancelar</button>
-      <button class="btn-guardar" onclick="guardarNuevaEmpresa()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar empresa</button>
+      <button class="btn-cancelar" onclick="cerrarModal('modalPuntos')">Cancelar</button>
+      <button class="btn-guardar" onclick="guardarCompraCliente()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar compra</button>
     </div>
   </div>
 </div>
@@ -436,513 +287,981 @@
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-  const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
-  const PASSWORD = 'olivilla2026';
-  const EMAIL_AVISO = 'almacen@olivillatres.com';
+const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
+const PASSWORD    = 'olivilla2026';
 
-  const hdrs = {
-    'apikey': SUPABASE_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_KEY,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation'
-  };
+const hdrs = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+};
 
-  let facturas = [];
-  let proveedoresDB = [];
-  let tabActual = 'todos';
-  let facturaDetalleId = null;
-  let modalTabActual = 'basico';
-  let acSelectedIndex = -1;
+let tablaActual      = 'facturas_tienda';
+let registros        = [];
+let inventarioDB     = [];
+let clientesDB       = [];
+let proveedoresDB    = [];   // ← fuente principal para autocompletado de empresa/proveedor
+let clienteSelId     = null;
+let clienteSelPuntos = 0;
+let lineasCompraCount   = 0;
+let lineasFacturaCount  = 0;
 
-  // ===== AUTH =====
-  function doLogin() {
-    if (document.getElementById('pwdF').value === PASSWORD) {
-      document.getElementById('loginView').style.display = 'none';
-      document.getElementById('appView').style.display = 'flex';
-      cargarDatos();
-    } else {
-      document.getElementById('loginErr').style.display = 'block';
-    }
+// ── UTILIDADES ────────────────────────────────────────────
+function fmt(v)  { return parseFloat(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
+function fmtN(v) { if (v===null||v===undefined||v===''||isNaN(parseFloat(v))) return '—'; return parseFloat(v).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtF(f) { return f ? f.split('-').reverse().join('/') : '—'; }
+function hoy()   { return new Date().toISOString().split('T')[0]; }
+function nvl(v)  { return (v!==null&&v!==undefined&&v!=='')?v:'—'; }
+
+function toast(msg, tipo='ok') {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${tipo}`;
+  t.innerHTML = msg;
+  wrap.appendChild(t);
+  setTimeout(()=>t.classList.add('show'), 50);
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 3500);
+}
+function emptyRow(cols, msg) {
+  return `<tr><td colspan="${cols}"><div class="empty-state"><i class="fa-solid fa-folder-open"></i>${msg}</div></td></tr>`;
+}
+
+// ── AUTH ──────────────────────────────────────────────────
+function doLogin() {
+  if (document.getElementById('pwdF').value === PASSWORD) {
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('appView').style.display   = 'flex';
+    Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()])
+      .then(()=>cambiarSeccion('facturas_tienda'));
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
   }
-  function doLogout() {
-    document.getElementById('loginView').style.display = 'flex';
-    document.getElementById('appView').style.display = 'none';
-    document.getElementById('pwdF').value = '';
+}
+function doLogout() {
+  document.getElementById('loginView').style.display = 'flex';
+  document.getElementById('appView').style.display   = 'none';
+  document.getElementById('pwdF').value = '';
+}
+
+// ── API ───────────────────────────────────────────────────
+async function apiGet(tabla, params='') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, {headers:hdrs});
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function apiPost(tabla, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {
+    method:'POST', headers:hdrs, body:JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function apiPatch(tabla, id, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
+    method:'PATCH', headers:hdrs, body:JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function apiDelete(tabla, id) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
+    method:'DELETE', headers:hdrs
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+async function cargarInventarioCache()  { inventarioDB  = await apiGet('inventario',  'order=nombre'); }
+async function cargarClientesCache()    { clientesDB    = await apiGet('clientes',    'order=nombre'); }
+async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
+
+// ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
+// Vincula un input de nombre y un input de NIF al listado de proveedoresDB.
+// Al seleccionar un proveedor se rellena nombre Y nif automáticamente.
+function setupProveedorAC(inputNombreId, inputNifId) {
+  const inpN = document.getElementById(inputNombreId);
+  const inpF = document.getElementById(inputNifId);
+  if (!inpN || !inpF) return;
+
+  // Asegurar posición relativa en el contenedor del input nombre
+  inpN.parentElement.style.position = 'relative';
+  inpF.parentElement.style.position = 'relative';
+
+  // Lista bajo el campo nombre
+  const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
+  // Lista bajo el campo NIF
+  const listaF = _crearLista('ac_f_' + inputNifId,   inpF.parentElement);
+
+  function filtrar(q) {
+    return proveedoresDB.filter(p =>
+      (p.nombre||'').toLowerCase().includes(q) ||
+      (p.nif||'').toLowerCase().includes(q)
+    ).slice(0, 10);
   }
 
-  // ===== API =====
-  async function apiGet(tabla, params='') {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, { headers: hdrs });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
-  async function apiPost(tabla, body) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, { method:'POST', headers: hdrs, body: JSON.stringify(body) });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
-  async function apiPatch(tabla, id, body) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, { method:'PATCH', headers: hdrs, body: JSON.stringify(body) });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
-  async function apiDelete(tabla, id) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, { method:'DELETE', headers: hdrs });
-    if (!r.ok) throw new Error(await r.text());
+  function seleccionar(prov) {
+    inpN.value = prov.nombre || '';
+    inpF.value = prov.nif   || '';
+    listaN.style.display = 'none';
+    listaF.style.display = 'none';
   }
 
-  // ===== CARGAR =====
-  async function cargarDatos() {
-    try {
-      [facturas, proveedoresDB] = await Promise.all([
-        apiGet('facturas', 'order=fecha.desc'),
-        apiGet('proveedores', 'order=nombre')
-      ]);
-      actualizarStats();
-      renderAlertas();
-      renderTabla();
-    } catch(e) {
-      toast('Error al cargar datos: ' + e.message, 'err');
-    }
-  }
-
-  // ===== STATS =====
-  function actualizarStats() {
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const pend = facturas.filter(f => f.estado === 'pendiente');
-    const venc = pend.filter(f => f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoy);
-    const cobrado = facturas.filter(f => f.tipo==='cobro' && f.estado==='pagado').reduce((s,f) => s + parseFloat(f.total||0), 0);
-    const porPagar = facturas.filter(f => f.tipo==='pago' && f.estado==='pendiente').reduce((s,f) => s + parseFloat(f.total||0), 0);
-    document.getElementById('sTot').textContent = facturas.length;
-    document.getElementById('sPend').textContent = pend.length;
-    document.getElementById('sVenc').textContent = venc.length;
-    document.getElementById('sCobrado').textContent = fmt(cobrado);
-    document.getElementById('sPagar').textContent = fmt(porPagar);
-  }
-
-  // ===== ALERTAS =====
-  function renderAlertas() {
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const pendientes = facturas.filter(f => f.estado === 'pendiente' && f.fecha_vencimiento);
-    const alertas = pendientes
-      .map(f => ({ f, dias: Math.ceil((new Date(f.fecha_vencimiento) - hoy) / 86400000) }))
-      .filter(x => x.dias <= 7)
-      .sort((a,b) => a.dias - b.dias);
-    const wrap = document.getElementById('alertasWrap');
-    if (!alertas.length) { wrap.innerHTML = ''; return; }
-    wrap.innerHTML = alertas.map(({f, dias}) => {
-      const critica = dias <= 0;
-      const msg = dias < 0 ? `Vencida hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias>1?'s':''}`;
-      return `<div class="alerta-item ${critica?'critica':''}">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <div><strong>${f.nombre}</strong> — Factura ${f.numero_factura||'s/n'} — <strong>${fmt(f.total)}</strong>
-        <span style="margin-left:8px;color:${critica?'#e53e3e':'#c47a00'}">${msg}</span></div>
-      </div>`;
-    }).join('');
-  }
-
-  // ===== RENDER TABLA =====
-  function renderTabla() {
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    const filtEst = document.getElementById('filtroEstado').value;
-    let lista = facturas.filter(f => {
-      const matchTab = tabActual === 'todos' || f.tipo === tabActual;
-      const matchQ = (f.nombre||'').toLowerCase().includes(q) || (f.numero_factura||'').toLowerCase().includes(q) || (f.nif||'').toLowerCase().includes(q);
-      const estado = getEstado(f, hoy);
-      const matchEst = !filtEst || estado === filtEst;
-      return matchTab && matchQ && matchEst;
+  function renderLista(lista, items) {
+    if (!items.length) { lista.style.display='none'; return; }
+    lista.innerHTML = items.map(p =>
+      `<div class="ac-item" data-id="${p.id}">
+        <span class="ac-nombre">${p.nombre||'—'}</span>
+        <span class="ac-nif">${p.nif||'Sin NIF'}</span>
+      </div>`
+    ).join('');
+    lista.style.display = 'block';
+    lista.querySelectorAll('.ac-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const prov = proveedoresDB.find(p => p.id == el.dataset.id);
+        if (prov) seleccionar(prov);
+      });
     });
-    if (!lista.length) {
-      document.getElementById('tablaBody').innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-file-invoice"></i>No hay facturas que mostrar.</div></td></tr>`;
-      return;
+  }
+
+  // Input nombre
+  inpN.addEventListener('input',  () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
+  inpN.addEventListener('focus',  () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
+  inpN.addEventListener('blur',   () => setTimeout(()=>listaN.style.display='none', 160));
+
+  // Input NIF
+  inpF.addEventListener('input',  () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
+  inpF.addEventListener('focus',  () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
+  inpF.addEventListener('blur',   () => setTimeout(()=>listaF.style.display='none', 160));
+}
+
+function _crearLista(id, parent) {
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = id;
+    el.className = 'ac-list';
+    el.style.display = 'none';
+    parent.appendChild(el);
+  }
+  return el;
+}
+
+// ── SECCIONES ─────────────────────────────────────────────
+function cambiarSeccion(sec) {
+  tablaActual = sec;
+  document.querySelectorAll('.btn-nav').forEach(b =>
+    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
+  );
+  const titulos = {
+    facturas_tienda:  ['Facturas de Tienda',  'fa-shop',           true ],
+    facturas_almacen: ['Facturas de Almacén', 'fa-warehouse',      true ],
+    albaranes:        ['Albaranes',            'fa-file-signature', false],
+    clientes:         ['Clientes',             'fa-users',          false],
+    inventario:       ['Inventario',           'fa-boxes-stacked',  false]
+  };
+  const [tit, ico, stats] = titulos[sec];
+  document.getElementById('txtSeccionTitulo').textContent = tit;
+  document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;
+  document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
+  document.getElementById('alertasWrap').innerHTML = '';
+
+  const esFacturas = sec==='facturas_tienda'||sec==='facturas_almacen';
+  document.getElementById('btnExportar').style.display = esFacturas ? 'flex' : 'none';
+
+  const sel = document.getElementById('filtroEstado');
+  const sp  = document.getElementById('searchInput');
+  if (esFacturas) {
+    sel.innerHTML = `<option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="pagado">Pagada</option>
+      <option value="vencido">Vencida</option>`;
+    sp.placeholder = 'Buscar por nº, empresa, NIF, concepto...';
+  } else if (sec==='albaranes') {
+    sel.innerHTML = `<option value="">Todos</option>
+      <option value="si">Facturado</option>
+      <option value="no">Sin facturar</option>`;
+    sp.placeholder = 'Buscar empresa o NIF...';
+  } else {
+    sel.innerHTML = `<option value="">Todos</option>`;
+    sp.placeholder = sec==='clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
+  }
+  cargarDatos();
+}
+
+// ── CARGAR DATOS ──────────────────────────────────────────
+async function cargarDatos() {
+  document.getElementById('tablaBody').innerHTML =
+    `<tr><td colspan="15"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
+  try {
+    const orden = {
+      facturas_tienda:'order=fecha.desc', facturas_almacen:'order=fecha.desc',
+      albaranes:'order=fecha.desc', clientes:'order=nombre', inventario:'order=nombre'
+    };
+    registros      = await apiGet(tablaActual, orden[tablaActual]||'');
+    inventarioDB   = await apiGet('inventario','order=nombre');
+    clientesDB     = await apiGet('clientes','order=nombre');
+    proveedoresDB  = await apiGet('proveedores','order=nombre');
+
+    if (tablaActual==='facturas_tienda'||tablaActual==='facturas_almacen') {
+      actualizarStats(); renderAlertas();
     }
-    document.getElementById('tablaBody').innerHTML = lista.map(f => {
-      const estado = getEstado(f, hoy);
-      const badgeEst = estado === 'pagado'
-        ? `<span class="badge-estado badge-pagado"><i class="fa-solid fa-check"></i> Pagada</span>`
-        : estado === 'vencido'
-        ? `<span class="badge-estado badge-vencido"><i class="fa-solid fa-clock"></i> Vencida</span>`
-        : `<span class="badge-estado badge-pendiente"><i class="fa-regular fa-clock"></i> Pendiente</span>`;
-      const badgeTipo = f.tipo === 'cobro'
-        ? `<span class="badge-tipo-cobro"><i class="fa-solid fa-arrow-down me-1"></i>Cobro</span>`
-        : `<span class="badge-tipo-pago"><i class="fa-solid fa-arrow-up me-1"></i>Pago</span>`;
-      const btnPagar = f.estado !== 'pagado'
-        ? `<button class="btn-pagar" onclick="marcarPagada(${f.id})"><i class="fa-solid fa-check me-1"></i>Pagada</button>`
-        : `<span style="font-size:.75rem;color:#999">${f.fecha_pago ? fmtFecha(f.fecha_pago) : ''}</span>`;
+    renderTabla();
+  } catch(e) {
+    toast('Error al cargar: '+e.message,'err');
+    document.getElementById('tablaBody').innerHTML =
+      `<tr><td colspan="15"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
+  }
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function actualizarStats() {
+  const hoyD = new Date(); hoyD.setHours(0,0,0,0);
+  const pend   = registros.filter(f=>f.estado==='pendiente');
+  const venc   = pend.filter(f=>f.fecha_vencimiento && new Date(f.fecha_vencimiento)<hoyD);
+  const pagado = registros.filter(f=>f.estado==='pagado').reduce((s,f)=>s+parseFloat(f.total||0),0);
+  const porPag = pend.reduce((s,f)=>s+parseFloat(f.total||0),0);
+  document.getElementById('sTot').textContent     = registros.length;
+  document.getElementById('sPend').textContent    = pend.length;
+  document.getElementById('sVenc').textContent    = venc.length;
+  document.getElementById('sCobrado').textContent = fmt(pagado);
+  document.getElementById('sPagar').textContent   = fmt(porPag);
+}
+
+function renderAlertas() {
+  const hoyD = new Date(); hoyD.setHours(0,0,0,0);
+  const alertas = registros
+    .filter(f=>f.estado==='pendiente'&&f.fecha_vencimiento)
+    .map(f=>({f, dias:Math.ceil((new Date(f.fecha_vencimiento)-hoyD)/86400000)}))
+    .filter(x=>x.dias<=7)
+    .sort((a,b)=>a.dias-b.dias);
+  const wrap = document.getElementById('alertasWrap');
+  if (!alertas.length) { wrap.innerHTML=''; return; }
+  wrap.innerHTML = alertas.map(({f,dias})=>{
+    const critica = dias<=0;
+    // En facturas tienda el campo en DB es 'proveedor', en almacén también 'proveedor'
+    const empresa = f.proveedor || '—';
+    const msg = dias<0 ? `Vencido hace ${Math.abs(dias)} días` : dias===0 ? 'Vence HOY' : `Vence en ${dias} día${dias>1?'s':''}`;
+    return `<div class="alerta-item ${critica?'critica':''}">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div><strong>${empresa}</strong> — Ref: ${f.numero_factura||'s/n'} — <strong>${fmt(f.total)}</strong>
+      <span style="margin-left:8px;color:${critica?'#e53e3e':'#c47a00'}">${msg}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER TABLA ──────────────────────────────────────────
+function renderTabla() {
+  const q    = document.getElementById('searchInput').value.toLowerCase().trim();
+  const fEst = document.getElementById('filtroEstado').value;
+  const hdr  = document.getElementById('tablaHeader');
+  const bdy  = document.getElementById('tablaBody');
+  const hoyD = new Date(); hoyD.setHours(0,0,0,0);
+
+  // FACTURAS TIENDA — usa campo 'proveedor' en DB
+  if (tablaActual==='facturas_tienda') {
+    hdr.innerHTML=`<tr>
+      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
+      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
+      <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
+      <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
+      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
+      <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
+    </tr>`;
+    const lista = registros.filter(f=>{
+      const mQ=[f.numero_factura,f.proveedor,f.nif,f.numero_interno,f.concepto].some(v=>(v||'').toLowerCase().includes(q));
+      const esVenc=f.estado==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
+      const estReal=esVenc?'vencido':(f.estado||'pendiente');
+      return mQ&&(!fEst||fEst===estReal||(fEst==='vencido'&&esVenc));
+    });
+    if (!lista.length){bdy.innerHTML=emptyRow(21,'No se encontraron facturas');return;}
+    bdy.innerHTML=lista.map(f=>{
+      const est=f.estado||'pendiente';
+      const esVenc=est==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
+      const eR=esVenc?'vencido':est;
       return `<tr>
-        <td>${badgeTipo}</td>
-        <td style="font-weight:500">${f.numero_factura||'—'}</td>
-        <td class="td-nombre" title="${f.nombre}">${f.nombre}</td>
-        <td>${fmtFecha(f.fecha)}</td>
-        <td>${f.fecha_vencimiento ? fmtFecha(f.fecha_vencimiento) : '—'}</td>
+        <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
+        <td><strong>${f.numero_factura||'—'}</strong></td>
+        <td class="td-nombre">${f.proveedor||'—'}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif||'—'}</td>
+        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td class="td-concepto" title="${f.concepto||''}">${f.concepto||'—'}</td>
+        <td class="num-cell">${fmtN(f.base1)}</td>
+        <td class="pct-cell">${f.pct_iva1!=null?f.pct_iva1+'%':'—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva1)}</td>
+        <td class="pct-cell">${f.pct_re1!=null?f.pct_re1+'%':'—'}</td>
+        <td class="num-cell">${fmtN(f.total_re1)}</td>
+        <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.descuento)}</td>
+        <td class="num-cell">${fmtN(f.base_retencion)}</td>
+        <td class="pct-cell">${f.pct_retencion!=null?f.pct_retencion+'%':'—'}</td>
+        <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
-        <td>${badgeEst}</td>
+        <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
+        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_tienda')">
+          ${est==='pagado'?'<i class="fa-solid fa-rotate-left me-1"></i>Pendiente':'<i class="fa-solid fa-check me-1"></i>Pagada'}
+        </button></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+
+  // FACTURAS ALMACÉN
+  } else if (tablaActual==='facturas_almacen') {
+    hdr.innerHTML=`<tr>
+      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
+      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
+      <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
+      <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
+      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
+      <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
+    </tr>`;
+    const lista = registros.filter(f=>{
+      const mQ=[f.numero_factura,f.proveedor,f.nif,f.numero_interno,f.concepto].some(v=>(v||'').toLowerCase().includes(q));
+      const esVenc=f.estado==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
+      const estReal=esVenc?'vencido':(f.estado||'pendiente');
+      return mQ&&(!fEst||fEst===estReal||(fEst==='vencido'&&esVenc));
+    });
+    if (!lista.length){bdy.innerHTML=emptyRow(21,'No se encontraron facturas');return;}
+    bdy.innerHTML=lista.map(f=>{
+      const est=f.estado||'pendiente';
+      const esVenc=est==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
+      const eR=esVenc?'vencido':est;
+      return `<tr>
+        <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
+        <td><strong>${f.numero_factura||'—'}</strong></td>
+        <td class="td-nombre">${f.proveedor||'—'}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif||'—'}</td>
+        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td class="td-concepto" title="${f.concepto||''}">${f.concepto||'—'}</td>
+        <td class="num-cell">${fmtN(f.base1)}</td>
+        <td class="pct-cell">${f.pct_iva1!=null?f.pct_iva1+'%':'—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva1)}</td>
+        <td class="pct-cell">${f.pct_re1!=null?f.pct_re1+'%':'—'}</td>
+        <td class="num-cell">${fmtN(f.total_re1)}</td>
+        <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.descuento)}</td>
+        <td class="num-cell">${fmtN(f.base_retencion)}</td>
+        <td class="pct-cell">${f.pct_retencion!=null?f.pct_retencion+'%':'—'}</td>
+        <td class="num-cell">${fmtN(f.total_retencion)}</td>
+        <td class="td-total">${fmt(f.total)}</td>
+        <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
+        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_almacen')">
+          ${est==='pagado'?'<i class="fa-solid fa-rotate-left me-1"></i>Pendiente':'<i class="fa-solid fa-check me-1"></i>Pagada'}
+        </button></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+
+  // ALBARANES
+  } else if (tablaActual==='albaranes') {
+    hdr.innerHTML=`<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Facturas por NIF</th><th>Acción</th><th></th></tr>`;
+    const lista=registros.filter(f=>{
+      const mQ=[f.numero_albaran,f.empresa,f.nif].some(v=>(v||'').toLowerCase().includes(q));
+      const mE=!fEst||(fEst==='si'?f.facturado:!f.facturado);
+      return mQ&&mE;
+    });
+    if (!lista.length){bdy.innerHTML=emptyRow(9,'No se encontraron albaranes');return;}
+    bdy.innerHTML=lista.map(f=>{
+      const fact=!!f.facturado;
+      return `<tr>
+        <td><strong>${f.numero_albaran||'—'}</strong></td>
+        <td class="td-nombre">${f.empresa||'—'}</td>
+        <td style="font-size:.8rem;color:#888">${f.nif||'—'}</td>
+        <td>${fmtF(f.fecha)}</td>
+        <td class="td-total">${fmt(f.total)}</td>
+        <td><span class="badge-estado ${fact?'badge-pagado':'badge-vencido'}">${fact?'SÍ':'NO'}</span></td>
+        <td>${f.nif
+          ?`<span class="link-badge factura" onclick="verFacturasNif('${f.nif}','${(f.empresa||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
+          :'<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
+        <td><button class="btn-toggle-facturado ${fact?'si':'no'}" onclick="toggleFacturado(${f.id},${fact})">
+          ${fact?'<i class="fa-solid fa-rotate-left me-1"></i>Sin facturar':'<i class="fa-solid fa-file-circle-check me-1"></i>Marcar facturado'}
+        </button></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+
+  // CLIENTES
+  } else if (tablaActual==='clientes') {
+    hdr.innerHTML=`<tr><th>Nombre</th><th>NIF</th><th>Email</th><th>Teléfono</th><th>Puntos</th><th>Última compra</th><th>Acciones</th><th></th></tr>`;
+    const lista=registros.filter(f=>[f.nombre,f.nif,f.email].some(v=>(v||'').toLowerCase().includes(q)));
+    if (!lista.length){bdy.innerHTML=emptyRow(8,'No se encontraron clientes');return;}
+    bdy.innerHTML=lista.map(f=>{
+      const uc=f.ultima_compra?new Date(f.ultima_compra):null;
+      const meses=uc?Math.floor((new Date()-uc)/(1000*60*60*24*30)):null;
+      const alerta=meses!==null&&meses>=5;
+      return `<tr style="${alerta?'background:#fff8e1':''}">
+        <td class="td-nombre">
+          ${alerta?'<i class="fa-solid fa-triangle-exclamation" style="color:#c47a00;margin-right:5px"></i>':''}
+          <strong>${f.nombre||'—'}</strong>
+        </td>
+        <td style="font-size:.8rem;color:#888">${f.nif||'—'}</td>
+        <td style="font-size:.82rem">${f.email||'—'}</td>
+        <td style="font-size:.82rem">${f.telefono||'—'}</td>
+        <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${f.puntos||0} pts</span></td>
+        <td style="font-size:.8rem;color:#888">${uc?uc.toLocaleDateString('es-ES'):'—'}
+          ${alerta?`<br><span style="color:#c47a00;font-size:.72rem">¡${meses} meses sin compra!</span>`:''}
+        </td>
         <td><div class="td-acciones">
-          ${btnPagar}
-          <button class="btn-ver" onclick="verDetalle(${f.id})"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn-eliminar" onclick="eliminar(${f.id})" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn-puntos" onclick="abrirModalCompra(${f.id},'${(f.nombre||'').replace(/'/g,"\\'")}',${f.puntos||0})">
+            <i class="fa-solid fa-cart-shopping me-1"></i>Registrar compra
+          </button>
+          ${f.nif?`<span class="link-badge" onclick="verAlbaranesNif('${f.nif}','${(f.nombre||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-file-signature"></i>Albaranes</span>`:''}
         </div></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+
+  // INVENTARIO
+  } else if (tablaActual==='inventario') {
+    hdr.innerHTML=`<tr><th>Producto</th><th>Stock (uds.)</th><th>Pts/unidad</th><th></th></tr>`;
+    const lista=registros.filter(p=>(p.nombre||'').toLowerCase().includes(q));
+    if (!lista.length){bdy.innerHTML=emptyRow(4,'No se encontraron productos');return;}
+    bdy.innerHTML=lista.map(p=>{
+      const agotado=parseFloat(p.stock||0)<=0;
+      return `<tr>
+        <td><strong>${p.nombre||'—'}</strong></td>
+        <td><span style="font-size:1.1rem;font-weight:700;color:${agotado?'#b53987':'#2d7a4f'}">${p.stock??0}</span>
+          <span style="font-size:.78rem;color:#aaa"> uds.</span>
+          ${agotado?'<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>':''}
+        </td>
+        <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${p.puntos_por_unidad||0} pts</span></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${p.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
     }).join('');
   }
+}
 
-  function getEstado(f, hoy) {
-    if (f.estado === 'pagado') return 'pagado';
-    if (f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoy) return 'vencido';
-    return 'pendiente';
-  }
+// ── TOGGLE ESTADO FACTURA ─────────────────────────────────
+async function toggleEstado(id, estadoActual, tabla) {
+  const nuevo = estadoActual==='pagado'?'pendiente':'pagado';
+  try {
+    await apiPatch(tabla, id, {estado:nuevo});
+    const reg = registros.find(r=>r.id===id);
+    if (reg) reg.estado = nuevo;
+    actualizarStats(); renderAlertas(); renderTabla();
+    toast(`Factura marcada como <strong>${nuevo.toUpperCase()}</strong>`);
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
 
-  // ===== MARCAR PAGADA =====
-  async function marcarPagada(id) {
-    const hoy = new Date().toISOString().split('T')[0];
-    try {
-      await apiPatch('facturas', id, { estado: 'pagado', fecha_pago: hoy });
-      const f = facturas.find(x => x.id === id);
-      if (f) { f.estado = 'pagado'; f.fecha_pago = hoy; }
-      actualizarStats(); renderAlertas(); renderTabla();
-      toast('Factura marcada como pagada ✓', 'ok');
-    } catch(e) { toast('Error: ' + e.message, 'err'); }
-  }
+async function toggleFacturado(id, actual) {
+  try {
+    await apiPatch('albaranes', id, {facturado:!actual});
+    const reg = registros.find(r=>r.id===id);
+    if (reg) reg.facturado = !actual;
+    renderTabla();
+    toast(`Albarán: <strong>${!actual?'FACTURADO':'SIN FACTURAR'}</strong>`);
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
 
-  function pagarDesdeDetalle() {
-    if (facturaDetalleId) { marcarPagada(facturaDetalleId); cerrarDetalle(); }
-  }
-
-  // ===== ELIMINAR =====
-  async function eliminar(id) {
-    if (!confirm('¿Eliminar esta factura? Esta acción no se puede deshacer.')) return;
-    try {
-      await apiDelete('facturas', id);
-      facturas = facturas.filter(f => f.id !== id);
-      actualizarStats(); renderAlertas(); renderTabla();
-      toast('Factura eliminada', 'ok');
-    } catch(e) { toast('Error: ' + e.message, 'err'); }
-  }
-
-  // ===== DETALLE =====
-  function verDetalle(id) {
-    const f = facturas.find(x => x.id === id);
-    if (!f) return;
-    facturaDetalleId = id;
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const estado = getEstado(f, hoy);
-    document.getElementById('detalleContenido').innerHTML = `
-      <div class="detalle-row"><span class="detalle-label">Tipo</span><span class="detalle-val">${f.tipo === 'cobro' ? '↓ Cobro (cliente)' : '↑ Pago (proveedor)'}</span></div>
-      <div class="detalle-row"><span class="detalle-label">Nº Factura</span><span class="detalle-val">${f.numero_factura||'—'}</span></div>
-      <div class="detalle-row"><span class="detalle-label">Empresa</span><span class="detalle-val">${f.nombre}</span></div>
-      <div class="detalle-row"><span class="detalle-label">NIF</span><span class="detalle-val">${f.nif||'—'}</span></div>
-      <div class="detalle-row"><span class="detalle-label">Fecha</span><span class="detalle-val">${fmtFecha(f.fecha)}</span></div>
-      <div class="detalle-row"><span class="detalle-label">Vencimiento</span><span class="detalle-val">${f.fecha_vencimiento ? fmtFecha(f.fecha_vencimiento) : '—'}</span></div>
-      <div class="detalle-row"><span class="detalle-label">Concepto</span><span class="detalle-val">${f.concepto||'—'}</span></div>
-      ${f.base1 ? `<div class="detalle-row"><span class="detalle-label">Base 1</span><span class="detalle-val">${fmt(f.base1)}</span></div>` : ''}
-      ${f.iva1_total ? `<div class="detalle-row"><span class="detalle-label">IVA (${f.iva1_pct}%)</span><span class="detalle-val">${fmt(f.iva1_total)}</span></div>` : ''}
-      ${f.re1_total ? `<div class="detalle-row"><span class="detalle-label">Recargo equiv.</span><span class="detalle-val">${fmt(f.re1_total)}</span></div>` : ''}
-      ${f.total_retencion ? `<div class="detalle-row"><span class="detalle-label">Retención (${f.pct_retencion}%)</span><span class="detalle-val">−${fmt(f.total_retencion)}</span></div>` : ''}
-      ${f.descuento ? `<div class="detalle-row"><span class="detalle-label">Descuento</span><span class="detalle-val">−${fmt(f.descuento)}</span></div>` : ''}
-      <div class="detalle-row"><span class="detalle-label detalle-total">TOTAL</span><span class="detalle-val detalle-total">${fmt(f.total)}</span></div>
-      <div class="detalle-row"><span class="detalle-label">Estado</span><span class="detalle-val">${estado === 'pagado' ? '✅ Pagada el ' + fmtFecha(f.fecha_pago) : estado === 'vencido' ? '🔴 Vencida' : '🟡 Pendiente'}</span></div>
-      ${f.notas ? `<div class="detalle-row"><span class="detalle-label">Notas</span><span class="detalle-val">${f.notas}</span></div>` : ''}
-    `;
-    document.getElementById('btnPagarDetalle').style.display = f.estado === 'pagado' ? 'none' : 'inline-flex';
+// ── VER FACTURAS POR NIF ──────────────────────────────────
+async function verFacturasNif(nif, empresa) {
+  try {
+    const [ft, fa] = await Promise.all([
+      apiGet('facturas_tienda',  `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
+      apiGet('facturas_almacen', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`)
+    ]);
+    const todas = [...ft.map(f=>({...f,_o:'Tienda'})),...fa.map(f=>({...f,_o:'Almacén'}))];
+    document.getElementById('modalDetalleTitulo').innerHTML =
+      `<i class="fa-solid fa-file-invoice" style="color:#b53987"></i>Facturas de ${empresa} (NIF: ${nif})`;
+    document.getElementById('modalDetalleContenido').innerHTML = !todas.length
+      ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin facturas para este NIF</p>`
+      : `<table class="mini-table"><thead><tr><th>Origen</th><th>Nº Factura</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>
+          ${todas.map(f=>`<tr>
+            <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${f._o==='Tienda'?'#e3f2fd':'#f3e5f5'};color:${f._o==='Tienda'?'#1565c0':'#6a1b9a'}">${f._o}</span></td>
+            <td><strong>${f.numero_factura||'—'}</strong></td>
+            <td>${fmtF(f.fecha)}</td>
+            <td><strong>${fmt(f.total)}</strong></td>
+            <td><span class="badge-estado badge-${f.estado||'pendiente'}">${(f.estado||'pendiente').toUpperCase()}</span></td>
+          </tr>`).join('')}
+        </tbody></table>`;
     document.getElementById('modalDetalle').classList.add('visible');
-  }
-  function cerrarDetalle() {
-    document.getElementById('modalDetalle').classList.remove('visible');
-    facturaDetalleId = null;
-  }
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
 
-  // ===== MODAL NUEVA FACTURA =====
-  function abrirModal() {
-    document.getElementById('fFecha').value = new Date().toISOString().split('T')[0];
+async function verAlbaranesNif(nif, nombre) {
+  try {
+    const albs = await apiGet('albaranes',`nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`);
+    document.getElementById('modalDetalleTitulo').innerHTML =
+      `<i class="fa-solid fa-file-signature" style="color:#b53987"></i>Albaranes de ${nombre}`;
+    document.getElementById('modalDetalleContenido').innerHTML = !albs.length
+      ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin albaranes para este NIF</p>`
+      : `<table class="mini-table"><thead><tr><th>Nº Albarán</th><th>Fecha</th><th>Total</th><th>Facturado</th></tr></thead><tbody>
+          ${albs.map(a=>`<tr>
+            <td><strong>${a.numero_albaran||'—'}</strong></td>
+            <td>${fmtF(a.fecha)}</td>
+            <td><strong>${fmt(a.total)}</strong></td>
+            <td><span class="badge-estado ${a.facturado?'badge-pagado':'badge-vencido'}">${a.facturado?'SÍ':'NO'}</span></td>
+          </tr>`).join('')}
+        </tbody></table>`;
+    document.getElementById('modalDetalle').classList.add('visible');
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
+
+// ── MODAL COMPRA CLIENTE ──────────────────────────────────
+function abrirModalCompra(id, nombre, puntos) {
+  clienteSelId     = id;
+  clienteSelPuntos = puntos;
+  lineasCompraCount = 0;
+  document.getElementById('pClienteNombre').value          = nombre;
+  document.getElementById('pClientePuntosActuales').value  = puntos + ' puntos';
+  document.getElementById('lineasCompra').innerHTML        = '';
+  document.getElementById('totalPuntosCompra').textContent = '0 pts';
+  document.getElementById('modalPuntos').classList.add('visible');
+  addLineaCompra();
+}
+
+function addLineaCompra() {
+  lineasCompraCount++;
+  const idx  = lineasCompraCount;
+  const opts = inventarioDB.map(p=>
+    `<option value="${p.id}" data-pts="${p.puntos_por_unidad||0}" data-stock="${p.stock||0}">
+      ${p.nombre} (stock: ${p.stock||0}) — ${p.puntos_por_unidad||0} pts/ud
+    </option>`
+  ).join('');
+  const div = document.createElement('div');
+  div.id = `lc_${idx}`;
+  div.className = 'linea-prod';
+  div.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Producto</label>
+      <select id="lc_prod_${idx}" onchange="recalcPuntos()">
+        <option value="">— Elige producto —</option>${opts}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Cantidad</label>
+      <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center" oninput="recalcPuntos()">
+    </div>
+    <div class="form-group" style="margin:0;width:70px">
+      <label style="font-size:.75rem">Puntos</label>
+      <input type="text" id="lc_pts_${idx}" readonly style="text-align:center;background:#f7f0f5;font-weight:600;color:#b53987" value="0">
+    </div>
+    <button type="button" onclick="document.getElementById('lc_${idx}').remove();recalcPuntos()"
+      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`;
+  document.getElementById('lineasCompra').appendChild(div);
+}
+
+function recalcPuntos() {
+  let total = 0;
+  document.querySelectorAll('[id^="lc_prod_"]').forEach(sel=>{
+    if (!sel.value) return;
+    const idx  = sel.id.split('_')[2];
+    const cant = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value||0);
+    const pts  = parseFloat(sel.selectedOptions[0]?.dataset.pts||0);
+    const linea= cant * pts;
+    const inpPts = document.getElementById(`lc_pts_${idx}`);
+    if (inpPts) inpPts.value = linea + ' pts';
+    total += linea;
+  });
+  document.getElementById('totalPuntosCompra').textContent = total + ' pts';
+}
+
+async function guardarCompraCliente() {
+  const lineas = [];
+  let totalPuntos = 0;
+  let ok = true;
+
+  document.querySelectorAll('[id^="lc_prod_"]').forEach(sel=>{
+    if (!sel.value) return;
+    const idx   = sel.id.split('_')[2];
+    const cant  = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value||0);
+    const pts   = parseFloat(sel.selectedOptions[0]?.dataset.pts||0);
+    const stock = parseFloat(sel.selectedOptions[0]?.dataset.stock||0);
+    const nombre= sel.selectedOptions[0]?.text.split('(')[0].trim();
+    if (cant<=0)     { toast(`Cantidad inválida en "${nombre}"`,'err'); ok=false; return; }
+    if (cant>stock)  { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`,'err'); ok=false; return; }
+    lineas.push({ producto_id:parseInt(sel.value), cantidad:cant, pts_linea:cant*pts, nombre, stock });
+    totalPuntos += cant*pts;
+  });
+
+  if (!ok) return;
+  if (!lineas.length) { toast('Añade al menos un producto','err'); return; }
+
+  try {
+    for (const l of lineas) {
+      await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad });
+    }
+    await apiPatch('clientes', clienteSelId, {
+      puntos: clienteSelPuntos + totalPuntos,
+      ultima_compra: new Date().toISOString()
+    });
+    toast(`<i class="fa-solid fa-star me-1"></i>Compra registrada — <strong>+${totalPuntos} pts</strong>`,'ok');
+    cerrarModal('modalPuntos');
+    cargarDatos();
+  } catch(e) { toast('Error al guardar compra: '+e.message,'err'); }
+}
+
+// ── CAMPOS IVA / BASES ────────────────────────────────────
+function htmlCamposExcel() {
+  return `
+    <div class="form-seccion">Bases e IVA</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Base 1</label><input type="number" id="f_base1" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>% IVA 1</label><input type="number" id="f_pct_iva1" step="0.01" placeholder="21"></div>
+      <div class="form-group"><label>Total IVA 1</label><input type="number" id="f_total_iva1" step="0.01" placeholder="0.00"></div>
+
+      <div class="form-group"><label>% RE 1</label><input type="number" id="f_pct_re1" step="0.01" placeholder="5.2"></div>
+      <div class="form-group"><label>Total RE 1</label><input type="number" id="f_total_re1" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Tasas</label><input type="number" id="f_tasas" step="0.01" placeholder="0.00"></div>
+
+      <div class="form-group"><label>Base 2</label><input type="number" id="f_base2" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>% IVA 2</label><input type="number" id="f_pct_iva2" step="0.01" placeholder="10"></div>
+      <div class="form-group"><label>Total IVA 2</label><input type="number" id="f_total_iva2" step="0.01" placeholder="0.00"></div>
+
+      <div class="form-group"><label>Base 3</label><input type="number" id="f_base3" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>% IVA 3</label><input type="number" id="f_pct_iva3" step="0.01" placeholder="4"></div>
+      <div class="form-group"><label>Total IVA 3</label><input type="number" id="f_total_iva3" step="0.01" placeholder="0.00"></div>
+
+      <div class="form-group"><label>Exento</label><input type="number" id="f_exento" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Descuento</label><input type="number" id="f_descuento" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"></div>
+    </div>
+    <div class="form-seccion">Retención</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Base Retención</label><input type="number" id="f_base_ret" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>% Retención</label><input type="number" id="f_pct_ret" step="0.01" placeholder="15"></div>
+      <div class="form-group"><label>Total Retención</label><input type="number" id="f_total_ret" step="0.01" placeholder="0.00"></div>
+    </div>`;
+}
+
+function recogerCamposExcel() {
+  const n = id => { const v = document.getElementById(id)?.value; return (v===''||v===null||v===undefined)?null:parseFloat(v); };
+  return {
+    base1:n('f_base1'), pct_iva1:n('f_pct_iva1'), total_iva1:n('f_total_iva1'),
+    pct_re1:n('f_pct_re1'), total_re1:n('f_total_re1'), tasas:n('f_tasas'),
+    base2:n('f_base2'), pct_iva2:n('f_pct_iva2'), total_iva2:n('f_total_iva2'),
+    base3:n('f_base3'), pct_iva3:n('f_pct_iva3'), total_iva3:n('f_total_iva3'),
+    exento:n('f_exento'), descuento:n('f_descuento'),
+    base_retencion:n('f_base_ret'), pct_retencion:n('f_pct_ret'), total_retencion:n('f_total_ret'),
+  };
+}
+
+// ── MODAL NUEVO REGISTRO ──────────────────────────────────
+function abrirModalNuevo() {
+  lineasFacturaCount = 0;
+  const cont = document.getElementById('modalFormContenido');
+
+  // ── FACTURA TIENDA ──
+  if (tablaActual==='facturas_tienda') {
+    document.getElementById('modalTitulo').textContent = 'Nueva Factura de Tienda';
+    cont.innerHTML = `
+      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
+        <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FT-2026-001"></div>
+        <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+
+        <div class="form-group span2 ac-wrap">
+          <label>Proveedor *</label>
+          <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+        </div>
+        <div class="form-group ac-wrap">
+          <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
+          <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
+        </div>
+
+        <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
+
+        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
+        <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
+      </div>
+      ${htmlCamposExcel()}`;
+    document.getElementById('modalNueva').classList.add('visible');
+    setTimeout(()=>setupProveedorAC('f_prov','f_nif'), 50);
+
+  // ── FACTURA ALMACÉN ──
+  } else if (tablaActual==='facturas_almacen') {
+    document.getElementById('modalTitulo').textContent = 'Nueva Factura de Almacén';
+    const opts = inventarioDB.map(p=>
+      `<option value="${p.id}" data-stock="${p.stock||0}">${p.nombre} (stock: ${p.stock||0})</option>`
+    ).join('');
+    cont.innerHTML = `
+      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
+        <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FA-2026-001"></div>
+        <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+
+        <div class="form-group span2 ac-wrap">
+          <label>Proveedor *</label>
+          <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+        </div>
+        <div class="form-group ac-wrap">
+          <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
+          <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
+        </div>
+
+        <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
+
+        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
+        <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
+      </div>
+      ${htmlCamposExcel()}
+      <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock automáticamente)</span></div>
+      <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
+      <div id="lineasFactAlm"></div>
+      <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
+    window._optsFactAlm = opts;
+    document.getElementById('modalNueva').classList.add('visible');
+    setTimeout(()=>{ setupProveedorAC('f_prov','f_nif'); addLineaFactAlm(); }, 50);
+
+  // ── ALBARÁN ──
+  } else if (tablaActual==='albaranes') {
+    document.getElementById('modalTitulo').textContent = 'Nuevo Albarán';
+    cont.innerHTML = `<div class="form-grid-2">
+      <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_num" placeholder="ALB-2026-001"></div>
+      <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+      <div class="form-group span2 ac-wrap">
+        <label>Proveedor / Empresa *</label>
+        <input type="text" id="f_empresa" placeholder="Escribe el nombre para buscar...">
+      </div>
+      <div class="form-group span2 ac-wrap">
+        <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
+        <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
+      </div>
+      <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+    </div>`;
+    document.getElementById('modalNueva').classList.add('visible');
+    setTimeout(()=>setupProveedorAC('f_empresa','f_nif'), 50);
+
+  // ── CLIENTE ──
+  } else if (tablaActual==='clientes') {
+    document.getElementById('modalTitulo').textContent = 'Nuevo Cliente';
+    cont.innerHTML = `<div class="form-grid-2">
+      <div class="form-group span2"><label>Nombre *</label><input type="text" id="f_nombre" placeholder="Nombre completo"></div>
+      <div class="form-group"><label>NIF</label><input type="text" id="f_nif" placeholder="45123456B"></div>
+      <div class="form-group"><label>Teléfono</label><input type="text" id="f_tel" placeholder="612345678"></div>
+      <div class="form-group span2"><label>Email</label><input type="email" id="f_email" placeholder="correo@ejemplo.com"></div>
+      <div class="form-group"><label>Puntos iniciales</label><input type="number" id="f_puntos" value="0" min="0"></div>
+    </div>`;
+    document.getElementById('modalNueva').classList.add('visible');
+
+  // ── INVENTARIO ──
+  } else if (tablaActual==='inventario') {
+    document.getElementById('modalTitulo').textContent = 'Nuevo Producto';
+    cont.innerHTML = `<div class="form-grid-2">
+      <div class="form-group span2"><label>Nombre del producto *</label><input type="text" id="f_nombre" placeholder="Ej: Cemento CEM II 25kg"></div>
+      <div class="form-group"><label>Stock inicial (uds.)</label><input type="number" id="f_stock" value="0" min="0"></div>
+      <div class="form-group"><label>Puntos por unidad</label><input type="number" id="f_pts" value="0" min="0"></div>
+    </div>
+    <p style="font-size:.78rem;color:#888;margin-top:10px"><i class="fa-solid fa-info-circle me-1"></i>Los puntos por unidad se usarán automáticamente al registrar una compra de cliente.</p>`;
     document.getElementById('modalNueva').classList.add('visible');
   }
-  function cerrarModal() {
-    document.getElementById('modalNueva').classList.remove('visible');
-    cerrarAutocomplete();
-    resetForm();
-  }
-  function resetForm() {
-    ['fFactura','fNumeracion','fNif','fNombre','fConcepto','fConceptoShort','fNotas'].forEach(id => document.getElementById(id).value = '');
-    ['fBase1','fBase2','fBase3','fTasas','fExento','fDescuento','fBaseRet','fPctRet',
-     'fIva1Total','fIva2Total','fIva3Total','fRe1Total','fTotalRet','fTotal'].forEach(id => document.getElementById(id).value = '0');
-    document.getElementById('fEmail').value = EMAIL_AVISO;
-    document.getElementById('fVencimiento').value = '';
-    document.getElementById('fTipo').value = 'cobro';
-  }
+}
 
-  function cambiarModalTab(tab) {
-    modalTabActual = tab;
-    document.getElementById('tabBasico').style.display = tab === 'basico' ? '' : 'none';
-    document.getElementById('tabImportes').style.display = tab === 'importes' ? '' : 'none';
-    document.querySelectorAll('.modal-tab').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='basico')||(i===1&&tab==='importes')));
-  }
+function addLineaFactAlm() {
+  lineasFacturaCount++;
+  const idx = lineasFacturaCount;
+  const div = document.createElement('div');
+  div.id = `lfa_${idx}`;
+  div.className = 'linea-prod';
+  div.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Producto</label>
+      <select id="lfa_prod_${idx}">
+        <option value="">— Selecciona producto —</option>${window._optsFactAlm||''}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Cantidad recibida</label>
+      <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center">
+    </div>
+    <div style="width:80px"></div>
+    <button type="button" onclick="document.getElementById('lfa_${idx}').remove()"
+      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`;
+  document.getElementById('lineasFactAlm').appendChild(div);
+}
 
-  // ===== AUTOCOMPLETE NOMBRE EMPRESA =====
-  function onNombreInput() {
-    const q = document.getElementById('fNombre').value.trim().toLowerCase();
-    const list = document.getElementById('acList');
-    acSelectedIndex = -1;
+// ── GUARDAR ───────────────────────────────────────────────
+async function guardarRegistro() {
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Guardando...';
+  try {
 
-    if (q.length < 1) { cerrarAutocomplete(); return; }
+    if (tablaActual==='facturas_tienda') {
+      const prov  = document.getElementById('f_prov').value.trim();
+      const fecha = document.getElementById('f_fecha').value;
+      if (!prov||!fecha) { toast('Proveedor y fecha son obligatorios','err'); return; }
+      await apiPost('facturas_tienda', {
+        numero_interno:    document.getElementById('f_num_interno').value.trim()||null,
+        numero_factura:    document.getElementById('f_num').value.trim()||null,
+        fecha,
+        proveedor: prov,          // ← campo correcto en la tabla
+        nif:       document.getElementById('f_nif').value.trim()||null,
+        concepto:  document.getElementById('f_concepto').value.trim()||null,
+        total:     parseFloat(document.getElementById('f_total').value||0),
+        estado:    document.getElementById('f_est').value,
+        fecha_vencimiento: document.getElementById('f_venc').value||null,
+        ...recogerCamposExcel()
+      });
 
-    const matches = proveedoresDB
-      .filter(p => p.nombre && p.nombre.toLowerCase().includes(q))
-      .slice(0, 10);
+    } else if (tablaActual==='facturas_almacen') {
+      const prov  = document.getElementById('f_prov').value.trim();
+      const fecha = document.getElementById('f_fecha').value;
+      if (!prov||!fecha) { toast('Proveedor y fecha son obligatorios','err'); return; }
 
-    if (!matches.length && q.length < 2) { cerrarAutocomplete(); return; }
+      const [fac] = await apiPost('facturas_almacen', {
+        numero_interno:    document.getElementById('f_num_interno').value.trim()||null,
+        numero_factura:    document.getElementById('f_num').value.trim()||null,
+        fecha,
+        proveedor: prov,
+        nif:       document.getElementById('f_nif').value.trim()||null,
+        concepto:  document.getElementById('f_concepto').value.trim()||null,
+        total:     parseFloat(document.getElementById('f_total').value||0),
+        estado:    document.getElementById('f_est').value,
+        fecha_vencimiento: document.getElementById('f_venc').value||null,
+        ...recogerCamposExcel()
+      });
 
-    let html = matches.map((p, i) =>
-      `<div class="autocomplete-item" data-i="${i}" onmousedown="seleccionarEmpresa('${escHtml(p.nombre)}','${escHtml(p.nif||'')}')">
-        <span>${resaltarCoincidencia(p.nombre, q)}</span>
-        <span class="ac-nif">${p.nif||''}</span>
-      </div>`
-    ).join('');
+      const lineas = [];
+      document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel=>{
+        if (!sel.value) return;
+        const idx  = sel.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lfa_cant_${idx}`)?.value||0);
+        if (cant>0) lineas.push({
+          producto_id:  parseInt(sel.value),
+          cantidad:     cant,
+          stock_actual: parseFloat(sel.selectedOptions[0]?.dataset.stock||0)
+        });
+      });
 
-    // Opción para añadir nueva empresa
-    html += `<div class="autocomplete-nueva" onmousedown="abrirModalEmpresa()">
-      <i class="fa-solid fa-plus"></i> Añadir "${escHtml(document.getElementById('fNombre').value.trim())}" como nueva empresa
-    </div>`;
-
-    list.innerHTML = html;
-    list.style.display = 'block';
-  }
-
-  function onNombreKeydown(e) {
-    const list = document.getElementById('acList');
-    const items = list.querySelectorAll('.autocomplete-item');
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      acSelectedIndex = Math.min(acSelectedIndex + 1, items.length - 1);
-      items.forEach((el,i) => el.classList.toggle('selected', i === acSelectedIndex));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      acSelectedIndex = Math.max(acSelectedIndex - 1, 0);
-      items.forEach((el,i) => el.classList.toggle('selected', i === acSelectedIndex));
-    } else if (e.key === 'Enter' && acSelectedIndex >= 0) {
-      e.preventDefault();
-      items[acSelectedIndex].dispatchEvent(new MouseEvent('mousedown'));
-    } else if (e.key === 'Escape') {
-      cerrarAutocomplete();
-    }
-  }
-
-  function seleccionarEmpresa(nombre, nif) {
-    document.getElementById('fNombre').value = nombre;
-    document.getElementById('fNif').value = nif;
-    cerrarAutocomplete();
-  }
-
-  function cerrarAutocomplete() {
-    const list = document.getElementById('acList');
-    list.style.display = 'none';
-    list.innerHTML = '';
-    acSelectedIndex = -1;
-  }
-
-  function resaltarCoincidencia(texto, q) {
-    const idx = texto.toLowerCase().indexOf(q);
-    if (idx < 0) return escHtml(texto);
-    return escHtml(texto.slice(0, idx)) +
-      `<strong style="color:#b53987">${escHtml(texto.slice(idx, idx + q.length))}</strong>` +
-      escHtml(texto.slice(idx + q.length));
-  }
-
-  function escHtml(s) {
-    return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-
-  // Cerrar autocomplete al hacer click fuera
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.autocomplete-wrap')) cerrarAutocomplete();
-  });
-
-  // ===== MODAL NUEVA EMPRESA =====
-  let nombrePendiente = '';
-
-  function abrirModalEmpresa() {
-    nombrePendiente = document.getElementById('fNombre').value.trim();
-    cerrarAutocomplete();
-    document.getElementById('eNombre').value = nombrePendiente;
-    document.getElementById('eNif').value = '';
-    document.getElementById('modalEmpresa').classList.add('visible');
-  }
-
-  function cerrarModalEmpresa() {
-    document.getElementById('modalEmpresa').classList.remove('visible');
-  }
-
-  async function guardarNuevaEmpresa() {
-    const nombre = document.getElementById('eNombre').value.trim();
-    const nif = document.getElementById('eNif').value.trim();
-    if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
-
-    try {
-      const res = await apiPost('proveedores', { nombre, nif: nif || null });
-      const nuevo = res && res[0] ? res[0] : { nombre, nif };
-      proveedoresDB.push(nuevo);
-      proveedoresDB.sort((a,b) => a.nombre.localeCompare(b.nombre));
-
-      // Rellenar el formulario de factura con la empresa recién creada
-      document.getElementById('fNombre').value = nombre;
-      document.getElementById('fNif').value = nif;
-
-      cerrarModalEmpresa();
-      toast(`Empresa "${nombre}" guardada en la base de datos ✓`, 'ok');
-    } catch(e) {
-      toast('Error al guardar empresa: ' + e.message, 'err');
-    }
-  }
-
-  // ===== CALCULAR TOTALES =====
-  function calcularTotal() {
-    const g = id => parseFloat(document.getElementById(id).value) || 0;
-    const s = (id, v) => document.getElementById(id).value = v.toFixed(2);
-    const b1 = g('fBase1'), iv1 = g('fIva1Pct'), re1 = g('fRe1Pct');
-    const iva1t = b1 * iv1 / 100; s('fIva1Total', iva1t);
-    const re1t = b1 * re1 / 100; s('fRe1Total', re1t);
-    const b2 = g('fBase2'), iv2 = g('fIva2Pct');
-    const iva2t = b2 * iv2 / 100; s('fIva2Total', iva2t);
-    const b3 = g('fBase3'), iv3 = g('fIva3Pct');
-    const iva3t = b3 * iv3 / 100; s('fIva3Total', iva3t);
-    const bret = g('fBaseRet'), pret = g('fPctRet');
-    const tret = bret * pret / 100; s('fTotalRet', tret);
-    const total = b1 + iva1t + re1t + g('fTasas') + b2 + iva2t + b3 + iva3t + g('fExento') - g('fDescuento') - tret;
-    s('fTotal', total);
-  }
-
-  // ===== GUARDAR FACTURA =====
-  async function guardarFactura() {
-    const nombre = document.getElementById('fNombre').value.trim();
-    const fecha = document.getElementById('fFecha').value;
-    if (!nombre) { toast('El nombre de empresa es obligatorio', 'err'); cambiarModalTab('basico'); return; }
-    if (!fecha) { toast('La fecha es obligatoria', 'err'); cambiarModalTab('basico'); return; }
-
-    const g = id => parseFloat(document.getElementById(id).value) || 0;
-    const concepto = document.getElementById('fConceptoShort').value.trim() || document.getElementById('fConcepto').value.trim() || null;
-    const body = {
-      tipo: document.getElementById('fTipo').value,
-      numeracion_interna: document.getElementById('fNumeracion').value.trim() || null,
-      numero_factura: document.getElementById('fFactura').value.trim() || null,
-      fecha,
-      fecha_vencimiento: document.getElementById('fVencimiento').value || null,
-      nif: document.getElementById('fNif').value.trim() || null,
-      nombre,
-      concepto,
-      base1: g('fBase1'), iva1_pct: g('fIva1Pct'), iva1_total: g('fIva1Total'),
-      re1_pct: g('fRe1Pct'), re1_total: g('fRe1Total'), tasas: g('fTasas'),
-      base2: g('fBase2'), iva2_pct: g('fIva2Pct'), iva2_total: g('fIva2Total'),
-      base3: g('fBase3'), iva3_pct: g('fIva3Pct'), iva3_total: g('fIva3Total'),
-      exento: g('fExento'), descuento: g('fDescuento'),
-      base_retencion: g('fBaseRet'), pct_retencion: g('fPctRet'), total_retencion: g('fTotalRet'),
-      total: g('fTotal'),
-      email_aviso: document.getElementById('fEmail').value.trim() || EMAIL_AVISO,
-      notas: document.getElementById('fNotas').value.trim() || null,
-      estado: 'pendiente'
-    };
-
-    try {
-      const res = await apiPost('facturas', body);
-      if (res && res[0]) facturas.unshift(res[0]);
-      cerrarModal();
-      actualizarStats(); renderAlertas(); renderTabla();
-      toast('Factura guardada correctamente ✓', 'ok');
-    } catch(e) { toast('Error al guardar: ' + e.message, 'err'); }
-  }
-
-  // ===== TABS =====
-  function cambiarTab(tab) {
-    tabActual = tab;
-    document.querySelectorAll('.tab-btn').forEach((b,i) => {
-      b.classList.toggle('active', ['todos','cobro','pago'][i] === tab);
-    });
-    renderTabla();
-  }
-
-  // ===== HELPERS =====
-  function fmt(v) { return parseFloat(v||0).toLocaleString('es-ES', { style:'currency', currency:'EUR' }); }
-  function fmtFecha(d) { if(!d) return '—'; const [y,m,dd] = d.split('-'); return `${dd}/${m}/${y}`; }
-
-  function toast(msg, tipo='') {
-    const wrap = document.getElementById('toastWrap');
-    const t = document.createElement('div');
-    t.className = 'toast ' + tipo;
-    t.textContent = msg;
-    wrap.appendChild(t);
-    setTimeout(() => t.classList.add('show'), 10);
-    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3000);
-  }
-
-  ['modalNueva','modalDetalle','modalEmpresa'].forEach(id => {
-    document.getElementById(id).addEventListener('click', function(e) {
-      if (e.target === this) {
-        if (id === 'modalNueva') cerrarModal();
-        else if (id === 'modalDetalle') cerrarDetalle();
-        else cerrarModalEmpresa();
+      for (const l of lineas) {
+        await apiPost('facturas_almacen_lineas', {factura_id:fac.id, producto_id:l.producto_id, cantidad:l.cantidad});
+        await apiPatch('inventario', l.producto_id, {stock: l.stock_actual + l.cantidad});
       }
-    });
-  });
+      toast(`Factura guardada${lineas.length?' y stock actualizado':''}`);
+      cerrarModal('modalNueva');
+      lineasFacturaCount = 0;
+      cargarDatos();
+      return;
 
-  setInterval(() => { if(facturas.length) renderAlertas(); }, 3600000);
+    } else if (tablaActual==='albaranes') {
+      const empresa = document.getElementById('f_empresa').value.trim();
+      const fecha   = document.getElementById('f_fecha').value;
+      if (!empresa||!fecha) { toast('Empresa y fecha son obligatorios','err'); return; }
+      await apiPost('albaranes', {
+        numero_albaran: document.getElementById('f_num').value.trim()||null,
+        fecha,
+        empresa,
+        nif:   document.getElementById('f_nif').value.trim()||null,
+        total: parseFloat(document.getElementById('f_total').value||0),
+        facturado: false
+      });
+
+    } else if (tablaActual==='clientes') {
+      const nombre = document.getElementById('f_nombre').value.trim();
+      if (!nombre) { toast('El nombre es obligatorio','err'); return; }
+      await apiPost('clientes', {
+        nombre,
+        nif:      document.getElementById('f_nif').value.trim()||null,
+        telefono: document.getElementById('f_tel').value.trim()||null,
+        email:    document.getElementById('f_email').value.trim()||null,
+        puntos:   parseInt(document.getElementById('f_puntos').value||0),
+        ultima_compra: new Date().toISOString()
+      });
+
+    } else if (tablaActual==='inventario') {
+      const nombre = document.getElementById('f_nombre').value.trim();
+      if (!nombre) { toast('El nombre es obligatorio','err'); return; }
+      await apiPost('inventario', {
+        nombre,
+        stock:             parseFloat(document.getElementById('f_stock').value||0),
+        puntos_por_unidad: parseInt(document.getElementById('f_pts').value||0)
+      });
+    }
+
+    toast('Guardado correctamente');
+    cerrarModal('modalNueva');
+    lineasFacturaCount = 0;
+    cargarDatos();
+  } catch(e) {
+    toast('Error al guardar: '+e.message,'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
+  }
+}
+
+// ── ELIMINAR ──────────────────────────────────────────────
+async function eliminar(id) {
+  if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
+  try {
+    await apiDelete(tablaActual, id);
+    toast('Eliminado correctamente');
+    cargarDatos();
+  } catch(e) { toast('Error al eliminar: '+e.message,'err'); }
+}
+
+// ── EXPORTAR EXCEL ────────────────────────────────────────
+function exportarExcel() {
+  if (!registros.length) { toast('No hay datos para exportar','err'); return; }
+  const esTienda = tablaActual==='facturas_tienda';
+  const cabeceras = [
+    'NUMERACION INTERNA EMP','Fecha','NIF','NOMBRE','FACTURA','CONCEPTO',
+    'Base 1','%IVA1','Total IVA1','%RE1','Total RE1','TASAS',
+    'Base 2','%IVA2','Total IVA2','Base3','%IVA3','Total IVA3',
+    'Exento','DESCUENTO','Base Retención','% Retención','Total Retención',
+    'Total','Estado','Vencimiento'
+  ];
+  const filas = registros.map(f=>({
+    'NUMERACION INTERNA EMP': f.numero_interno||'',
+    'Fecha':       f.fecha ? f.fecha.split('-').reverse().join('/') : '',
+    'NIF':         f.nif||'',
+    'NOMBRE':      f.proveedor||'',   // ambas tablas usan campo 'proveedor'
+    'FACTURA':     f.numero_factura||'',
+    'CONCEPTO':    f.concepto||'',
+    'Base 1':      f.base1!=null?parseFloat(f.base1):'',
+    '%IVA1':       f.pct_iva1!=null?parseFloat(f.pct_iva1):'',
+    'Total IVA1':  f.total_iva1!=null?parseFloat(f.total_iva1):'',
+    '%RE1':        f.pct_re1!=null?parseFloat(f.pct_re1):'',
+    'Total RE1':   f.total_re1!=null?parseFloat(f.total_re1):'',
+    'TASAS':       f.tasas!=null?parseFloat(f.tasas):'',
+    'Base 2':      f.base2!=null?parseFloat(f.base2):'',
+    '%IVA2':       f.pct_iva2!=null?parseFloat(f.pct_iva2):'',
+    'Total IVA2':  f.total_iva2!=null?parseFloat(f.total_iva2):'',
+    'Base3':       f.base3!=null?parseFloat(f.base3):'',
+    '%IVA3':       f.pct_iva3!=null?parseFloat(f.pct_iva3):'',
+    'Total IVA3':  f.total_iva3!=null?parseFloat(f.total_iva3):'',
+    'Exento':      f.exento!=null?parseFloat(f.exento):'',
+    'DESCUENTO':   f.descuento!=null?parseFloat(f.descuento):'',
+    'Base Retención':  f.base_retencion!=null?parseFloat(f.base_retencion):'',
+    '% Retención':     f.pct_retencion!=null?parseFloat(f.pct_retencion):'',
+    'Total Retención': f.total_retencion!=null?parseFloat(f.total_retencion):'',
+    'Total':   f.total!=null?parseFloat(f.total):0,
+    'Estado':  (f.estado||'pendiente').toUpperCase(),
+    'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(filas, {header:cabeceras});
+  ws['!cols'] = [
+    {wch:18},{wch:12},{wch:14},{wch:28},{wch:18},{wch:30},
+    {wch:10},{wch:7},{wch:10},{wch:7},{wch:10},{wch:10},
+    {wch:10},{wch:7},{wch:10},{wch:10},{wch:7},{wch:10},
+    {wch:10},{wch:10},{wch:14},{wch:10},{wch:14},
+    {wch:12},{wch:12},{wch:12}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, esTienda?'Facturas Tienda':'Facturas Almacén');
+  const fecha = new Date().toISOString().split('T')[0];
+  const nombre = `${esTienda?'facturas_tienda':'facturas_almacen'}_${fecha}.xlsx`;
+  XLSX.writeFile(wb, nombre);
+  toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`,'ok');
+}
+
+// ── CERRAR MODALES ────────────────────────────────────────
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('visible');
+}
 </script>
 </body>
 </html>
-
-
-<!-- -- Tabla de facturas/albaranes
-CREATE TABLE facturas (
-  id serial PRIMARY KEY,
-  tipo text NOT NULL CHECK (tipo IN ('cobro', 'pago')),  -- cobro=cliente nos paga, pago=nosotros pagamos proveedor
-  
-  -- Identificación
-  numeracion_interna text,
-  numero_factura text,
-  fecha date NOT NULL,
-  fecha_vencimiento date,  -- configurable por factura
-  
-  -- Empresa
-  nif text,
-  nombre text NOT NULL,
-  concepto text,
-  
-  -- Importes
-  base1 numeric(10,2) DEFAULT 0,
-  iva1_pct numeric(5,2) DEFAULT 0,
-  iva1_total numeric(10,2) DEFAULT 0,
-  re1_pct numeric(5,2) DEFAULT 0,
-  re1_total numeric(10,2) DEFAULT 0,
-  tasas numeric(10,2) DEFAULT 0,
-  base2 numeric(10,2) DEFAULT 0,
-  iva2_pct numeric(5,2) DEFAULT 0,
-  iva2_total numeric(10,2) DEFAULT 0,
-  base3 numeric(10,2) DEFAULT 0,
-  iva3_pct numeric(5,2) DEFAULT 0,
-  iva3_total numeric(10,2) DEFAULT 0,
-  exento numeric(10,2) DEFAULT 0,
-  descuento numeric(10,2) DEFAULT 0,
-  base_retencion numeric(10,2) DEFAULT 0,
-  pct_retencion numeric(5,2) DEFAULT 0,
-  total_retencion numeric(10,2) DEFAULT 0,
-  total numeric(10,2) NOT NULL DEFAULT 0,
-  
-  -- Estado
-  estado text NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'pagado')),
-  fecha_pago date,
-  
-  -- Notificaciones
-  email_aviso text DEFAULT 'almacen@olivillatres.com',
-  aviso_enviado boolean DEFAULT false,
-  
-  -- Metadata
-  notas text,
-  creado_en timestamptz DEFAULT now(),
-  actualizado_en timestamptz DEFAULT now()
-);
-
--- Activar RLS
-ALTER TABLE facturas ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Lectura publica facturas" ON facturas FOR SELECT USING (true);
-CREATE POLICY "Insertar facturas" ON facturas FOR INSERT WITH CHECK (true);
-CREATE POLICY "Actualizar facturas" ON facturas FOR UPDATE USING (true); -->
