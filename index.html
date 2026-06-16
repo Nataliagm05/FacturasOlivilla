@@ -940,7 +940,6 @@
     }
   </style>
 </head>
-
 <body>
 
   <!-- LOGIN -->
@@ -1012,7 +1011,7 @@
           <option value="">Todos los estados</option>
         </select>
         <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i>Añadir Nuevo</button>
-        <button class="btn-exportar" id="btnExportar" onclick="exportarExcel()" style="display:none"><i
+        <button class="btn-exportar" id="btnExportar" onclick="abrirModalExportar()" style="display:none"><i
             class="fa-solid fa-file-excel"></i>Exportar Excel</button>
       </div>
       <div class="tabla-wrap">
@@ -1103,7 +1102,42 @@
       </div>
     </div>
   </div>
+<!-- MODAL EXPORTAR EXCEL -->
+<div class="modal-overlay" id="modalExportar">
+  <div class="modal-box-sm">
+    <h3><i class="fa-solid fa-file-excel" style="color:#b53987"></i>Exportar Excel</h3>
 
+    <div class="form-group">
+      <label>Año</label>
+      <select id="exportYear"></select>
+    </div>
+
+    <div class="form-group">
+      <label>Meses</label>
+      <div id="exportMeses" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:.85rem">
+        <label><input type="checkbox" value="1"> Enero</label>
+        <label><input type="checkbox" value="2"> Febrero</label>
+        <label><input type="checkbox" value="3"> Marzo</label>
+        <label><input type="checkbox" value="4"> Abril</label>
+        <label><input type="checkbox" value="5"> Mayo</label>
+        <label><input type="checkbox" value="6"> Junio</label>
+        <label><input type="checkbox" value="7"> Julio</label>
+        <label><input type="checkbox" value="8"> Agosto</label>
+        <label><input type="checkbox" value="9"> Septiembre</label>
+        <label><input type="checkbox" value="10"> Octubre</label>
+        <label><input type="checkbox" value="11"> Noviembre</label>
+        <label><input type="checkbox" value="12"> Diciembre</label>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="cerrarModal('modalExportar')">Cancelar</button>
+      <button class="btn-guardar" onclick="exportarExcel()">
+        <i class="fa-solid fa-file-excel me-1"></i>Exportar
+      </button>
+    </div>
+  </div>
+</div>
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script>
@@ -1840,7 +1874,13 @@
 
         <div class="form-group span2 ac-wrap">
           <label>Proveedor *</label>
-          <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+          <div style="display:flex;gap:6px;align-items:center">
+  <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+  <button type="button" class="btn-add-linea" style="padding:6px 10px;font-size:.8rem"
+    onclick="crearProveedorRapido()">
+    <i class="fa-solid fa-plus"></i>
+  </button>
+</div>
         </div>
         <div class="form-group ac-wrap">
           <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
@@ -1984,6 +2024,54 @@
         document.getElementById('modalNueva').classList.add('visible');
       }
     }
+async function crearProveedorRapido() {
+  const nombre = document.getElementById('f_prov').value.trim();
+
+  if (!nombre) {
+    toast('Introduce un nombre de proveedor', 'err');
+    return;
+  }
+
+  const nif = document.getElementById('f_nif').value.trim() || null;
+
+  try {
+    const nuevo = await apiPost('proveedores', {
+      nombre,
+      nif
+    });
+
+    toast('Proveedor creado correctamente');
+
+    // recargar cache
+    proveedoresDB = await apiGet('proveedores', 'order=nombre');
+
+    // auto rellenar si viene nif vacío o coincidencia
+    const prov = proveedoresDB.find(p => p.nombre === nombre);
+    if (prov) {
+      document.getElementById('f_nif').value = prov.nif || '';
+    }
+
+  } catch (e) {
+    toast('Error creando proveedor: ' + e.message, 'err');
+  }
+}
+    function abrirModalExportar() {
+  const sel = document.getElementById('exportYear');
+  sel.innerHTML = '';
+
+  const currentYear = new Date().getFullYear();
+
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    sel.appendChild(opt);
+  }
+
+  sel.value = currentYear;
+
+  document.getElementById('modalExportar').classList.add('visible');
+}
 
     function addLineaFactAlm() {
       lineasFacturaCount++;
@@ -2034,6 +2122,17 @@
             fecha_vencimiento: document.getElementById('f_venc').value || null,
             ...recogerCamposExcel()
           });
+const numFactura = document.getElementById('f_num').value.trim();
+const existe = numFactura && registros.some(r =>
+  (r.numero_factura || '').toLowerCase() === numFactura.toLowerCase()
+);
+
+if (existe) {
+  toast('⚠️ Ya existe una factura con ese número', 'err');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
+  return;
+}
           const lineas = [];
 
           document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
@@ -2086,7 +2185,19 @@
             estado: document.getElementById('f_est').value,
             fecha_vencimiento: document.getElementById('f_venc').value || null,
             ...recogerCamposExcel()
+            
           });
+const numFactura2 = document.getElementById('f_num').value.trim();
+const existe = numFactura2 && registros.some(r =>
+  (r.numero_factura || '').toLowerCase() === numFactura2.toLowerCase()
+);
+
+if (existe) {
+  toast('⚠️ Ya existe una factura con ese número', 'err');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
+  return;
+}
 
           const lineas = [];
           document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
@@ -2174,65 +2285,88 @@
     }
 
     // ── EXPORTAR EXCEL ────────────────────────────────────────
-    function exportarExcel() {
-      if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
-      const esTienda = tablaActual === 'facturas_tienda';
-      const cabeceras = [
-        'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', 'FACTURA', 'CONCEPTO',
-        'Base 1', '%IVA1', 'Total IVA1', '%RE1', 'Total RE1', 'TASAS',
-        'Base 2', '%IVA2', 'Total IVA2', 'Base3', '%IVA3', 'Total IVA3',
-        'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención',
-        'Total', 'Estado', 'Vencimiento'
-      ];
-      const filas = registros.map(f => ({
-        'NUMERACION INTERNA EMP': f.numero_interno || '',
-        'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
-        'NIF': f.nif || '',
-        'NOMBRE': f.proveedor || '',   // ambas tablas usan campo 'proveedor'
-        'FACTURA': f.numero_factura || '',
-        'CONCEPTO': f.concepto || '',
-        'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
-        '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
-        'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
-        '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
-        'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
-        'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
-        'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
-        '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
-        'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
-        'Base3': f.base3 != null ? parseFloat(f.base3) : '',
-        '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
-        'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
-        'Exento': f.exento != null ? parseFloat(f.exento) : '',
-        'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
-        'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
-        '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
-        'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
-        'Total': f.total != null ? parseFloat(f.total) : 0,
-        'Estado': (f.estado || 'pendiente').toUpperCase(),
-        'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
-      }));
+function exportarExcel() {
+  if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
 
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
-      ws['!cols'] = [
-        { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 30 },
-        { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 },
-        { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 }, { wch: 7 }, { wch: 10 },
-        { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 14 },
-        { wch: 12 }, { wch: 12 }, { wch: 12 }
-      ];
-      XLSX.utils.book_append_sheet(wb, ws, esTienda ? 'Facturas Tienda' : 'Facturas Almacén');
-      const fecha = new Date().toISOString().split('T')[0];
-      const nombre = `${esTienda ? 'facturas_tienda' : 'facturas_almacen'}_${fecha}.xlsx`;
-      XLSX.writeFile(wb, nombre);
-      toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
-    }
+  const year = parseInt(document.getElementById('exportYear').value);
 
-    // ── CERRAR MODALES ────────────────────────────────────────
-    function cerrarModal(id) {
-      document.getElementById(id).classList.remove('visible');
-    }
+  const meses = Array.from(
+    document.querySelectorAll('#exportMeses input:checked')
+  ).map(i => parseInt(i.value));
+
+  const filtrados = registros.filter(f => {
+    if (!f.fecha) return false;
+
+    const [y, m] = f.fecha.split('-').map(Number);
+
+    if (y !== year) return false;
+    if (meses.length && !meses.includes(m)) return false;
+
+    return true;
+  });
+
+  if (!filtrados.length) {
+    toast('No hay datos para ese filtro', 'err');
+    return;
+  }
+        if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
+        const esTienda = tablaActual === 'facturas_tienda';
+        const cabeceras = [
+          'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', 'FACTURA', 'CONCEPTO',
+          'Base 1', '%IVA1', 'Total IVA1', '%RE1', 'Total RE1', 'TASAS',
+          'Base 2', '%IVA2', 'Total IVA2', 'Base3', '%IVA3', 'Total IVA3',
+          'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención',
+          'Total', 'Estado', 'Vencimiento'
+        ];
+        const filas = filtrados.map(f => ({
+          'NUMERACION INTERNA EMP': f.numero_interno || '',
+          'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
+          'NIF': f.nif || '',
+          'NOMBRE': f.proveedor || '',   // ambas tablas usan campo 'proveedor'
+          'FACTURA': f.numero_factura || '',
+          'CONCEPTO': f.concepto || '',
+          'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
+          '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
+          'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+          '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
+          'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
+          'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
+          'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
+          '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
+          'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
+          'Base3': f.base3 != null ? parseFloat(f.base3) : '',
+          '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
+          'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
+          'Exento': f.exento != null ? parseFloat(f.exento) : '',
+          'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
+          'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
+          '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
+          'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
+          'Total': f.total != null ? parseFloat(f.total) : 0,
+          'Estado': (f.estado || 'pendiente').toUpperCase(),
+          'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
+        ws['!cols'] = [
+          { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 30 },
+          { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 },
+          { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 }, { wch: 7 }, { wch: 10 },
+          { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 14 },
+          { wch: 12 }, { wch: 12 }, { wch: 12 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, esTienda ? 'Facturas Tienda' : 'Facturas Almacén');
+        const fecha = new Date().toISOString().split('T')[0];
+        const nombre = `${esTienda ? 'facturas_tienda' : 'facturas_almacen'}_${fecha}.xlsx`;
+        XLSX.writeFile(wb, nombre);
+        toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
+      }
+
+      // ── CERRAR MODALES ────────────────────────────────────────
+      function cerrarModal(id) {
+        document.getElementById(id).classList.remove('visible');
+      }
   </script>
 </body>
 
