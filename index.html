@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,560 +9,1381 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
-    body { background:#f7f9fa; color:#4a3b68; min-height:100vh; display:flex; flex-direction:column; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-    .login-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:2rem; }
-    .login-card { background:#fff; border-radius:14px; box-shadow:0 4px 24px rgba(74,59,104,.12); padding:2.5rem 2rem; width:100%; max-width:360px; }
-    .login-card img { height:48px; margin-bottom:1.5rem; display:block; }
-    .login-card h2 { font-size:1.15rem; font-weight:600; color:#4a3b68; margin-bottom:.3rem; }
-    .login-card p  { font-size:.83rem; color:#999; margin-bottom:1.5rem; }
-    .login-card label { font-size:.82rem; font-weight:500; color:#4a3b68; display:block; margin-bottom:5px; }
-    .login-card input { width:100%; padding:10px 14px; border:1.5px solid #ddd; border-radius:8px; font-size:.93rem; color:#4a3b68; margin-bottom:1rem; transition:border-color .2s; }
-    .login-card input:focus { outline:none; border-color:#b53987; }
-    .btn-login { width:100%; background:#b53987; color:#fff; border:none; border-radius:8px; padding:11px; font-size:.95rem; font-weight:500; cursor:pointer; transition:background .2s; }
-    .btn-login:hover { background:#4a3b68; }
-    .login-error { color:#b53987; font-size:.82rem; margin-top:8px; display:none; }
+    body {
+      background: #f7f9fa;
+      color: #4a3b68;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-    .topbar { background:#35284f; padding:10px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
-    .topbar-left { color:#c9b8e8; font-size:.9rem; display:flex; align-items:center; gap:12px; }
-    .topbar-left img { height:32px; }
-    .nav-principal { display:flex; gap:8px; flex-wrap:wrap; }
-    .btn-nav { background:transparent; border:1px solid #5a4878; border-radius:6px; color:#c9b8e8; font-size:.85rem; padding:6px 14px; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:6px; }
-    .btn-nav:hover { border-color:#b53987; color:#f386cc; background:rgba(181,57,135,0.1); }
-    .btn-nav.active { background:#b53987; color:#fff; border-color:#b53987; font-weight:600; }
-    .btn-salir { background:transparent; border:1px solid #5a4878; border-radius:6px; color:#c9b8e8; font-size:.78rem; padding:6px 12px; cursor:pointer; transition:all .2s; }
-    .btn-salir:hover { border-color:#b53987; color:#f386cc; }
+    .login-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
 
-    .main-wrap { flex:1; max-width:1400px; margin:0 auto; width:100%; padding:24px 16px 60px; }
-    .page-title { font-size:1.4rem; font-weight:700; color:#4a3b68; margin-bottom:1.5rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .login-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(74, 59, 104, .12);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 360px;
+    }
 
-    .alertas-wrap { margin-bottom:1.25rem; }
-    .alerta-item { background:#fff0f6; border:1.5px solid #f386cc; border-radius:10px; padding:12px 16px; margin-bottom:8px; display:flex; align-items:center; gap:12px; font-size:.88rem; }
-    .alerta-item.critica { background:#fff0f0; border-color:#e53e3e; }
-    .alerta-item i { font-size:1.1rem; color:#b53987; flex-shrink:0; }
-    .alerta-item.critica i { color:#e53e3e; }
+    .login-card img {
+      height: 48px;
+      margin-bottom: 1.5rem;
+      display: block;
+    }
 
-    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:1.5rem; }
-    .stat { background:#fff; border-radius:10px; border:1.5px solid #ede5f5; padding:14px 18px; }
-    .stat .slabel { font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#999; margin-bottom:4px; }
-    .stat .sval { font-size:1.6rem; font-weight:700; color:#4a3b68; line-height:1; }
-    .stat.verde .sval { color:#2d7a4f; }
-    .stat.rojo  .sval { color:#b53987; }
-    .stat.naranja .sval { color:#c47a00; }
+    .login-card h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #4a3b68;
+      margin-bottom: .3rem;
+    }
 
-    .filtros { display:flex; gap:10px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
-    .filtros input, .filtros select { padding:8px 12px; border:1.5px solid #ddd; border-radius:8px; font-size:.88rem; color:#4a3b68; background:#fff; transition:border-color .2s; }
-    .filtros input:focus, .filtros select:focus { outline:none; border-color:#b53987; }
-    .filtros input[type=text] { flex:1; min-width:160px; }
-    .btn-nueva { background:#b53987; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:.88rem; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; transition:background .2s; }
-    .btn-nueva:hover { background:#4a3b68; }
-    .btn-exportar { background:#2d7a4f; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:.88rem; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; transition:background .2s; }
-    .btn-exportar:hover { background:#1a4d32; }
+    .login-card p {
+      font-size: .83rem;
+      color: #999;
+      margin-bottom: 1.5rem;
+    }
 
-    .tabla-wrap { background:#fff; border-radius:12px; border:1.5px solid #ede5f5; overflow:hidden; overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; font-size:.82rem; }
-    thead th { background:#f7f0f5; color:#4a3b68; font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; padding:9px 10px; text-align:left; border-bottom:1.5px solid #ede5f5; white-space:nowrap; }
-    tbody tr { border-bottom:1px solid #f0eaf8; transition:background .15s; }
-    tbody tr:hover { background:#fdf8fc; }
-    tbody td { padding:8px 10px; vertical-align:middle; }
-    .td-nombre { font-weight:500; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .td-total  { font-weight:700; color:#4a3b68; white-space:nowrap; }
-    .td-acciones { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .login-card label {
+      font-size: .82rem;
+      font-weight: 500;
+      color: #4a3b68;
+      display: block;
+      margin-bottom: 5px;
+    }
 
-    .badge-estado    { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:600; white-space:nowrap; }
-    .badge-pendiente { background:#fff3e0; color:#c47a00; }
-    .badge-pagado    { background:#e8f5e9; color:#2d7a4f; }
-    .badge-vencido   { background:#fce4ec; color:#b53987; }
-    .badge-puntos    { background:#ede5f5; color:#4a3b68; font-size:.75rem; font-weight:700; padding:4px 10px; border-radius:20px; }
+    .login-card input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: .93rem;
+      color: #4a3b68;
+      margin-bottom: 1rem;
+      transition: border-color .2s;
+    }
 
-    .btn-toggle-pago { border:none; border-radius:6px; padding:5px 11px; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
-    .btn-toggle-pago.pendiente { background:#fff3e0; color:#c47a00; border:1.5px solid #f0c060; }
-    .btn-toggle-pago.pendiente:hover { background:#c47a00; color:#fff; }
-    .btn-toggle-pago.pagado    { background:#e8f5e9; color:#2d7a4f; border:1.5px solid #81c784; }
-    .btn-toggle-pago.pagado:hover    { background:#2d7a4f; color:#fff; }
-    .btn-toggle-pago.vencido   { background:#fce4ec; color:#b53987; border:1.5px solid #f48fb1; }
-    .btn-toggle-pago.vencido:hover   { background:#b53987; color:#fff; }
+    .login-card input:focus {
+      outline: none;
+      border-color: #b53987;
+    }
 
-    .btn-toggle-facturado     { border:none; border-radius:6px; padding:5px 11px; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
-    .btn-toggle-facturado.no  { background:#fce4ec; color:#c0392b; border:1.5px solid #f48fb1; }
-    .btn-toggle-facturado.no:hover   { background:#c0392b; color:#fff; }
-    .btn-toggle-facturado.si  { background:#e8f5e9; color:#2d7a4f; border:1.5px solid #81c784; }
-    .btn-toggle-facturado.si:hover   { background:#2d7a4f; color:#fff; }
+    .btn-login {
+      width: 100%;
+      background: #b53987;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: .95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s;
+    }
 
-    .btn-puntos { background:#ede5f5; color:#4a3b68; border:1.5px solid #c9b8e8; border-radius:6px; padding:5px 10px; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
-    .btn-puntos:hover { background:#b53987; color:#fff; border-color:#b53987; }
-    .btn-eliminar { background:transparent; border:none; color:#ccc; font-size:.9rem; cursor:pointer; padding:4px 6px; transition:color .2s; }
-    .btn-eliminar:hover { color:#e53e3e; }
-    .link-badge { display:inline-flex; align-items:center; gap:5px; background:#f3e5f5; color:#6a1b9a; border-radius:20px; padding:3px 9px; font-size:.73rem; font-weight:600; cursor:pointer; transition:background .2s; white-space:nowrap; }
-    .link-badge:hover { background:#6a1b9a; color:#fff; }
-    .link-badge.factura { background:#e3f2fd; color:#1565c0; }
-    .link-badge.factura:hover { background:#1565c0; color:#fff; }
+    .btn-login:hover {
+      background: #4a3b68;
+    }
+
+    .login-error {
+      color: #b53987;
+      font-size: .82rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .topbar {
+      background: #35284f;
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .topbar-left {
+      color: #c9b8e8;
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-left img {
+      height: 32px;
+    }
+
+    .nav-principal {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-nav {
+      background: transparent;
+      border: 1px solid #5a4878;
+      border-radius: 6px;
+      color: #c9b8e8;
+      font-size: .85rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-nav:hover {
+      border-color: #b53987;
+      color: #f386cc;
+      background: rgba(181, 57, 135, 0.1);
+    }
+
+    .btn-nav.active {
+      background: #b53987;
+      color: #fff;
+      border-color: #b53987;
+      font-weight: 600;
+    }
+
+    .btn-salir {
+      background: transparent;
+      border: 1px solid #5a4878;
+      border-radius: 6px;
+      color: #c9b8e8;
+      font-size: .78rem;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-salir:hover {
+      border-color: #b53987;
+      color: #f386cc;
+    }
+
+    .main-wrap {
+      flex: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 24px 16px 60px;
+    }
+
+    .page-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #4a3b68;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .alertas-wrap {
+      margin-bottom: 1.25rem;
+    }
+
+    .alerta-item {
+      background: #fff0f6;
+      border: 1.5px solid #f386cc;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: .88rem;
+    }
+
+    .alerta-item.critica {
+      background: #fff0f0;
+      border-color: #e53e3e;
+    }
+
+    .alerta-item i {
+      font-size: 1.1rem;
+      color: #b53987;
+      flex-shrink: 0;
+    }
+
+    .alerta-item.critica i {
+      color: #e53e3e;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat {
+      background: #fff;
+      border-radius: 10px;
+      border: 1.5px solid #ede5f5;
+      padding: 14px 18px;
+    }
+
+    .stat .slabel {
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #999;
+      margin-bottom: 4px;
+    }
+
+    .stat .sval {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #4a3b68;
+      line-height: 1;
+    }
+
+    .stat.verde .sval {
+      color: #2d7a4f;
+    }
+
+    .stat.rojo .sval {
+      color: #b53987;
+    }
+
+    .stat.naranja .sval {
+      color: #c47a00;
+    }
+
+    .filtros {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filtros input,
+    .filtros select {
+      padding: 8px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: .88rem;
+      color: #4a3b68;
+      background: #fff;
+      transition: border-color .2s;
+    }
+
+    .filtros input:focus,
+    .filtros select:focus {
+      outline: none;
+      border-color: #b53987;
+    }
+
+    .filtros input[type=text] {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .btn-nueva {
+      background: #b53987;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .btn-nueva:hover {
+      background: #4a3b68;
+    }
+
+    .btn-exportar {
+      background: #2d7a4f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .btn-exportar:hover {
+      background: #1a4d32;
+    }
+
+    .tabla-wrap {
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid #ede5f5;
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+    }
+
+    thead th {
+      background: #f7f0f5;
+      color: #4a3b68;
+      font-weight: 600;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1.5px solid #ede5f5;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #f0eaf8;
+      transition: background .15s;
+    }
+
+    tbody tr:hover {
+      background: #fdf8fc;
+    }
+
+    tbody td {
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+
+    .td-nombre {
+      font-weight: 500;
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .td-total {
+      font-weight: 700;
+      color: #4a3b68;
+      white-space: nowrap;
+    }
+
+    .td-acciones {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge-estado {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-pendiente {
+      background: #fff3e0;
+      color: #c47a00;
+    }
+
+    .badge-pagado {
+      background: #e8f5e9;
+      color: #2d7a4f;
+    }
+
+    .badge-vencido {
+      background: #fce4ec;
+      color: #b53987;
+    }
+
+    .badge-puntos {
+      background: #ede5f5;
+      color: #4a3b68;
+      font-size: .75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .btn-toggle-pago {
+      border: none;
+      border-radius: 6px;
+      padding: 5px 11px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-toggle-pago.pendiente {
+      background: #fff3e0;
+      color: #c47a00;
+      border: 1.5px solid #f0c060;
+    }
+
+    .btn-toggle-pago.pendiente:hover {
+      background: #c47a00;
+      color: #fff;
+    }
+
+    .btn-toggle-pago.pagado {
+      background: #e8f5e9;
+      color: #2d7a4f;
+      border: 1.5px solid #81c784;
+    }
+
+    .btn-toggle-pago.pagado:hover {
+      background: #2d7a4f;
+      color: #fff;
+    }
+
+    .btn-toggle-pago.vencido {
+      background: #fce4ec;
+      color: #b53987;
+      border: 1.5px solid #f48fb1;
+    }
+
+    .btn-toggle-pago.vencido:hover {
+      background: #b53987;
+      color: #fff;
+    }
+
+    .btn-toggle-facturado {
+      border: none;
+      border-radius: 6px;
+      padding: 5px 11px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-toggle-facturado.no {
+      background: #fce4ec;
+      color: #c0392b;
+      border: 1.5px solid #f48fb1;
+    }
+
+    .btn-toggle-facturado.no:hover {
+      background: #c0392b;
+      color: #fff;
+    }
+
+    .btn-toggle-facturado.si {
+      background: #e8f5e9;
+      color: #2d7a4f;
+      border: 1.5px solid #81c784;
+    }
+
+    .btn-toggle-facturado.si:hover {
+      background: #2d7a4f;
+      color: #fff;
+    }
+
+    .btn-puntos {
+      background: #ede5f5;
+      color: #4a3b68;
+      border: 1.5px solid #c9b8e8;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-puntos:hover {
+      background: #b53987;
+      color: #fff;
+      border-color: #b53987;
+    }
+
+    .btn-eliminar {
+      background: transparent;
+      border: none;
+      color: #ccc;
+      font-size: .9rem;
+      cursor: pointer;
+      padding: 4px 6px;
+      transition: color .2s;
+    }
+
+    .btn-eliminar:hover {
+      color: #e53e3e;
+    }
+
+    .link-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f3e5f5;
+      color: #6a1b9a;
+      border-radius: 20px;
+      padding: 3px 9px;
+      font-size: .73rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+
+    .link-badge:hover {
+      background: #6a1b9a;
+      color: #fff;
+    }
+
+    .link-badge.factura {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .link-badge.factura:hover {
+      background: #1565c0;
+      color: #fff;
+    }
 
     /* AUTOCOMPLETE */
-    .ac-wrap { position:relative; }
-    .ac-list { position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid #b53987; border-top:none; border-radius:0 0 8px 8px; z-index:9999; max-height:220px; overflow-y:auto; box-shadow:0 6px 18px rgba(74,59,104,.18); }
-    .ac-item { padding:9px 14px; cursor:pointer; font-size:.87rem; color:#4a3b68; border-bottom:1px solid #f0eaf8; display:flex; flex-direction:column; gap:2px; }
-    .ac-item:last-child { border-bottom:none; }
-    .ac-item:hover, .ac-item.focused { background:#f7f0f5; }
-    .ac-item .ac-nombre { font-weight:600; }
-    .ac-item .ac-nif { font-size:.74rem; color:#999; }
+    .ac-wrap {
+      position: relative;
+    }
+
+    .ac-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1.5px solid #b53987;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      z-index: 9999;
+      max-height: 220px;
+      overflow-y: auto;
+      box-shadow: 0 6px 18px rgba(74, 59, 104, .18);
+    }
+
+    .ac-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: .87rem;
+      color: #4a3b68;
+      border-bottom: 1px solid #f0eaf8;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .ac-item:last-child {
+      border-bottom: none;
+    }
+
+    .ac-item:hover,
+    .ac-item.focused {
+      background: #f7f0f5;
+    }
+
+    .ac-item .ac-nombre {
+      font-weight: 600;
+    }
+
+    .ac-item .ac-nif {
+      font-size: .74rem;
+      color: #999;
+    }
 
     /* MODALES */
-    .modal-overlay { position:fixed; inset:0; background:rgba(74,59,104,.5); z-index:1000; display:none; align-items:flex-start; justify-content:center; padding:1rem; overflow-y:auto; }
-    .modal-overlay.visible { display:flex; }
-    .modal-box    { background:#fff; border-radius:14px; padding:2rem; width:100%; max-width:900px; box-shadow:0 8px 32px rgba(74,59,104,.2); margin:auto; }
-    .modal-box-sm { background:#fff; border-radius:14px; padding:1.75rem; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(74,59,104,.2); margin:auto; }
-    .modal-box h3, .modal-box-sm h3 { font-size:1.1rem; font-weight:600; color:#4a3b68; margin-bottom:1.25rem; display:flex; align-items:center; gap:8px; }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(74, 59, 104, .5);
+      z-index: 1000;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 1rem;
+      overflow-y: auto;
+    }
 
-    .form-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-    .form-grid .span2 { grid-column:span 2; }
-    .form-grid .span3 { grid-column:span 3; }
-    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .form-grid-2 .span2 { grid-column:span 2; }
-    .form-group { margin:0; }
-    .form-group label { font-size:.78rem; font-weight:500; color:#4a3b68; display:block; margin-bottom:4px; }
-    .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px 11px; border:1.5px solid #ddd; border-radius:7px; font-size:.88rem; color:#4a3b68; transition:border-color .2s; background:#fff; }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline:none; border-color:#b53987; }
-    .form-group input[readonly] { background:#f7f0f5; }
-    .form-seccion { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#b53987; margin:1rem 0 .5rem; padding-top:.75rem; border-top:1.5px solid #ede5f5; }
-    .form-seccion:first-child { border-top:none; padding-top:0; margin-top:0; }
+    .modal-overlay.visible {
+      display: flex;
+    }
 
-    .modal-btns { display:flex; gap:10px; justify-content:flex-end; margin-top:1.5rem; flex-wrap:wrap; }
-    .btn-cancelar { background:transparent; border:1.5px solid #ddd; border-radius:8px; padding:9px 18px; font-size:.88rem; color:#888; cursor:pointer; }
-    .btn-cancelar:hover { border-color:#b53987; color:#b53987; }
-    .btn-guardar  { background:#b53987; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:.88rem; font-weight:500; cursor:pointer; transition:background .2s; }
-    .btn-guardar:hover { background:#4a3b68; }
+    .modal-box {
+      background: #fff;
+      border-radius: 14px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
+      margin: auto;
+    }
 
-    .linea-prod { display:grid; grid-template-columns:1fr 90px 80px auto; gap:8px; align-items:end; margin-bottom:8px; }
-    .btn-add-linea { width:100%; margin-top:6px; background:transparent; border:1.5px dashed #b53987; border-radius:7px; padding:7px 14px; color:#b53987; font-size:.84rem; cursor:pointer; }
-    .btn-add-linea:hover { background:#fff0f8; }
+    .modal-box-sm {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
+      margin: auto;
+    }
 
-    .mini-table { width:100%; border-collapse:collapse; font-size:.83rem; margin-top:8px; }
-    .mini-table th { background:#f7f0f5; padding:7px 10px; text-align:left; font-size:.73rem; color:#4a3b68; font-weight:600; text-transform:uppercase; }
-    .mini-table td { padding:7px 10px; border-bottom:1px solid #f0eaf8; vertical-align:middle; }
+    .modal-box h3,
+    .modal-box-sm h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #4a3b68;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-    .toast-wrap { position:fixed; bottom:24px; right:24px; z-index:2000; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
-    .toast { background:#4a3b68; color:#fff; border-radius:8px; padding:10px 18px; font-size:.88rem; box-shadow:0 4px 14px rgba(74,59,104,.25); opacity:0; transform:translateY(10px); transition:all .3s; }
-    .toast.show { opacity:1; transform:translateY(0); }
-    .toast.ok   { background:#2d7a4f; }
-    .toast.err  { background:#c0392b; }
-    .toast.info { background:#1565c0; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
 
-    .empty-state { text-align:center; padding:3rem 1rem; color:#bbb; }
-    .empty-state i { font-size:2.5rem; margin-bottom:.75rem; display:block; }
-    .td-concepto { max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; color:#666; }
-    .num-cell { text-align:right; white-space:nowrap; }
-    .pct-cell { text-align:center; font-size:.75rem; color:#888; }
+    .form-grid .span2 {
+      grid-column: span 2;
+    }
+
+    .form-grid .span3 {
+      grid-column: span 3;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid-2 .span2 {
+      grid-column: span 2;
+    }
+
+    .form-group {
+      margin: 0;
+    }
+
+    .form-group label {
+      font-size: .78rem;
+      font-weight: 500;
+      color: #4a3b68;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1.5px solid #ddd;
+      border-radius: 7px;
+      font-size: .88rem;
+      color: #4a3b68;
+      transition: border-color .2s;
+      background: #fff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #b53987;
+    }
+
+    .form-group input[readonly] {
+      background: #f7f0f5;
+    }
+
+    .form-seccion {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #b53987;
+      margin: 1rem 0 .5rem;
+      padding-top: .75rem;
+      border-top: 1.5px solid #ede5f5;
+    }
+
+    .form-seccion:first-child {
+      border-top: none;
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-cancelar {
+      background: transparent;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: .88rem;
+      color: #888;
+      cursor: pointer;
+    }
+
+    .btn-cancelar:hover {
+      border-color: #b53987;
+      color: #b53987;
+    }
+
+    .btn-guardar {
+      background: #b53987;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 20px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-guardar:hover {
+      background: #4a3b68;
+    }
+
+    .linea-prod {
+      display: grid;
+      grid-template-columns: 1fr 90px 80px auto;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 8px;
+    }
+
+    .btn-add-linea {
+      width: 100%;
+      margin-top: 6px;
+      background: transparent;
+      border: 1.5px dashed #b53987;
+      border-radius: 7px;
+      padding: 7px 14px;
+      color: #b53987;
+      font-size: .84rem;
+      cursor: pointer;
+    }
+
+    .btn-add-linea:hover {
+      background: #fff0f8;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .83rem;
+      margin-top: 8px;
+    }
+
+    .mini-table th {
+      background: #f7f0f5;
+      padding: 7px 10px;
+      text-align: left;
+      font-size: .73rem;
+      color: #4a3b68;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .mini-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #f0eaf8;
+      vertical-align: middle;
+    }
+
+    .toast-wrap {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #4a3b68;
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: .88rem;
+      box-shadow: 0 4px 14px rgba(74, 59, 104, .25);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all .3s;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.ok {
+      background: #2d7a4f;
+    }
+
+    .toast.err {
+      background: #c0392b;
+    }
+
+    .toast.info {
+      background: #1565c0;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #bbb;
+    }
+
+    .empty-state i {
+      font-size: 2.5rem;
+      margin-bottom: .75rem;
+      display: block;
+    }
+
+    .td-concepto {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .78rem;
+      color: #666;
+    }
+
+    .num-cell {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .pct-cell {
+      text-align: center;
+      font-size: .75rem;
+      color: #888;
+    }
 
     @media(max-width:900px) {
-      .form-grid { grid-template-columns:1fr 1fr; }
-      .form-grid .span3 { grid-column:span 2; }
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .form-grid .span3 {
+        grid-column: span 2;
+      }
     }
+
     @media(max-width:600px) {
-      .form-grid { grid-template-columns:1fr; }
-      .form-grid .span2, .form-grid .span3 { grid-column:span 1; }
-      .form-grid-2 { grid-template-columns:1fr; }
-      .form-grid-2 .span2 { grid-column:span 1; }
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid .span2,
+      .form-grid .span3 {
+        grid-column: span 1;
+      }
+
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid-2 .span2 {
+        grid-column: span 1;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<!-- LOGIN -->
-<div class="login-wrap" id="loginView">
-  <div class="login-card">
-    <img src="logonuevo2.png" alt="Logo" onerror="this.style.display='none'">
-    <h2>Gestión de Facturas</h2>
-    <p>Panel interno — Almacén Olivilla Tres</p>
-    <label for="pwdF">Contraseña</label>
-    <input type="password" id="pwdF" placeholder="Introduce la contraseña" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn-login" onclick="doLogin()"><i class="fa-solid fa-lock me-2"></i>Entrar</button>
-    <p class="login-error" id="loginErr"><i class="fa-solid fa-circle-exclamation me-1"></i>Contraseña incorrecta</p>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="appView" style="display:none;flex-direction:column;flex:1;">
-  <div class="topbar">
-    <div class="topbar-left">
-      <img src="logonuevo2.png" alt="" onerror="this.style.display='none'">
-      <span>Almacén Olivilla Tres</span>
-    </div>
-    <div class="nav-principal">
-      <button class="btn-nav active" onclick="cambiarSeccion('facturas_tienda')"><i class="fa-solid fa-shop"></i>Facturas Tienda</button>
-      <button class="btn-nav" onclick="cambiarSeccion('facturas_almacen')"><i class="fa-solid fa-warehouse"></i>Facturas Almacén</button>
-      <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i class="fa-solid fa-file-signature"></i>Albaranes</button>
-      <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
-      <button class="btn-nav" onclick="cambiarSeccion('inventario')"><i class="fa-solid fa-boxes-stacked"></i>Inventario</button>
-    </div>
-    <button class="btn-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
-  </div>
-
-  <div class="main-wrap">
-    <div class="page-title">
-      <i id="iconoSeccion" class="fa-solid fa-file-invoice" style="color:#b53987"></i>
-      <span id="txtSeccionTitulo">Facturas de Tienda</span>
-    </div>
-    <div class="alertas-wrap" id="alertasWrap"></div>
-    <div id="statsContenedor" class="stats-grid" style="display:none">
-      <div class="stat"><div class="slabel">Total registros</div><div class="sval" id="sTot">—</div></div>
-      <div class="stat naranja"><div class="slabel">Pendientes</div><div class="sval" id="sPend">—</div></div>
-      <div class="stat rojo"><div class="slabel">Vencidas</div><div class="sval" id="sVenc">—</div></div>
-      <div class="stat verde"><div class="slabel">Total pagado</div><div class="sval" id="sCobrado">—</div></div>
-      <div class="stat rojo"><div class="slabel">Por pagar</div><div class="sval" id="sPagar">—</div></div>
-    </div>
-    <div class="filtros">
-      <input type="text" id="searchInput" placeholder="Buscar..." oninput="renderTabla()">
-      <select id="filtroEstado" onchange="renderTabla()">
-        <option value="">Todos los estados</option>
-      </select>
-      <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i>Añadir Nuevo</button>
-      <button class="btn-exportar" id="btnExportar" onclick="exportarExcel()" style="display:none"><i class="fa-solid fa-file-excel"></i>Exportar Excel</button>
-    </div>
-    <div class="tabla-wrap">
-      <table>
-        <thead id="tablaHeader"></thead>
-        <tbody id="tablaBody">
-          <tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>
-        </tbody>
-      </table>
+  <!-- LOGIN -->
+  <div class="login-wrap" id="loginView">
+    <div class="login-card">
+      <img src="logonuevo2.png" alt="Logo" onerror="this.style.display='none'">
+      <h2>Gestión de Facturas</h2>
+      <p>Panel interno — Almacén Olivilla Tres</p>
+      <label for="pwdF">Contraseña</label>
+      <input type="password" id="pwdF" placeholder="Introduce la contraseña"
+        onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="btn-login" onclick="doLogin()"><i class="fa-solid fa-lock me-2"></i>Entrar</button>
+      <p class="login-error" id="loginErr"><i class="fa-solid fa-circle-exclamation me-1"></i>Contraseña incorrecta</p>
     </div>
   </div>
-</div>
 
-<!-- MODAL NUEVO REGISTRO -->
-<div class="modal-overlay" id="modalNueva">
-  <div class="modal-box">
-    <h3><i class="fa-solid fa-plus-circle" style="color:#b53987"></i><span id="modalTitulo">Nuevo Registro</span></h3>
-    <div id="modalFormContenido"></div>
-    <div class="modal-btns">
-      <button class="btn-cancelar" onclick="cerrarModal('modalNueva')">Cancelar</button>
-      <button class="btn-guardar" id="btnGuardar" onclick="guardarRegistro()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL DETALLE -->
-<div class="modal-overlay" id="modalDetalle">
-  <div class="modal-box" style="max-width:680px">
-    <h3 id="modalDetalleTitulo"><i class="fa-solid fa-list" style="color:#b53987"></i>Detalle</h3>
-    <div id="modalDetalleContenido"></div>
-    <div class="modal-btns">
-      <button class="btn-cancelar" onclick="cerrarModal('modalDetalle')">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL COMPRA CLIENTE -->
-<div class="modal-overlay" id="modalPuntos">
-  <div class="modal-box-sm">
-    <h3><i class="fa-solid fa-star" style="color:#b53987"></i>Registrar Compra de Cliente</h3>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div class="form-group">
-        <label>Cliente</label>
-        <input type="text" id="pClienteNombre" readonly>
+  <!-- APP -->
+  <div id="appView" style="display:none;flex-direction:column;flex:1;">
+    <div class="topbar">
+      <div class="topbar-left">
+        <img src="logonuevo2.png" alt="" onerror="this.style.display='none'">
+        <span>Almacén Olivilla Tres</span>
       </div>
-      <div class="form-group">
-        <label>Puntos actuales</label>
-        <input type="text" id="pClientePuntosActuales" readonly>
+      <div class="nav-principal">
+        <button class="btn-nav active" onclick="cambiarSeccion('facturas_tienda')"><i
+            class="fa-solid fa-shop"></i>Facturas Tienda</button>
+        <button class="btn-nav" onclick="cambiarSeccion('facturas_almacen')"><i
+            class="fa-solid fa-warehouse"></i>Facturas Almacén</button>
+        <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
+            class="fa-solid fa-file-signature"></i>Albaranes</button>
+        <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
+        <button class="btn-nav" onclick="cambiarSeccion('inventario')"><i
+            class="fa-solid fa-boxes-stacked"></i>Inventario</button>
       </div>
-      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Productos comprados</div>
-      <p style="font-size:.78rem;color:#888;margin-top:-8px"><i class="fa-solid fa-info-circle me-1"></i>Cada producto descuenta stock y suma sus puntos al cliente automáticamente.</p>
-      <div id="lineasCompra"></div>
-      <button type="button" class="btn-add-linea" onclick="addLineaCompra()">
-        <i class="fa-solid fa-plus me-1"></i>Añadir producto
-      </button>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:10px;border-top:1.5px solid #ede5f5">
-        <span style="font-size:.85rem;color:#888;font-weight:600">Puntos que se añadirán:</span>
-        <span id="totalPuntosCompra" style="font-size:1.3rem;font-weight:700;color:#b53987">0 pts</span>
+      <button class="btn-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
+    </div>
+
+    <div class="main-wrap">
+      <div class="page-title">
+        <i id="iconoSeccion" class="fa-solid fa-file-invoice" style="color:#b53987"></i>
+        <span id="txtSeccionTitulo">Facturas de Tienda</span>
+      </div>
+      <div class="alertas-wrap" id="alertasWrap"></div>
+      <div id="statsContenedor" class="stats-grid" style="display:none">
+        <div class="stat">
+          <div class="slabel">Total registros</div>
+          <div class="sval" id="sTot">—</div>
+        </div>
+        <div class="stat naranja">
+          <div class="slabel">Pendientes</div>
+          <div class="sval" id="sPend">—</div>
+        </div>
+        <div class="stat rojo">
+          <div class="slabel">Vencidas</div>
+          <div class="sval" id="sVenc">—</div>
+        </div>
+        <div class="stat verde">
+          <div class="slabel">Total pagado</div>
+          <div class="sval" id="sCobrado">—</div>
+        </div>
+        <div class="stat rojo">
+          <div class="slabel">Por pagar</div>
+          <div class="sval" id="sPagar">—</div>
+        </div>
+      </div>
+      <div class="filtros">
+        <input type="text" id="searchInput" placeholder="Buscar..." oninput="renderTabla()">
+        <select id="filtroEstado" onchange="renderTabla()">
+          <option value="">Todos los estados</option>
+        </select>
+        <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i>Añadir Nuevo</button>
+        <button class="btn-exportar" id="btnExportar" onclick="exportarExcel()" style="display:none"><i
+            class="fa-solid fa-file-excel"></i>Exportar Excel</button>
+      </div>
+      <div class="tabla-wrap">
+        <table>
+          <thead id="tablaHeader"></thead>
+          <tbody id="tablaBody">
+            <tr>
+              <td colspan="9">
+                <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="modal-btns">
-      <button class="btn-cancelar" onclick="cerrarModal('modalPuntos')">Cancelar</button>
-      <button class="btn-guardar" onclick="guardarCompraCliente()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar compra</button>
+  </div>
+
+  <!-- MODAL NUEVO REGISTRO -->
+  <div class="modal-overlay" id="modalNueva">
+    <div class="modal-box">
+      <h3><i class="fa-solid fa-plus-circle" style="color:#b53987"></i><span id="modalTitulo">Nuevo Registro</span></h3>
+      <div id="modalFormContenido"></div>
+      <div class="modal-btns">
+        <button class="btn-cancelar" onclick="cerrarModal('modalNueva')">Cancelar</button>
+        <button class="btn-guardar" id="btnGuardar" onclick="guardarRegistro()"><i
+            class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="toast-wrap" id="toastWrap"></div>
+  <!-- MODAL DETALLE -->
+  <div class="modal-overlay" id="modalDetalle">
+    <div class="modal-box" style="max-width:680px">
+      <h3 id="modalDetalleTitulo"><i class="fa-solid fa-list" style="color:#b53987"></i>Detalle</h3>
+      <div id="modalDetalleContenido"></div>
+      <div class="modal-btns">
+        <button class="btn-cancelar" onclick="cerrarModal('modalDetalle')">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
-<script>
-const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
-const PASSWORD    = 'olivilla2026';
+  <!-- MODAL COMPRA CLIENTE -->
+  <div class="modal-overlay" id="modalPuntos">
+    <div class="modal-box-sm">
+      <h3><i class="fa-solid fa-star" style="color:#b53987"></i>Registrar Compra de Cliente</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label>Email cliente</label>
+          <input type="email"
+       id="cliente_email"
+       readonly>
+        </div>
 
-const hdrs = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': 'Bearer ' + SUPABASE_KEY,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation'
-};
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="cliente_nombre" readonly>
+        </div>
 
-let tablaActual      = 'facturas_tienda';
-let registros        = [];
-let inventarioDB     = [];
-let clientesDB       = [];
-let proveedoresDB    = [];   // ← fuente principal para autocompletado de empresa/proveedor
-let clienteSelId     = null;
-let clienteSelPuntos = 0;
-let lineasCompraCount   = 0;
-let lineasFacturaCount  = 0;
+        <div class="form-group">
+          <label>NIF</label>
+          <input type="text" id="cliente_nif" readonly>
+        </div>
 
-// ── UTILIDADES ────────────────────────────────────────────
-function fmt(v)  { return parseFloat(v||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
-function fmtN(v) { if (v===null||v===undefined||v===''||isNaN(parseFloat(v))) return '—'; return parseFloat(v).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtF(f) { return f ? f.split('-').reverse().join('/') : '—'; }
-function hoy()   { return new Date().toISOString().split('T')[0]; }
-function nvl(v)  { return (v!==null&&v!==undefined&&v!=='')?v:'—'; }
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="cliente_telefono" readonly>
+        </div>
 
-function toast(msg, tipo='ok') {
-  const wrap = document.getElementById('toastWrap');
-  const t = document.createElement('div');
-  t.className = `toast ${tipo}`;
-  t.innerHTML = msg;
-  wrap.appendChild(t);
-  setTimeout(()=>t.classList.add('show'), 50);
-  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 3500);
-}
-function emptyRow(cols, msg) {
-  return `<tr><td colspan="${cols}"><div class="empty-state"><i class="fa-solid fa-folder-open"></i>${msg}</div></td></tr>`;
-}
+        <div class="form-group">
+          <label>Puntos Totales</label>
+          <input type="text" id="cliente_puntos" readonly>
+        </div>
+        <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Productos comprados</div>
+        <p style="font-size:.78rem;color:#888;margin-top:-8px"><i class="fa-solid fa-info-circle me-1"></i>Cada producto
+          descuenta stock y suma sus puntos al cliente automáticamente.</p>
+        <div id="lineasCompra"></div>
+        <button type="button" class="btn-add-linea" onclick="addLineaCompra()">
+          <i class="fa-solid fa-plus me-1"></i>Añadir producto
+        </button>
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:10px;border-top:1.5px solid #ede5f5">
+          <span style="font-size:.85rem;color:#888;font-weight:600">Puntos que se añadirán:</span>
+          <span id="totalPuntosCompra" style="font-size:1.3rem;font-weight:700;color:#b53987">0 pts</span>
+        </div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancelar" onclick="cerrarModal('modalPuntos')">Cancelar</button>
+        <button class="btn-guardar" onclick="guardarCompraCliente()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+          compra</button>
+      </div>
+    </div>
+  </div>
 
-// ── AUTH ──────────────────────────────────────────────────
-function doLogin() {
-  if (document.getElementById('pwdF').value === PASSWORD) {
-    document.getElementById('loginView').style.display = 'none';
-    document.getElementById('appView').style.display   = 'flex';
-    Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()])
-      .then(()=>cambiarSeccion('facturas_tienda'));
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-  }
-}
-function doLogout() {
-  document.getElementById('loginView').style.display = 'flex';
-  document.getElementById('appView').style.display   = 'none';
-  document.getElementById('pwdF').value = '';
-}
+  <div class="toast-wrap" id="toastWrap"></div>
 
-// ── API ───────────────────────────────────────────────────
-async function apiGet(tabla, params='') {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, {headers:hdrs});
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function apiPost(tabla, body) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {
-    method:'POST', headers:hdrs, body:JSON.stringify(body)
-  });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function apiPatch(tabla, id, body) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
-    method:'PATCH', headers:hdrs, body:JSON.stringify(body)
-  });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function apiDelete(tabla, id) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
-    method:'DELETE', headers:hdrs
-  });
-  if (!r.ok) throw new Error(await r.text());
-}
+  <script>
+    const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
+    const PASSWORD = 'olivilla2026';
 
-async function cargarInventarioCache()  { inventarioDB  = await apiGet('inventario',  'order=nombre'); }
-async function cargarClientesCache()    { clientesDB    = await apiGet('clientes',    'order=nombre'); }
-async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
+    const hdrs = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
 
-// ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
-// Vincula un input de nombre y un input de NIF al listado de proveedoresDB.
-// Al seleccionar un proveedor se rellena nombre Y nif automáticamente.
-function setupProveedorAC(inputNombreId, inputNifId) {
-  const inpN = document.getElementById(inputNombreId);
-  const inpF = document.getElementById(inputNifId);
-  if (!inpN || !inpF) return;
+    let tablaActual = 'facturas_tienda';
+    let registros = [];
+    let inventarioDB = [];
+    let clientesDB = [];
+    let proveedoresDB = [];   // ← fuente principal para autocompletado de empresa/proveedor
+    let clienteSelId = null;
+    let clienteSelPuntos = 0;
+    let lineasCompraCount = 0;
+    let lineasFacturaCount = 0;
 
-  // Asegurar posición relativa en el contenedor del input nombre
-  inpN.parentElement.style.position = 'relative';
-  inpF.parentElement.style.position = 'relative';
+    // ── UTILIDADES ────────────────────────────────────────────
+    function fmt(v) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+    function fmtN(v) { if (v === null || v === undefined || v === '' || isNaN(parseFloat(v))) return '—'; return parseFloat(v).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function fmtF(f) { return f ? f.split('-').reverse().join('/') : '—'; }
+    function hoy() { return new Date().toISOString().split('T')[0]; }
+    function nvl(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
 
-  // Lista bajo el campo nombre
-  const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
-  // Lista bajo el campo NIF
-  const listaF = _crearLista('ac_f_' + inputNifId,   inpF.parentElement);
+    function toast(msg, tipo = 'ok') {
+      const wrap = document.getElementById('toastWrap');
+      const t = document.createElement('div');
+      t.className = `toast ${tipo}`;
+      t.innerHTML = msg;
+      wrap.appendChild(t);
+      setTimeout(() => t.classList.add('show'), 50);
+      setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+    }
+    function emptyRow(cols, msg) {
+      return `<tr><td colspan="${cols}"><div class="empty-state"><i class="fa-solid fa-folder-open"></i>${msg}</div></td></tr>`;
+    }
 
-  function filtrar(q) {
-    return proveedoresDB.filter(p =>
-      (p.nombre||'').toLowerCase().includes(q) ||
-      (p.nif||'').toLowerCase().includes(q)
-    ).slice(0, 10);
-  }
+    // ── AUTH ──────────────────────────────────────────────────
+    function doLogin() {
+      if (document.getElementById('pwdF').value === PASSWORD) {
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('appView').style.display = 'flex';
+        Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()])
+          .then(() => cambiarSeccion('facturas_tienda'));
+      } else {
+        document.getElementById('loginErr').style.display = 'block';
+      }
+    }
+    function doLogout() {
+      document.getElementById('loginView').style.display = 'flex';
+      document.getElementById('appView').style.display = 'none';
+      document.getElementById('pwdF').value = '';
+    }
 
-  function seleccionar(prov) {
-    inpN.value = prov.nombre || '';
-    inpF.value = prov.nif   || '';
-    listaN.style.display = 'none';
-    listaF.style.display = 'none';
-  }
-
-  function renderLista(lista, items) {
-    if (!items.length) { lista.style.display='none'; return; }
-    lista.innerHTML = items.map(p =>
-      `<div class="ac-item" data-id="${p.id}">
-        <span class="ac-nombre">${p.nombre||'—'}</span>
-        <span class="ac-nif">${p.nif||'Sin NIF'}</span>
-      </div>`
-    ).join('');
-    lista.style.display = 'block';
-    lista.querySelectorAll('.ac-item').forEach(el => {
-      el.addEventListener('mousedown', e => {
-        e.preventDefault();
-        const prov = proveedoresDB.find(p => p.id == el.dataset.id);
-        if (prov) seleccionar(prov);
+    // ── API ───────────────────────────────────────────────────
+    async function apiGet(tabla, params = '') {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, { headers: hdrs });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+    async function apiPost(tabla, body) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {
+        method: 'POST', headers: hdrs, body: JSON.stringify(body)
       });
-    });
-  }
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+    async function apiPatch(tabla, id, body) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
+        method: 'PATCH', headers: hdrs, body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+    async function apiDelete(tabla, id) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
+        method: 'DELETE', headers: hdrs
+      });
+      if (!r.ok) throw new Error(await r.text());
+    }
 
-  // Input nombre
-  inpN.addEventListener('input',  () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
-  inpN.addEventListener('focus',  () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
-  inpN.addEventListener('blur',   () => setTimeout(()=>listaN.style.display='none', 160));
+    async function cargarInventarioCache() { inventarioDB = await apiGet('inventario', 'order=nombre'); }
+    async function cargarClientesCache() { clientesDB = await apiGet('clientes', 'order=nombre'); }
+    async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
 
-  // Input NIF
-  inpF.addEventListener('input',  () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
-  inpF.addEventListener('focus',  () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
-  inpF.addEventListener('blur',   () => setTimeout(()=>listaF.style.display='none', 160));
-}
+    // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
+    // Vincula un input de nombre y un input de NIF al listado de proveedoresDB.
+    // Al seleccionar un proveedor se rellena nombre Y nif automáticamente.
+    function setupProveedorAC(inputNombreId, inputNifId) {
+      const inpN = document.getElementById(inputNombreId);
+      const inpF = document.getElementById(inputNifId);
+      if (!inpN || !inpF) return;
 
-function _crearLista(id, parent) {
-  let el = document.getElementById(id);
-  if (!el) {
-    el = document.createElement('div');
-    el.id = id;
-    el.className = 'ac-list';
-    el.style.display = 'none';
-    parent.appendChild(el);
-  }
-  return el;
-}
+      // Asegurar posición relativa en el contenedor del input nombre
+      inpN.parentElement.style.position = 'relative';
+      inpF.parentElement.style.position = 'relative';
 
-// ── SECCIONES ─────────────────────────────────────────────
-function cambiarSeccion(sec) {
-  tablaActual = sec;
-  document.querySelectorAll('.btn-nav').forEach(b =>
-    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
-  );
-  const titulos = {
-    facturas_tienda:  ['Facturas de Tienda',  'fa-shop',           true ],
-    facturas_almacen: ['Facturas de Almacén', 'fa-warehouse',      true ],
-    albaranes:        ['Albaranes',            'fa-file-signature', false],
-    clientes:         ['Clientes',             'fa-users',          false],
-    inventario:       ['Inventario',           'fa-boxes-stacked',  false]
-  };
-  const [tit, ico, stats] = titulos[sec];
-  document.getElementById('txtSeccionTitulo').textContent = tit;
-  document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;
-  document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
-  document.getElementById('alertasWrap').innerHTML = '';
+      // Lista bajo el campo nombre
+      const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
+      // Lista bajo el campo NIF
+      const listaF = _crearLista('ac_f_' + inputNifId, inpF.parentElement);
 
-  const esFacturas = sec==='facturas_tienda'||sec==='facturas_almacen';
-  document.getElementById('btnExportar').style.display = esFacturas ? 'flex' : 'none';
+      function filtrar(q) {
+        return proveedoresDB.filter(p =>
+          (p.nombre || '').toLowerCase().includes(q) ||
+          (p.nif || '').toLowerCase().includes(q)
+        ).slice(0, 10);
+      }
 
-  const sel = document.getElementById('filtroEstado');
-  const sp  = document.getElementById('searchInput');
-  if (esFacturas) {
-    sel.innerHTML = `<option value="">Todos los estados</option>
+      function seleccionar(prov) {
+        inpN.value = prov.nombre || '';
+        inpF.value = prov.nif || '';
+        listaN.style.display = 'none';
+        listaF.style.display = 'none';
+      }
+
+      function renderLista(lista, items) {
+        if (!items.length) { lista.style.display = 'none'; return; }
+        lista.innerHTML = items.map(p =>
+          `<div class="ac-item" data-id="${p.id}">
+        <span class="ac-nombre">${p.nombre || '—'}</span>
+        <span class="ac-nif">${p.nif || 'Sin NIF'}</span>
+      </div>`
+        ).join('');
+        lista.style.display = 'block';
+        lista.querySelectorAll('.ac-item').forEach(el => {
+          el.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const prov = proveedoresDB.find(p => p.id == el.dataset.id);
+            if (prov) seleccionar(prov);
+          });
+        });
+      }
+
+      // Input nombre
+      inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
+      inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
+      inpN.addEventListener('blur', () => setTimeout(() => listaN.style.display = 'none', 160));
+
+      // Input NIF
+      inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
+      inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
+      inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));
+    }
+
+    function _crearLista(id, parent) {
+      let el = document.getElementById(id);
+      if (!el) {
+        el = document.createElement('div');
+        el.id = id;
+        el.className = 'ac-list';
+        el.style.display = 'none';
+        parent.appendChild(el);
+      }
+      return el;
+    }
+
+    // ── SECCIONES ─────────────────────────────────────────────
+    function cambiarSeccion(sec) {
+      tablaActual = sec;
+      document.querySelectorAll('.btn-nav').forEach(b =>
+        b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
+      );
+      const titulos = {
+        facturas_tienda: ['Facturas de Tienda', 'fa-shop', true],
+        facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
+        albaranes: ['Albaranes', 'fa-file-signature', false],
+        clientes: ['Clientes', 'fa-users', false],
+        inventario: ['Inventario', 'fa-boxes-stacked', false]
+      };
+      const [tit, ico, stats] = titulos[sec];
+      document.getElementById('txtSeccionTitulo').textContent = tit;
+      document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;
+      document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
+      document.getElementById('alertasWrap').innerHTML = '';
+
+      const esFacturas = sec === 'facturas_tienda' || sec === 'facturas_almacen';
+      document.getElementById('btnExportar').style.display = esFacturas ? 'flex' : 'none';
+
+      const sel = document.getElementById('filtroEstado');
+      const sp = document.getElementById('searchInput');
+      if (esFacturas) {
+        sel.innerHTML = `<option value="">Todos los estados</option>
       <option value="pendiente">Pendiente</option>
       <option value="pagado">Pagada</option>
       <option value="vencido">Vencida</option>`;
-    sp.placeholder = 'Buscar por nº, empresa, NIF, concepto...';
-  } else if (sec==='albaranes') {
-    sel.innerHTML = `<option value="">Todos</option>
+        sp.placeholder = 'Buscar por nº, empresa, NIF, concepto...';
+      } else if (sec === 'albaranes') {
+        sel.innerHTML = `<option value="">Todos</option>
       <option value="si">Facturado</option>
       <option value="no">Sin facturar</option>`;
-    sp.placeholder = 'Buscar empresa o NIF...';
-  } else {
-    sel.innerHTML = `<option value="">Todos</option>`;
-    sp.placeholder = sec==='clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
-  }
-  cargarDatos();
-}
-
-// ── CARGAR DATOS ──────────────────────────────────────────
-async function cargarDatos() {
-  document.getElementById('tablaBody').innerHTML =
-    `<tr><td colspan="15"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
-  try {
-    const orden = {
-      facturas_tienda:'order=fecha.desc', facturas_almacen:'order=fecha.desc',
-      albaranes:'order=fecha.desc', clientes:'order=nombre', inventario:'order=nombre'
-    };
-    registros      = await apiGet(tablaActual, orden[tablaActual]||'');
-    inventarioDB   = await apiGet('inventario','order=nombre');
-    clientesDB     = await apiGet('clientes','order=nombre');
-    proveedoresDB  = await apiGet('proveedores','order=nombre');
-
-    if (tablaActual==='facturas_tienda'||tablaActual==='facturas_almacen') {
-      actualizarStats(); renderAlertas();
+        sp.placeholder = 'Buscar empresa o NIF...';
+      } else {
+        sel.innerHTML = `<option value="">Todos</option>`;
+        sp.placeholder = sec === 'clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
+      }
+      cargarDatos();
     }
-    renderTabla();
-  } catch(e) {
-    toast('Error al cargar: '+e.message,'err');
-    document.getElementById('tablaBody').innerHTML =
-      `<tr><td colspan="15"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
-  }
-}
 
-// ── STATS ─────────────────────────────────────────────────
-function actualizarStats() {
-  const hoyD = new Date(); hoyD.setHours(0,0,0,0);
-  const pend   = registros.filter(f=>f.estado==='pendiente');
-  const venc   = pend.filter(f=>f.fecha_vencimiento && new Date(f.fecha_vencimiento)<hoyD);
-  const pagado = registros.filter(f=>f.estado==='pagado').reduce((s,f)=>s+parseFloat(f.total||0),0);
-  const porPag = pend.reduce((s,f)=>s+parseFloat(f.total||0),0);
-  document.getElementById('sTot').textContent     = registros.length;
-  document.getElementById('sPend').textContent    = pend.length;
-  document.getElementById('sVenc').textContent    = venc.length;
-  document.getElementById('sCobrado').textContent = fmt(pagado);
-  document.getElementById('sPagar').textContent   = fmt(porPag);
-}
+    // ── CARGAR DATOS ──────────────────────────────────────────
+    async function cargarDatos() {
+      document.getElementById('tablaBody').innerHTML =
+        `<tr><td colspan="15"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
+      try {
+        const orden = {
+          facturas_tienda: 'order=fecha.desc', facturas_almacen: 'order=fecha.desc',
+          albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre'
+        };
+        registros = await apiGet(tablaActual, orden[tablaActual] || '');
+        inventarioDB = await apiGet('inventario', 'order=nombre');
+        clientesDB = await apiGet('clientes', 'order=nombre');
+        proveedoresDB = await apiGet('proveedores', 'order=nombre');
 
-function renderAlertas() {
-  const hoyD = new Date(); hoyD.setHours(0,0,0,0);
-  const alertas = registros
-    .filter(f=>f.estado==='pendiente'&&f.fecha_vencimiento)
-    .map(f=>({f, dias:Math.ceil((new Date(f.fecha_vencimiento)-hoyD)/86400000)}))
-    .filter(x=>x.dias<=7)
-    .sort((a,b)=>a.dias-b.dias);
-  const wrap = document.getElementById('alertasWrap');
-  if (!alertas.length) { wrap.innerHTML=''; return; }
-  wrap.innerHTML = alertas.map(({f,dias})=>{
-    const critica = dias<=0;
-    // En facturas tienda el campo en DB es 'proveedor', en almacén también 'proveedor'
-    const empresa = f.proveedor || '—';
-    const msg = dias<0 ? `Vencido hace ${Math.abs(dias)} días` : dias===0 ? 'Vence HOY' : `Vence en ${dias} día${dias>1?'s':''}`;
-    return `<div class="alerta-item ${critica?'critica':''}">
+        if (tablaActual === 'facturas_tienda' || tablaActual === 'facturas_almacen') {
+          actualizarStats(); renderAlertas();
+        }
+        renderTabla();
+      } catch (e) {
+        toast('Error al cargar: ' + e.message, 'err');
+        document.getElementById('tablaBody').innerHTML =
+          `<tr><td colspan="15"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
+      }
+    }
+
+    // ── STATS ─────────────────────────────────────────────────
+    function actualizarStats() {
+      const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
+      const pend = registros.filter(f => f.estado === 'pendiente');
+      const venc = pend.filter(f => f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD);
+      const pagado = registros.filter(f => f.estado === 'pagado').reduce((s, f) => s + parseFloat(f.total || 0), 0);
+      const porPag = pend.reduce((s, f) => s + parseFloat(f.total || 0), 0);
+      document.getElementById('sTot').textContent = registros.length;
+      document.getElementById('sPend').textContent = pend.length;
+      document.getElementById('sVenc').textContent = venc.length;
+      document.getElementById('sCobrado').textContent = fmt(pagado);
+      document.getElementById('sPagar').textContent = fmt(porPag);
+    }
+
+    function renderAlertas() {
+      const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
+      const alertas = registros
+        .filter(f => f.estado === 'pendiente' && f.fecha_vencimiento)
+        .map(f => ({ f, dias: Math.ceil((new Date(f.fecha_vencimiento) - hoyD) / 86400000) }))
+        .filter(x => x.dias <= 7)
+        .sort((a, b) => a.dias - b.dias);
+      const wrap = document.getElementById('alertasWrap');
+      if (!alertas.length) { wrap.innerHTML = ''; return; }
+      wrap.innerHTML = alertas.map(({ f, dias }) => {
+        const critica = dias <= 0;
+        // En facturas tienda el campo en DB es 'proveedor', en almacén también 'proveedor'
+        const empresa = f.proveedor || '—';
+        const msg = dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
+        return `<div class="alerta-item ${critica ? 'critica' : ''}">
       <i class="fa-solid fa-triangle-exclamation"></i>
-      <div><strong>${empresa}</strong> — Ref: ${f.numero_factura||'s/n'} — <strong>${fmt(f.total)}</strong>
-      <span style="margin-left:8px;color:${critica?'#e53e3e':'#c47a00'}">${msg}</span></div>
+      <div><strong>${empresa}</strong> — Ref: ${f.numero_factura || 's/n'} — <strong>${fmt(f.total)}</strong>
+      <span style="margin-left:8px;color:${critica ? '#e53e3e' : '#c47a00'}">${msg}</span></div>
     </div>`;
-  }).join('');
-}
+      }).join('');
+    }
 
-// ── RENDER TABLA ──────────────────────────────────────────
-function renderTabla() {
-  const q    = document.getElementById('searchInput').value.toLowerCase().trim();
-  const fEst = document.getElementById('filtroEstado').value;
-  const hdr  = document.getElementById('tablaHeader');
-  const bdy  = document.getElementById('tablaBody');
-  const hoyD = new Date(); hoyD.setHours(0,0,0,0);
+    // ── RENDER TABLA ──────────────────────────────────────────
+    function renderTabla() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const fEst = document.getElementById('filtroEstado').value;
+      const hdr = document.getElementById('tablaHeader');
+      const bdy = document.getElementById('tablaBody');
+      const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
 
-  // FACTURAS TIENDA — usa campo 'proveedor' en DB
-  if (tablaActual==='facturas_tienda') {
-    hdr.innerHTML=`<tr>
+      // FACTURAS TIENDA — usa campo 'proveedor' en DB
+      if (tablaActual === 'facturas_tienda') {
+        hdr.innerHTML = `<tr>
       <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
       <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
@@ -570,46 +1392,46 @@ function renderTabla() {
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
       <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
     </tr>`;
-    const lista = registros.filter(f=>{
-      const mQ=[f.numero_factura,f.proveedor,f.nif,f.numero_interno,f.concepto].some(v=>(v||'').toLowerCase().includes(q));
-      const esVenc=f.estado==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
-      const estReal=esVenc?'vencido':(f.estado||'pendiente');
-      return mQ&&(!fEst||fEst===estReal||(fEst==='vencido'&&esVenc));
-    });
-    if (!lista.length){bdy.innerHTML=emptyRow(21,'No se encontraron facturas');return;}
-    bdy.innerHTML=lista.map(f=>{
-      const est=f.estado||'pendiente';
-      const esVenc=est==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
-      const eR=esVenc?'vencido':est;
-      return `<tr>
+        const lista = registros.filter(f => {
+          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
+          const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
+          const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
+          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
+        });
+        if (!lista.length) { bdy.innerHTML = emptyRow(21, 'No se encontraron facturas'); return; }
+        bdy.innerHTML = lista.map(f => {
+          const est = f.estado || 'pendiente';
+          const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
+          const eR = esVenc ? 'vencido' : est;
+          return `<tr>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td><strong>${f.numero_factura||'—'}</strong></td>
-        <td class="td-nombre">${f.proveedor||'—'}</td>
-        <td style="font-size:.78rem;color:#888">${f.nif||'—'}</td>
+        <td><strong>${f.numero_factura || '—'}</strong></td>
+        <td class="td-nombre">${f.proveedor || '—'}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
-        <td class="td-concepto" title="${f.concepto||''}">${f.concepto||'—'}</td>
+        <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
-        <td class="pct-cell">${f.pct_iva1!=null?f.pct_iva1+'%':'—'}</td>
+        <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="pct-cell">${f.pct_re1!=null?f.pct_re1+'%':'—'}</td>
+        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_re1)}</td>
         <td class="num-cell">${fmtN(f.tasas)}</td>
         <td class="num-cell">${fmtN(f.descuento)}</td>
         <td class="num-cell">${fmtN(f.base_retencion)}</td>
-        <td class="pct-cell">${f.pct_retencion!=null?f.pct_retencion+'%':'—'}</td>
+        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_tienda')">
-          ${est==='pagado'?'<i class="fa-solid fa-rotate-left me-1"></i>Pendiente':'<i class="fa-solid fa-check me-1"></i>Pagada'}
+          ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
         </button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
-    }).join('');
+        }).join('');
 
-  // FACTURAS ALMACÉN
-  } else if (tablaActual==='facturas_almacen') {
-    hdr.innerHTML=`<tr>
+        // FACTURAS ALMACÉN
+      } else if (tablaActual === 'facturas_almacen') {
+        hdr.innerHTML = `<tr>
       <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
       <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
@@ -618,213 +1440,268 @@ function renderTabla() {
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
       <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
     </tr>`;
-    const lista = registros.filter(f=>{
-      const mQ=[f.numero_factura,f.proveedor,f.nif,f.numero_interno,f.concepto].some(v=>(v||'').toLowerCase().includes(q));
-      const esVenc=f.estado==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
-      const estReal=esVenc?'vencido':(f.estado||'pendiente');
-      return mQ&&(!fEst||fEst===estReal||(fEst==='vencido'&&esVenc));
-    });
-    if (!lista.length){bdy.innerHTML=emptyRow(21,'No se encontraron facturas');return;}
-    bdy.innerHTML=lista.map(f=>{
-      const est=f.estado||'pendiente';
-      const esVenc=est==='pendiente'&&f.fecha_vencimiento&&new Date(f.fecha_vencimiento)<hoyD;
-      const eR=esVenc?'vencido':est;
-      return `<tr>
+        const lista = registros.filter(f => {
+          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
+          const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
+          const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
+          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
+        });
+        if (!lista.length) { bdy.innerHTML = emptyRow(21, 'No se encontraron facturas'); return; }
+        bdy.innerHTML = lista.map(f => {
+          const est = f.estado || 'pendiente';
+          const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
+          const eR = esVenc ? 'vencido' : est;
+          return `<tr>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td><strong>${f.numero_factura||'—'}</strong></td>
-        <td class="td-nombre">${f.proveedor||'—'}</td>
-        <td style="font-size:.78rem;color:#888">${f.nif||'—'}</td>
+        <td><strong>${f.numero_factura || '—'}</strong></td>
+        <td class="td-nombre">${f.proveedor || '—'}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
-        <td class="td-concepto" title="${f.concepto||''}">${f.concepto||'—'}</td>
+        <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
-        <td class="pct-cell">${f.pct_iva1!=null?f.pct_iva1+'%':'—'}</td>
+        <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="pct-cell">${f.pct_re1!=null?f.pct_re1+'%':'—'}</td>
+        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_re1)}</td>
         <td class="num-cell">${fmtN(f.tasas)}</td>
         <td class="num-cell">${fmtN(f.descuento)}</td>
         <td class="num-cell">${fmtN(f.base_retencion)}</td>
-        <td class="pct-cell">${f.pct_retencion!=null?f.pct_retencion+'%':'—'}</td>
+        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_almacen')">
-          ${est==='pagado'?'<i class="fa-solid fa-rotate-left me-1"></i>Pendiente':'<i class="fa-solid fa-check me-1"></i>Pagada'}
+          ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
         </button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
-    }).join('');
+        }).join('');
 
-  // ALBARANES
-  } else if (tablaActual==='albaranes') {
-    hdr.innerHTML=`<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Facturas por NIF</th><th>Acción</th><th></th></tr>`;
-    const lista=registros.filter(f=>{
-      const mQ=[f.numero_albaran,f.empresa,f.nif].some(v=>(v||'').toLowerCase().includes(q));
-      const mE=!fEst||(fEst==='si'?f.facturado:!f.facturado);
-      return mQ&&mE;
-    });
-    if (!lista.length){bdy.innerHTML=emptyRow(9,'No se encontraron albaranes');return;}
-    bdy.innerHTML=lista.map(f=>{
-      const fact=!!f.facturado;
-      return `<tr>
-        <td><strong>${f.numero_albaran||'—'}</strong></td>
-        <td class="td-nombre">${f.empresa||'—'}</td>
-        <td style="font-size:.8rem;color:#888">${f.nif||'—'}</td>
+        // ALBARANES
+      } else if (tablaActual === 'albaranes') {
+        hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Facturas por NIF</th><th>Acción</th><th></th></tr>`;
+        const lista = registros.filter(f => {
+          const mQ = [f.numero_albaran, f.empresa, f.nif].some(v => (v || '').toLowerCase().includes(q));
+          const mE = !fEst || (fEst === 'si' ? f.facturado : !f.facturado);
+          return mQ && mE;
+        });
+        if (!lista.length) { bdy.innerHTML = emptyRow(9, 'No se encontraron albaranes'); return; }
+        bdy.innerHTML = lista.map(f => {
+          const fact = !!f.facturado;
+          return `<tr>
+        <td><strong>${f.numero_albaran || '—'}</strong></td>
+        <td class="td-nombre">${f.empresa || '—'}</td>
+        <td style="font-size:.8rem;color:#888">${f.nif || '—'}</td>
         <td>${fmtF(f.fecha)}</td>
         <td class="td-total">${fmt(f.total)}</td>
-        <td><span class="badge-estado ${fact?'badge-pagado':'badge-vencido'}">${fact?'SÍ':'NO'}</span></td>
+        <td><span class="badge-estado ${fact ? 'badge-pagado' : 'badge-vencido'}">${fact ? 'SÍ' : 'NO'}</span></td>
         <td>${f.nif
-          ?`<span class="link-badge factura" onclick="verFacturasNif('${f.nif}','${(f.empresa||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
-          :'<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
-        <td><button class="btn-toggle-facturado ${fact?'si':'no'}" onclick="toggleFacturado(${f.id},${fact})">
-          ${fact?'<i class="fa-solid fa-rotate-left me-1"></i>Sin facturar':'<i class="fa-solid fa-file-circle-check me-1"></i>Marcar facturado'}
+              ? `<span class="link-badge factura" onclick="verFacturasNif('${f.nif}','${(f.empresa || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
+              : '<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
+        <td><button class="btn-toggle-facturado ${fact ? 'si' : 'no'}" onclick="toggleFacturado(${f.id},${fact})">
+          ${fact ? '<i class="fa-solid fa-rotate-left me-1"></i>Sin facturar' : '<i class="fa-solid fa-file-circle-check me-1"></i>Marcar facturado'}
         </button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
-    }).join('');
+        }).join('');
 
-  // CLIENTES
-  } else if (tablaActual==='clientes') {
-    hdr.innerHTML=`<tr><th>Nombre</th><th>NIF</th><th>Email</th><th>Teléfono</th><th>Puntos</th><th>Última compra</th><th>Acciones</th><th></th></tr>`;
-    const lista=registros.filter(f=>[f.nombre,f.nif,f.email].some(v=>(v||'').toLowerCase().includes(q)));
-    if (!lista.length){bdy.innerHTML=emptyRow(8,'No se encontraron clientes');return;}
-    bdy.innerHTML=lista.map(f=>{
-      const uc=f.ultima_compra?new Date(f.ultima_compra):null;
-      const meses=uc?Math.floor((new Date()-uc)/(1000*60*60*24*30)):null;
-      const alerta=meses!==null&&meses>=5;
-      return `<tr style="${alerta?'background:#fff8e1':''}">
+        // CLIENTES
+      } else if (tablaActual === 'clientes') {
+        hdr.innerHTML = `<tr><th>Nombre</th><th>NIF</th><th>Email</th><th>Teléfono</th><th>Puntos</th><th>Última compra</th><th>Acciones</th><th></th></tr>`;
+        const lista = registros.filter(f => [f.nombre, f.nif, f.email].some(v => (v || '').toLowerCase().includes(q)));
+        if (!lista.length) { bdy.innerHTML = emptyRow(8, 'No se encontraron clientes'); return; }
+        bdy.innerHTML = lista.map(f => {
+          const uc = f.ultima_compra ? new Date(f.ultima_compra) : null;
+          const meses = uc ? Math.floor((new Date() - uc) / (1000 * 60 * 60 * 24 * 30)) : null;
+          const alerta = meses !== null && meses >= 5;
+          return `<tr style="${alerta ? 'background:#fff8e1' : ''}">
         <td class="td-nombre">
-          ${alerta?'<i class="fa-solid fa-triangle-exclamation" style="color:#c47a00;margin-right:5px"></i>':''}
-          <strong>${f.nombre||'—'}</strong>
+          ${alerta ? '<i class="fa-solid fa-triangle-exclamation" style="color:#c47a00;margin-right:5px"></i>' : ''}
+          <strong>${f.nombre || '—'}</strong>
         </td>
-        <td style="font-size:.8rem;color:#888">${f.nif||'—'}</td>
-        <td style="font-size:.82rem">${f.email||'—'}</td>
-        <td style="font-size:.82rem">${f.telefono||'—'}</td>
-        <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${f.puntos||0} pts</span></td>
-        <td style="font-size:.8rem;color:#888">${uc?uc.toLocaleDateString('es-ES'):'—'}
-          ${alerta?`<br><span style="color:#c47a00;font-size:.72rem">¡${meses} meses sin compra!</span>`:''}
+        <td style="font-size:.8rem;color:#888">${f.nif || '—'}</td>
+        <td style="font-size:.82rem">${f.email || '—'}</td>
+        <td style="font-size:.82rem">${f.telefono || '—'}</td>
+        <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${f.puntos || 0} pts</span></td>
+        <td style="font-size:.8rem;color:#888">${uc ? uc.toLocaleDateString('es-ES') : '—'}
+          ${alerta ? `<br><span style="color:#c47a00;font-size:.72rem">¡${meses} meses sin compra!</span>` : ''}
         </td>
         <td><div class="td-acciones">
-          <button class="btn-puntos" onclick="abrirModalCompra(${f.id},'${(f.nombre||'').replace(/'/g,"\\'")}',${f.puntos||0})">
+          <button class="btn-puntos" onclick="abrirModalCompra(${f.id})">
             <i class="fa-solid fa-cart-shopping me-1"></i>Registrar compra
           </button>
-          ${f.nif?`<span class="link-badge" onclick="verAlbaranesNif('${f.nif}','${(f.nombre||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-file-signature"></i>Albaranes</span>`:''}
+          ${f.nif ? `<span class="link-badge" onclick="verAlbaranesNif('${f.nif}','${(f.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-signature"></i>Albaranes</span>` : ''}
         </div></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
-    }).join('');
+        }).join('');
 
-  // INVENTARIO
-  } else if (tablaActual==='inventario') {
-    hdr.innerHTML=`<tr><th>Producto</th><th>Stock (uds.)</th><th>Pts/unidad</th><th></th></tr>`;
-    const lista=registros.filter(p=>(p.nombre||'').toLowerCase().includes(q));
-    if (!lista.length){bdy.innerHTML=emptyRow(4,'No se encontraron productos');return;}
-    bdy.innerHTML=lista.map(p=>{
-      const agotado=parseFloat(p.stock||0)<=0;
-      return `<tr>
-        <td><strong>${p.nombre||'—'}</strong></td>
-        <td><span style="font-size:1.1rem;font-weight:700;color:${agotado?'#b53987':'#2d7a4f'}">${p.stock??0}</span>
+        // INVENTARIO
+      } else if (tablaActual === 'inventario') {
+        hdr.innerHTML = `<tr><th>Producto</th><th>Stock (uds.)</th><th>Pts/unidad</th><th></th></tr>`;
+        const lista = registros.filter(p => (p.nombre || '').toLowerCase().includes(q));
+        if (!lista.length) { bdy.innerHTML = emptyRow(4, 'No se encontraron productos'); return; }
+        bdy.innerHTML = lista.map(p => {
+          const agotado = parseFloat(p.stock || 0) <= 0;
+          return `<tr>
+        <td><strong>${p.nombre || '—'}</strong></td>
+        <td><span style="font-size:1.1rem;font-weight:700;color:${agotado ? '#b53987' : '#2d7a4f'}">${p.stock ?? 0}</span>
           <span style="font-size:.78rem;color:#aaa"> uds.</span>
-          ${agotado?'<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>':''}
+          ${agotado ? '<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>' : ''}
         </td>
-        <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${p.puntos_por_unidad||0} pts</span></td>
+        <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${p.puntos_por_unidad || 0} pts</span></td>
         <td><button class="btn-eliminar" onclick="eliminar(${p.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
-    }).join('');
-  }
-}
+        }).join('');
+      }
+    }
 
-// ── TOGGLE ESTADO FACTURA ─────────────────────────────────
-async function toggleEstado(id, estadoActual, tabla) {
-  const nuevo = estadoActual==='pagado'?'pendiente':'pagado';
-  try {
-    await apiPatch(tabla, id, {estado:nuevo});
-    const reg = registros.find(r=>r.id===id);
-    if (reg) reg.estado = nuevo;
-    actualizarStats(); renderAlertas(); renderTabla();
-    toast(`Factura marcada como <strong>${nuevo.toUpperCase()}</strong>`);
-  } catch(e) { toast('Error: '+e.message,'err'); }
-}
+    // ── TOGGLE ESTADO FACTURA ─────────────────────────────────
+    async function toggleEstado(id, estadoActual, tabla) {
+      const nuevo = estadoActual === 'pagado' ? 'pendiente' : 'pagado';
+      try {
+        await apiPatch(tabla, id, { estado: nuevo });
+        const reg = registros.find(r => r.id === id);
+        if (reg) reg.estado = nuevo;
+        actualizarStats(); renderAlertas(); renderTabla();
+        toast(`Factura marcada como <strong>${nuevo.toUpperCase()}</strong>`);
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
 
-async function toggleFacturado(id, actual) {
-  try {
-    await apiPatch('albaranes', id, {facturado:!actual});
-    const reg = registros.find(r=>r.id===id);
-    if (reg) reg.facturado = !actual;
-    renderTabla();
-    toast(`Albarán: <strong>${!actual?'FACTURADO':'SIN FACTURAR'}</strong>`);
-  } catch(e) { toast('Error: '+e.message,'err'); }
-}
+    async function toggleFacturado(id, actual) {
+      try {
+        await apiPatch('albaranes', id, { facturado: !actual });
+        const reg = registros.find(r => r.id === id);
+        if (reg) reg.facturado = !actual;
+        renderTabla();
+        toast(`Albarán: <strong>${!actual ? 'FACTURADO' : 'SIN FACTURAR'}</strong>`);
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
 
-// ── VER FACTURAS POR NIF ──────────────────────────────────
-async function verFacturasNif(nif, empresa) {
-  try {
-    const [ft, fa] = await Promise.all([
-      apiGet('facturas_tienda',  `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
-      apiGet('facturas_almacen', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`)
-    ]);
-    const todas = [...ft.map(f=>({...f,_o:'Tienda'})),...fa.map(f=>({...f,_o:'Almacén'}))];
-    document.getElementById('modalDetalleTitulo').innerHTML =
-      `<i class="fa-solid fa-file-invoice" style="color:#b53987"></i>Facturas de ${empresa} (NIF: ${nif})`;
-    document.getElementById('modalDetalleContenido').innerHTML = !todas.length
-      ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin facturas para este NIF</p>`
-      : `<table class="mini-table"><thead><tr><th>Origen</th><th>Nº Factura</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>
-          ${todas.map(f=>`<tr>
-            <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${f._o==='Tienda'?'#e3f2fd':'#f3e5f5'};color:${f._o==='Tienda'?'#1565c0':'#6a1b9a'}">${f._o}</span></td>
-            <td><strong>${f.numero_factura||'—'}</strong></td>
+    // ── VER FACTURAS POR NIF ──────────────────────────────────
+    async function verFacturasNif(nif, empresa) {
+      try {
+        const [ft, fa] = await Promise.all([
+          apiGet('facturas_tienda', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
+          apiGet('facturas_almacen', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`)
+        ]);
+        const todas = [...ft.map(f => ({ ...f, _o: 'Tienda' })), ...fa.map(f => ({ ...f, _o: 'Almacén' }))];
+        document.getElementById('modalDetalleTitulo').innerHTML =
+          `<i class="fa-solid fa-file-invoice" style="color:#b53987"></i>Facturas de ${empresa} (NIF: ${nif})`;
+        document.getElementById('modalDetalleContenido').innerHTML = !todas.length
+          ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin facturas para este NIF</p>`
+          : `<table class="mini-table"><thead><tr><th>Origen</th><th>Nº Factura</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>
+          ${todas.map(f => `<tr>
+            <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${f._o === 'Tienda' ? '#e3f2fd' : '#f3e5f5'};color:${f._o === 'Tienda' ? '#1565c0' : '#6a1b9a'}">${f._o}</span></td>
+            <td><strong>${f.numero_factura || '—'}</strong></td>
             <td>${fmtF(f.fecha)}</td>
             <td><strong>${fmt(f.total)}</strong></td>
-            <td><span class="badge-estado badge-${f.estado||'pendiente'}">${(f.estado||'pendiente').toUpperCase()}</span></td>
+            <td><span class="badge-estado badge-${f.estado || 'pendiente'}">${(f.estado || 'pendiente').toUpperCase()}</span></td>
           </tr>`).join('')}
         </tbody></table>`;
-    document.getElementById('modalDetalle').classList.add('visible');
-  } catch(e) { toast('Error: '+e.message,'err'); }
-}
+        document.getElementById('modalDetalle').classList.add('visible');
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
 
-async function verAlbaranesNif(nif, nombre) {
-  try {
-    const albs = await apiGet('albaranes',`nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`);
-    document.getElementById('modalDetalleTitulo').innerHTML =
-      `<i class="fa-solid fa-file-signature" style="color:#b53987"></i>Albaranes de ${nombre}`;
-    document.getElementById('modalDetalleContenido').innerHTML = !albs.length
-      ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin albaranes para este NIF</p>`
-      : `<table class="mini-table"><thead><tr><th>Nº Albarán</th><th>Fecha</th><th>Total</th><th>Facturado</th></tr></thead><tbody>
-          ${albs.map(a=>`<tr>
-            <td><strong>${a.numero_albaran||'—'}</strong></td>
+    async function verAlbaranesNif(nif, nombre) {
+      try {
+        const albs = await apiGet('albaranes', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`);
+        document.getElementById('modalDetalleTitulo').innerHTML =
+          `<i class="fa-solid fa-file-signature" style="color:#b53987"></i>Albaranes de ${nombre}`;
+        document.getElementById('modalDetalleContenido').innerHTML = !albs.length
+          ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin albaranes para este NIF</p>`
+          : `<table class="mini-table"><thead><tr><th>Nº Albarán</th><th>Fecha</th><th>Total</th><th>Facturado</th></tr></thead><tbody>
+          ${albs.map(a => `<tr>
+            <td><strong>${a.numero_albaran || '—'}</strong></td>
             <td>${fmtF(a.fecha)}</td>
             <td><strong>${fmt(a.total)}</strong></td>
-            <td><span class="badge-estado ${a.facturado?'badge-pagado':'badge-vencido'}">${a.facturado?'SÍ':'NO'}</span></td>
+            <td><span class="badge-estado ${a.facturado ? 'badge-pagado' : 'badge-vencido'}">${a.facturado ? 'SÍ' : 'NO'}</span></td>
           </tr>`).join('')}
         </tbody></table>`;
-    document.getElementById('modalDetalle').classList.add('visible');
-  } catch(e) { toast('Error: '+e.message,'err'); }
+        document.getElementById('modalDetalle').classList.add('visible');
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+
+    // ── MODAL COMPRA CLIENTE ──────────────────────────────────
+function abrirModalCompra(clienteId){
+
+    const cliente =
+        clientesDB.find(
+            c => c.id == clienteId
+        );
+
+    if(!cliente) return;
+
+    clienteSelId = cliente.id;
+    clienteSelPuntos = cliente.puntos || 0;
+
+    document.getElementById("cliente_nombre").value =
+        cliente.nombre || "";
+
+    document.getElementById("cliente_nif").value =
+        cliente.nif || "";
+
+    document.getElementById("cliente_telefono").value =
+        cliente.telefono || "";
+
+    document.getElementById("cliente_email").value =
+        cliente.email || "";
+
+    document.getElementById("cliente_puntos").value =
+        cliente.puntos || 0;
+
+    document.getElementById("modalPuntos")
+        .classList.add("visible");
+
+    document.getElementById("lineasCompra")
+        .innerHTML = "";
+
+    addLineaCompra();
+}
+    async function buscarClienteEmail() {
+
+  const email = document.getElementById("cliente_email")
+    .value
+    .trim()
+    .toLowerCase();
+
+  const cliente = clientesDB.find(
+    c => (c.email || "").toLowerCase() === email
+  );
+
+  if (!cliente) {
+    toast("Cliente no encontrado", "err");
+    return;
+  }
+
+  clienteSelId = cliente.id;
+  clienteSelPuntos = cliente.puntos || 0;
+
+  document.getElementById("cliente_nombre").value =
+    cliente.nombre || "";
+
+  document.getElementById("cliente_nif").value =
+    cliente.nif || "";
+
+  document.getElementById("cliente_telefono").value =
+    cliente.telefono || "";
+
+  document.getElementById("cliente_puntos").value =
+    (cliente.puntos || 0) + " puntos";
 }
 
-// ── MODAL COMPRA CLIENTE ──────────────────────────────────
-function abrirModalCompra(id, nombre, puntos) {
-  clienteSelId     = id;
-  clienteSelPuntos = puntos;
-  lineasCompraCount = 0;
-  document.getElementById('pClienteNombre').value          = nombre;
-  document.getElementById('pClientePuntosActuales').value  = puntos + ' puntos';
-  document.getElementById('lineasCompra').innerHTML        = '';
-  document.getElementById('totalPuntosCompra').textContent = '0 pts';
-  document.getElementById('modalPuntos').classList.add('visible');
-  addLineaCompra();
-}
-
-function addLineaCompra() {
-  lineasCompraCount++;
-  const idx  = lineasCompraCount;
-  const opts = inventarioDB.map(p=>
-    `<option value="${p.id}" data-pts="${p.puntos_por_unidad||0}" data-stock="${p.stock||0}">
-      ${p.nombre} (stock: ${p.stock||0}) — ${p.puntos_por_unidad||0} pts/ud
+    function addLineaCompra() {
+      lineasCompraCount++;
+      const idx = lineasCompraCount;
+      const opts = inventarioDB.map(p =>
+        `<option value="${p.id}" data-pts="${p.puntos_por_unidad || 0}" data-stock="${p.stock || 0}">
+      ${p.nombre} (stock: ${p.stock || 0}) — ${p.puntos_por_unidad || 0} pts/ud
     </option>`
-  ).join('');
-  const div = document.createElement('div');
-  div.id = `lc_${idx}`;
-  div.className = 'linea-prod';
-  div.innerHTML = `
+      ).join('');
+      const div = document.createElement('div');
+      div.id = `lc_${idx}`;
+      div.className = 'linea-prod';
+      div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
       <select id="lc_prod_${idx}" onchange="recalcPuntos()">
@@ -843,62 +1720,68 @@ function addLineaCompra() {
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
     </button>`;
-  document.getElementById('lineasCompra').appendChild(div);
-}
-
-function recalcPuntos() {
-  let total = 0;
-  document.querySelectorAll('[id^="lc_prod_"]').forEach(sel=>{
-    if (!sel.value) return;
-    const idx  = sel.id.split('_')[2];
-    const cant = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value||0);
-    const pts  = parseFloat(sel.selectedOptions[0]?.dataset.pts||0);
-    const linea= cant * pts;
-    const inpPts = document.getElementById(`lc_pts_${idx}`);
-    if (inpPts) inpPts.value = linea + ' pts';
-    total += linea;
-  });
-  document.getElementById('totalPuntosCompra').textContent = total + ' pts';
-}
-
-async function guardarCompraCliente() {
-  const lineas = [];
-  let totalPuntos = 0;
-  let ok = true;
-
-  document.querySelectorAll('[id^="lc_prod_"]').forEach(sel=>{
-    if (!sel.value) return;
-    const idx   = sel.id.split('_')[2];
-    const cant  = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value||0);
-    const pts   = parseFloat(sel.selectedOptions[0]?.dataset.pts||0);
-    const stock = parseFloat(sel.selectedOptions[0]?.dataset.stock||0);
-    const nombre= sel.selectedOptions[0]?.text.split('(')[0].trim();
-    if (cant<=0)     { toast(`Cantidad inválida en "${nombre}"`,'err'); ok=false; return; }
-    if (cant>stock)  { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`,'err'); ok=false; return; }
-    lineas.push({ producto_id:parseInt(sel.value), cantidad:cant, pts_linea:cant*pts, nombre, stock });
-    totalPuntos += cant*pts;
-  });
-
-  if (!ok) return;
-  if (!lineas.length) { toast('Añade al menos un producto','err'); return; }
-
-  try {
-    for (const l of lineas) {
-      await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad });
+      document.getElementById('lineasCompra').appendChild(div);
     }
-    await apiPatch('clientes', clienteSelId, {
-      puntos: clienteSelPuntos + totalPuntos,
-      ultima_compra: new Date().toISOString()
-    });
-    toast(`<i class="fa-solid fa-star me-1"></i>Compra registrada — <strong>+${totalPuntos} pts</strong>`,'ok');
-    cerrarModal('modalPuntos');
-    cargarDatos();
-  } catch(e) { toast('Error al guardar compra: '+e.message,'err'); }
-}
 
-// ── CAMPOS IVA / BASES ────────────────────────────────────
-function htmlCamposExcel() {
-  return `
+    function recalcPuntos() {
+      let total = 0;
+      document.querySelectorAll('[id^="lc_prod_"]').forEach(sel => {
+        if (!sel.value) return;
+        const idx = sel.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value || 0);
+        const pts = parseFloat(sel.selectedOptions[0]?.dataset.pts || 0);
+        const linea = cant * pts;
+        const inpPts = document.getElementById(`lc_pts_${idx}`);
+        if (inpPts) inpPts.value = linea + ' pts';
+        total += linea;
+      });
+      document.getElementById('totalPuntosCompra').textContent = total + ' pts';
+    }
+
+    async function guardarCompraCliente() {
+      const lineas = [];
+      let totalPuntos = 0;
+      let ok = true;
+if (!clienteSelId) {
+  toast(
+    "Introduce primero un email válido",
+    "err"
+  );
+  return;
+}
+      document.querySelectorAll('[id^="lc_prod_"]').forEach(sel => {
+        if (!sel.value) return;
+        const idx = sel.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value || 0);
+        const pts = parseFloat(sel.selectedOptions[0]?.dataset.pts || 0);
+        const stock = parseFloat(sel.selectedOptions[0]?.dataset.stock || 0);
+        const nombre = sel.selectedOptions[0]?.text.split('(')[0].trim();
+        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; return; }
+        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; return; }
+        lineas.push({ producto_id: parseInt(sel.value), cantidad: cant, pts_linea: cant * pts, nombre, stock });
+        totalPuntos += cant * pts;
+      });
+
+      if (!ok) return;
+      if (!lineas.length) { toast('Añade al menos un producto', 'err'); return; }
+
+      try {
+        for (const l of lineas) {
+          await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad });
+        }
+        await apiPatch('clientes', clienteSelId, {
+          puntos: clienteSelPuntos + totalPuntos,
+          ultima_compra: new Date().toISOString()
+        });
+        toast(`<i class="fa-solid fa-star me-1"></i>Compra registrada — <strong>+${totalPuntos} pts</strong>`, 'ok');
+        cerrarModal('modalPuntos');
+        cargarDatos();
+      } catch (e) { toast('Error al guardar compra: ' + e.message, 'err'); }
+    }
+
+    // ── CAMPOS IVA / BASES ────────────────────────────────────
+    function htmlCamposExcel() {
+      return `
     <div class="form-seccion">Bases e IVA</div>
     <div class="form-grid">
       <div class="form-group"><label>Base 1</label><input type="number" id="f_base1" step="0.01" placeholder="0.00"></div>
@@ -927,29 +1810,29 @@ function htmlCamposExcel() {
       <div class="form-group"><label>% Retención</label><input type="number" id="f_pct_ret" step="0.01" placeholder="15"></div>
       <div class="form-group"><label>Total Retención</label><input type="number" id="f_total_ret" step="0.01" placeholder="0.00"></div>
     </div>`;
-}
+    }
 
-function recogerCamposExcel() {
-  const n = id => { const v = document.getElementById(id)?.value; return (v===''||v===null||v===undefined)?null:parseFloat(v); };
-  return {
-    base1:n('f_base1'), pct_iva1:n('f_pct_iva1'), total_iva1:n('f_total_iva1'),
-    pct_re1:n('f_pct_re1'), total_re1:n('f_total_re1'), tasas:n('f_tasas'),
-    base2:n('f_base2'), pct_iva2:n('f_pct_iva2'), total_iva2:n('f_total_iva2'),
-    base3:n('f_base3'), pct_iva3:n('f_pct_iva3'), total_iva3:n('f_total_iva3'),
-    exento:n('f_exento'), descuento:n('f_descuento'),
-    base_retencion:n('f_base_ret'), pct_retencion:n('f_pct_ret'), total_retencion:n('f_total_ret'),
-  };
-}
+    function recogerCamposExcel() {
+      const n = id => { const v = document.getElementById(id)?.value; return (v === '' || v === null || v === undefined) ? null : parseFloat(v); };
+      return {
+        base1: n('f_base1'), pct_iva1: n('f_pct_iva1'), total_iva1: n('f_total_iva1'),
+        pct_re1: n('f_pct_re1'), total_re1: n('f_total_re1'), tasas: n('f_tasas'),
+        base2: n('f_base2'), pct_iva2: n('f_pct_iva2'), total_iva2: n('f_total_iva2'),
+        base3: n('f_base3'), pct_iva3: n('f_pct_iva3'), total_iva3: n('f_total_iva3'),
+        exento: n('f_exento'), descuento: n('f_descuento'),
+        base_retencion: n('f_base_ret'), pct_retencion: n('f_pct_ret'), total_retencion: n('f_total_ret'),
+      };
+    }
 
-// ── MODAL NUEVO REGISTRO ──────────────────────────────────
-function abrirModalNuevo() {
-  lineasFacturaCount = 0;
-  const cont = document.getElementById('modalFormContenido');
+    // ── MODAL NUEVO REGISTRO ──────────────────────────────────
+    function abrirModalNuevo() {
+      lineasFacturaCount = 0;
+      const cont = document.getElementById('modalFormContenido');
 
-  // ── FACTURA TIENDA ──
-  if (tablaActual==='facturas_tienda') {
-    document.getElementById('modalTitulo').textContent = 'Nueva Factura de Tienda';
-    cont.innerHTML = `
+      // ── FACTURA TIENDA ──
+      if (tablaActual === 'facturas_tienda') {
+        document.getElementById('modalTitulo').textContent = 'Nueva Factura de Tienda';
+        cont.innerHTML = `
       <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
       <div class="form-grid">
         <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
@@ -972,16 +1855,16 @@ function abrirModalNuevo() {
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       </div>
       ${htmlCamposExcel()}`;
-    document.getElementById('modalNueva').classList.add('visible');
-    setTimeout(()=>setupProveedorAC('f_prov','f_nif'), 50);
+        document.getElementById('modalNueva').classList.add('visible');
+        setTimeout(() => setupProveedorAC('f_prov', 'f_nif'), 50);
 
-  // ── FACTURA ALMACÉN ──
-  } else if (tablaActual==='facturas_almacen') {
-    document.getElementById('modalTitulo').textContent = 'Nueva Factura de Almacén';
-    const opts = inventarioDB.map(p=>
-      `<option value="${p.id}" data-stock="${p.stock||0}">${p.nombre} (stock: ${p.stock||0})</option>`
-    ).join('');
-    cont.innerHTML = `
+        // ── FACTURA ALMACÉN ──
+      } else if (tablaActual === 'facturas_almacen') {
+        document.getElementById('modalTitulo').textContent = 'Nueva Factura de Almacén';
+        const opts = inventarioDB.map(p =>
+          `<option value="${p.id}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0})</option>`
+        ).join('');
+        cont.innerHTML = `
       <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
       <div class="form-grid">
         <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
@@ -1008,14 +1891,14 @@ function abrirModalNuevo() {
       <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
       <div id="lineasFactAlm"></div>
       <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
-    window._optsFactAlm = opts;
-    document.getElementById('modalNueva').classList.add('visible');
-    setTimeout(()=>{ setupProveedorAC('f_prov','f_nif'); addLineaFactAlm(); }, 50);
+        window._optsFactAlm = opts;
+        document.getElementById('modalNueva').classList.add('visible');
+        setTimeout(() => { setupProveedorAC('f_prov', 'f_nif'); addLineaFactAlm(); }, 50);
 
-  // ── ALBARÁN ──
-  } else if (tablaActual==='albaranes') {
-    document.getElementById('modalTitulo').textContent = 'Nuevo Albarán';
-    cont.innerHTML = `<div class="form-grid-2">
+        // ── ALBARÁN ──
+      } else if (tablaActual === 'albaranes') {
+        document.getElementById('modalTitulo').textContent = 'Nuevo Albarán';
+        cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_num" placeholder="ALB-2026-001"></div>
       <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
       <div class="form-group span2 ac-wrap">
@@ -1028,45 +1911,45 @@ function abrirModalNuevo() {
       </div>
       <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
     </div>`;
-    document.getElementById('modalNueva').classList.add('visible');
-    setTimeout(()=>setupProveedorAC('f_empresa','f_nif'), 50);
+        document.getElementById('modalNueva').classList.add('visible');
+        setTimeout(() => setupProveedorAC('f_empresa', 'f_nif'), 50);
 
-  // ── CLIENTE ──
-  } else if (tablaActual==='clientes') {
-    document.getElementById('modalTitulo').textContent = 'Nuevo Cliente';
-    cont.innerHTML = `<div class="form-grid-2">
+        // ── CLIENTE ──
+      } else if (tablaActual === 'clientes') {
+        document.getElementById('modalTitulo').textContent = 'Nuevo Cliente';
+        cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group span2"><label>Nombre *</label><input type="text" id="f_nombre" placeholder="Nombre completo"></div>
       <div class="form-group"><label>NIF</label><input type="text" id="f_nif" placeholder="45123456B"></div>
       <div class="form-group"><label>Teléfono</label><input type="text" id="f_tel" placeholder="612345678"></div>
       <div class="form-group span2"><label>Email</label><input type="email" id="f_email" placeholder="correo@ejemplo.com"></div>
       <div class="form-group"><label>Puntos iniciales</label><input type="number" id="f_puntos" value="0" min="0"></div>
     </div>`;
-    document.getElementById('modalNueva').classList.add('visible');
+        document.getElementById('modalNueva').classList.add('visible');
 
-  // ── INVENTARIO ──
-  } else if (tablaActual==='inventario') {
-    document.getElementById('modalTitulo').textContent = 'Nuevo Producto';
-    cont.innerHTML = `<div class="form-grid-2">
+        // ── INVENTARIO ──
+      } else if (tablaActual === 'inventario') {
+        document.getElementById('modalTitulo').textContent = 'Nuevo Producto';
+        cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group span2"><label>Nombre del producto *</label><input type="text" id="f_nombre" placeholder="Ej: Cemento CEM II 25kg"></div>
       <div class="form-group"><label>Stock inicial (uds.)</label><input type="number" id="f_stock" value="0" min="0"></div>
       <div class="form-group"><label>Puntos por unidad</label><input type="number" id="f_pts" value="0" min="0"></div>
     </div>
     <p style="font-size:.78rem;color:#888;margin-top:10px"><i class="fa-solid fa-info-circle me-1"></i>Los puntos por unidad se usarán automáticamente al registrar una compra de cliente.</p>`;
-    document.getElementById('modalNueva').classList.add('visible');
-  }
-}
+        document.getElementById('modalNueva').classList.add('visible');
+      }
+    }
 
-function addLineaFactAlm() {
-  lineasFacturaCount++;
-  const idx = lineasFacturaCount;
-  const div = document.createElement('div');
-  div.id = `lfa_${idx}`;
-  div.className = 'linea-prod';
-  div.innerHTML = `
+    function addLineaFactAlm() {
+      lineasFacturaCount++;
+      const idx = lineasFacturaCount;
+      const div = document.createElement('div');
+      div.id = `lfa_${idx}`;
+      div.className = 'linea-prod';
+      div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
       <select id="lfa_prod_${idx}">
-        <option value="">— Selecciona producto —</option>${window._optsFactAlm||''}
+        <option value="">— Selecciona producto —</option>${window._optsFactAlm || ''}
       </select>
     </div>
     <div class="form-group" style="margin:0">
@@ -1078,190 +1961,191 @@ function addLineaFactAlm() {
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
     </button>`;
-  document.getElementById('lineasFactAlm').appendChild(div);
-}
-
-// ── GUARDAR ───────────────────────────────────────────────
-async function guardarRegistro() {
-  const btn = document.getElementById('btnGuardar');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Guardando...';
-  try {
-
-    if (tablaActual==='facturas_tienda') {
-      const prov  = document.getElementById('f_prov').value.trim();
-      const fecha = document.getElementById('f_fecha').value;
-      if (!prov||!fecha) { toast('Proveedor y fecha son obligatorios','err'); return; }
-      await apiPost('facturas_tienda', {
-        numero_interno:    document.getElementById('f_num_interno').value.trim()||null,
-        numero_factura:    document.getElementById('f_num').value.trim()||null,
-        fecha,
-        proveedor: prov,          // ← campo correcto en la tabla
-        nif:       document.getElementById('f_nif').value.trim()||null,
-        concepto:  document.getElementById('f_concepto').value.trim()||null,
-        total:     parseFloat(document.getElementById('f_total').value||0),
-        estado:    document.getElementById('f_est').value,
-        fecha_vencimiento: document.getElementById('f_venc').value||null,
-        ...recogerCamposExcel()
-      });
-
-    } else if (tablaActual==='facturas_almacen') {
-      const prov  = document.getElementById('f_prov').value.trim();
-      const fecha = document.getElementById('f_fecha').value;
-      if (!prov||!fecha) { toast('Proveedor y fecha son obligatorios','err'); return; }
-
-      const [fac] = await apiPost('facturas_almacen', {
-        numero_interno:    document.getElementById('f_num_interno').value.trim()||null,
-        numero_factura:    document.getElementById('f_num').value.trim()||null,
-        fecha,
-        proveedor: prov,
-        nif:       document.getElementById('f_nif').value.trim()||null,
-        concepto:  document.getElementById('f_concepto').value.trim()||null,
-        total:     parseFloat(document.getElementById('f_total').value||0),
-        estado:    document.getElementById('f_est').value,
-        fecha_vencimiento: document.getElementById('f_venc').value||null,
-        ...recogerCamposExcel()
-      });
-
-      const lineas = [];
-      document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel=>{
-        if (!sel.value) return;
-        const idx  = sel.id.split('_')[2];
-        const cant = parseFloat(document.getElementById(`lfa_cant_${idx}`)?.value||0);
-        if (cant>0) lineas.push({
-          producto_id:  parseInt(sel.value),
-          cantidad:     cant,
-          stock_actual: parseFloat(sel.selectedOptions[0]?.dataset.stock||0)
-        });
-      });
-
-      for (const l of lineas) {
-        await apiPost('facturas_almacen_lineas', {factura_id:fac.id, producto_id:l.producto_id, cantidad:l.cantidad});
-        await apiPatch('inventario', l.producto_id, {stock: l.stock_actual + l.cantidad});
-      }
-      toast(`Factura guardada${lineas.length?' y stock actualizado':''}`);
-      cerrarModal('modalNueva');
-      lineasFacturaCount = 0;
-      cargarDatos();
-      return;
-
-    } else if (tablaActual==='albaranes') {
-      const empresa = document.getElementById('f_empresa').value.trim();
-      const fecha   = document.getElementById('f_fecha').value;
-      if (!empresa||!fecha) { toast('Empresa y fecha son obligatorios','err'); return; }
-      await apiPost('albaranes', {
-        numero_albaran: document.getElementById('f_num').value.trim()||null,
-        fecha,
-        empresa,
-        nif:   document.getElementById('f_nif').value.trim()||null,
-        total: parseFloat(document.getElementById('f_total').value||0),
-        facturado: false
-      });
-
-    } else if (tablaActual==='clientes') {
-      const nombre = document.getElementById('f_nombre').value.trim();
-      if (!nombre) { toast('El nombre es obligatorio','err'); return; }
-      await apiPost('clientes', {
-        nombre,
-        nif:      document.getElementById('f_nif').value.trim()||null,
-        telefono: document.getElementById('f_tel').value.trim()||null,
-        email:    document.getElementById('f_email').value.trim()||null,
-        puntos:   parseInt(document.getElementById('f_puntos').value||0),
-        ultima_compra: new Date().toISOString()
-      });
-
-    } else if (tablaActual==='inventario') {
-      const nombre = document.getElementById('f_nombre').value.trim();
-      if (!nombre) { toast('El nombre es obligatorio','err'); return; }
-      await apiPost('inventario', {
-        nombre,
-        stock:             parseFloat(document.getElementById('f_stock').value||0),
-        puntos_por_unidad: parseInt(document.getElementById('f_pts').value||0)
-      });
+      document.getElementById('lineasFactAlm').appendChild(div);
     }
 
-    toast('Guardado correctamente');
-    cerrarModal('modalNueva');
-    lineasFacturaCount = 0;
-    cargarDatos();
-  } catch(e) {
-    toast('Error al guardar: '+e.message,'err');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
-  }
-}
+    // ── GUARDAR ───────────────────────────────────────────────
+    async function guardarRegistro() {
+      const btn = document.getElementById('btnGuardar');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Guardando...';
+      try {
 
-// ── ELIMINAR ──────────────────────────────────────────────
-async function eliminar(id) {
-  if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
-  try {
-    await apiDelete(tablaActual, id);
-    toast('Eliminado correctamente');
-    cargarDatos();
-  } catch(e) { toast('Error al eliminar: '+e.message,'err'); }
-}
+        if (tablaActual === 'facturas_tienda') {
+          const prov = document.getElementById('f_prov').value.trim();
+          const fecha = document.getElementById('f_fecha').value;
+          if (!prov || !fecha) { toast('Proveedor y fecha son obligatorios', 'err'); return; }
+          await apiPost('facturas_tienda', {
+            numero_interno: document.getElementById('f_num_interno').value.trim() || null,
+            numero_factura: document.getElementById('f_num').value.trim() || null,
+            fecha,
+            proveedor: prov,          // ← campo correcto en la tabla
+            nif: document.getElementById('f_nif').value.trim() || null,
+            concepto: document.getElementById('f_concepto').value.trim() || null,
+            total: parseFloat(document.getElementById('f_total').value || 0),
+            estado: document.getElementById('f_est').value,
+            fecha_vencimiento: document.getElementById('f_venc').value || null,
+            ...recogerCamposExcel()
+          });
 
-// ── EXPORTAR EXCEL ────────────────────────────────────────
-function exportarExcel() {
-  if (!registros.length) { toast('No hay datos para exportar','err'); return; }
-  const esTienda = tablaActual==='facturas_tienda';
-  const cabeceras = [
-    'NUMERACION INTERNA EMP','Fecha','NIF','NOMBRE','FACTURA','CONCEPTO',
-    'Base 1','%IVA1','Total IVA1','%RE1','Total RE1','TASAS',
-    'Base 2','%IVA2','Total IVA2','Base3','%IVA3','Total IVA3',
-    'Exento','DESCUENTO','Base Retención','% Retención','Total Retención',
-    'Total','Estado','Vencimiento'
-  ];
-  const filas = registros.map(f=>({
-    'NUMERACION INTERNA EMP': f.numero_interno||'',
-    'Fecha':       f.fecha ? f.fecha.split('-').reverse().join('/') : '',
-    'NIF':         f.nif||'',
-    'NOMBRE':      f.proveedor||'',   // ambas tablas usan campo 'proveedor'
-    'FACTURA':     f.numero_factura||'',
-    'CONCEPTO':    f.concepto||'',
-    'Base 1':      f.base1!=null?parseFloat(f.base1):'',
-    '%IVA1':       f.pct_iva1!=null?parseFloat(f.pct_iva1):'',
-    'Total IVA1':  f.total_iva1!=null?parseFloat(f.total_iva1):'',
-    '%RE1':        f.pct_re1!=null?parseFloat(f.pct_re1):'',
-    'Total RE1':   f.total_re1!=null?parseFloat(f.total_re1):'',
-    'TASAS':       f.tasas!=null?parseFloat(f.tasas):'',
-    'Base 2':      f.base2!=null?parseFloat(f.base2):'',
-    '%IVA2':       f.pct_iva2!=null?parseFloat(f.pct_iva2):'',
-    'Total IVA2':  f.total_iva2!=null?parseFloat(f.total_iva2):'',
-    'Base3':       f.base3!=null?parseFloat(f.base3):'',
-    '%IVA3':       f.pct_iva3!=null?parseFloat(f.pct_iva3):'',
-    'Total IVA3':  f.total_iva3!=null?parseFloat(f.total_iva3):'',
-    'Exento':      f.exento!=null?parseFloat(f.exento):'',
-    'DESCUENTO':   f.descuento!=null?parseFloat(f.descuento):'',
-    'Base Retención':  f.base_retencion!=null?parseFloat(f.base_retencion):'',
-    '% Retención':     f.pct_retencion!=null?parseFloat(f.pct_retencion):'',
-    'Total Retención': f.total_retencion!=null?parseFloat(f.total_retencion):'',
-    'Total':   f.total!=null?parseFloat(f.total):0,
-    'Estado':  (f.estado||'pendiente').toUpperCase(),
-    'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
-  }));
+        } else if (tablaActual === 'facturas_almacen') {
+          const prov = document.getElementById('f_prov').value.trim();
+          const fecha = document.getElementById('f_fecha').value;
+          if (!prov || !fecha) { toast('Proveedor y fecha son obligatorios', 'err'); return; }
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(filas, {header:cabeceras});
-  ws['!cols'] = [
-    {wch:18},{wch:12},{wch:14},{wch:28},{wch:18},{wch:30},
-    {wch:10},{wch:7},{wch:10},{wch:7},{wch:10},{wch:10},
-    {wch:10},{wch:7},{wch:10},{wch:10},{wch:7},{wch:10},
-    {wch:10},{wch:10},{wch:14},{wch:10},{wch:14},
-    {wch:12},{wch:12},{wch:12}
-  ];
-  XLSX.utils.book_append_sheet(wb, ws, esTienda?'Facturas Tienda':'Facturas Almacén');
-  const fecha = new Date().toISOString().split('T')[0];
-  const nombre = `${esTienda?'facturas_tienda':'facturas_almacen'}_${fecha}.xlsx`;
-  XLSX.writeFile(wb, nombre);
-  toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`,'ok');
-}
+          const [fac] = await apiPost('facturas_almacen', {
+            numero_interno: document.getElementById('f_num_interno').value.trim() || null,
+            numero_factura: document.getElementById('f_num').value.trim() || null,
+            fecha,
+            proveedor: prov,
+            nif: document.getElementById('f_nif').value.trim() || null,
+            concepto: document.getElementById('f_concepto').value.trim() || null,
+            total: parseFloat(document.getElementById('f_total').value || 0),
+            estado: document.getElementById('f_est').value,
+            fecha_vencimiento: document.getElementById('f_venc').value || null,
+            ...recogerCamposExcel()
+          });
 
-// ── CERRAR MODALES ────────────────────────────────────────
-function cerrarModal(id) {
-  document.getElementById(id).classList.remove('visible');
-}
-</script>
+          const lineas = [];
+          document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
+            if (!sel.value) return;
+            const idx = sel.id.split('_')[2];
+            const cant = parseFloat(document.getElementById(`lfa_cant_${idx}`)?.value || 0);
+            if (cant > 0) lineas.push({
+              producto_id: parseInt(sel.value),
+              cantidad: cant,
+              stock_actual: parseFloat(sel.selectedOptions[0]?.dataset.stock || 0)
+            });
+          });
+
+          for (const l of lineas) {
+            await apiPost('facturas_almacen_lineas', { factura_id: fac.id, producto_id: l.producto_id, cantidad: l.cantidad });
+            await apiPatch('inventario', l.producto_id, { stock: l.stock_actual + l.cantidad });
+          }
+          toast(`Factura guardada${lineas.length ? ' y stock actualizado' : ''}`);
+          cerrarModal('modalNueva');
+          lineasFacturaCount = 0;
+          cargarDatos();
+          return;
+
+        } else if (tablaActual === 'albaranes') {
+          const empresa = document.getElementById('f_empresa').value.trim();
+          const fecha = document.getElementById('f_fecha').value;
+          if (!empresa || !fecha) { toast('Empresa y fecha son obligatorios', 'err'); return; }
+          await apiPost('albaranes', {
+            numero_albaran: document.getElementById('f_num').value.trim() || null,
+            fecha,
+            empresa,
+            nif: document.getElementById('f_nif').value.trim() || null,
+            total: parseFloat(document.getElementById('f_total').value || 0),
+            facturado: false
+          });
+
+        } else if (tablaActual === 'clientes') {
+          const nombre = document.getElementById('f_nombre').value.trim();
+          if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+          await apiPost('clientes', {
+            nombre,
+            nif: document.getElementById('f_nif').value.trim() || null,
+            telefono: document.getElementById('f_tel').value.trim() || null,
+            email: document.getElementById('f_email').value.trim() || null,
+            puntos: parseInt(document.getElementById('f_puntos').value || 0),
+            ultima_compra: new Date().toISOString()
+          });
+
+        } else if (tablaActual === 'inventario') {
+          const nombre = document.getElementById('f_nombre').value.trim();
+          if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+          await apiPost('inventario', {
+            nombre,
+            stock: parseFloat(document.getElementById('f_stock').value || 0),
+            puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0)
+          });
+        }
+
+        toast('Guardado correctamente');
+        cerrarModal('modalNueva');
+        lineasFacturaCount = 0;
+        cargarDatos();
+      } catch (e) {
+        toast('Error al guardar: ' + e.message, 'err');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
+      }
+    }
+
+    // ── ELIMINAR ──────────────────────────────────────────────
+    async function eliminar(id) {
+      if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
+      try {
+        await apiDelete(tablaActual, id);
+        toast('Eliminado correctamente');
+        cargarDatos();
+      } catch (e) { toast('Error al eliminar: ' + e.message, 'err'); }
+    }
+
+    // ── EXPORTAR EXCEL ────────────────────────────────────────
+    function exportarExcel() {
+      if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
+      const esTienda = tablaActual === 'facturas_tienda';
+      const cabeceras = [
+        'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', 'FACTURA', 'CONCEPTO',
+        'Base 1', '%IVA1', 'Total IVA1', '%RE1', 'Total RE1', 'TASAS',
+        'Base 2', '%IVA2', 'Total IVA2', 'Base3', '%IVA3', 'Total IVA3',
+        'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención',
+        'Total', 'Estado', 'Vencimiento'
+      ];
+      const filas = registros.map(f => ({
+        'NUMERACION INTERNA EMP': f.numero_interno || '',
+        'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
+        'NIF': f.nif || '',
+        'NOMBRE': f.proveedor || '',   // ambas tablas usan campo 'proveedor'
+        'FACTURA': f.numero_factura || '',
+        'CONCEPTO': f.concepto || '',
+        'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
+        '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
+        'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+        '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
+        'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
+        'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
+        'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
+        '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
+        'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
+        'Base3': f.base3 != null ? parseFloat(f.base3) : '',
+        '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
+        'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
+        'Exento': f.exento != null ? parseFloat(f.exento) : '',
+        'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
+        'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
+        '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
+        'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
+        'Total': f.total != null ? parseFloat(f.total) : 0,
+        'Estado': (f.estado || 'pendiente').toUpperCase(),
+        'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
+      ws['!cols'] = [
+        { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 30 },
+        { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 },
+        { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 }, { wch: 7 }, { wch: 10 },
+        { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 14 },
+        { wch: 12 }, { wch: 12 }, { wch: 12 }
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, esTienda ? 'Facturas Tienda' : 'Facturas Almacén');
+      const fecha = new Date().toISOString().split('T')[0];
+      const nombre = `${esTienda ? 'facturas_tienda' : 'facturas_almacen'}_${fecha}.xlsx`;
+      XLSX.writeFile(wb, nombre);
+      toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
+    }
+
+    // ── CERRAR MODALES ────────────────────────────────────────
+    function cerrarModal(id) {
+      document.getElementById(id).classList.remove('visible');
+    }
+  </script>
 </body>
+
 </html>
