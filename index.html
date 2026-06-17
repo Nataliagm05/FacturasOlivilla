@@ -2383,7 +2383,7 @@ async function enviarEmailPuntos(email, nombre, puntos, tipo) {
 
   try {
     const res = await fetch(
-      'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/clever-worker',
+      'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/enviar-email',
       {
         method: 'POST',
         headers: {
