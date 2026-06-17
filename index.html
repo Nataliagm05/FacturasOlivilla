@@ -1358,9 +1358,10 @@
         clientesDB = await apiGet('clientes', 'order=nombre');
         proveedoresDB = await apiGet('proveedores', 'order=nombre');
 
-        if (tablaActual === 'facturas_tienda' || tablaActual === 'facturas_almacen') {
+if (tablaActual === 'facturas_tienda' || tablaActual === 'facturas_almacen') {
           actualizarStats(); renderAlertas();
         }
+        await comprobarCaducidadPuntos();
         renderTabla();
       } catch (e) {
         toast('Error al cargar: ' + e.message, 'err');
@@ -1798,14 +1799,24 @@
       if (!ok) return;
       if (!lineas.length) { toast('Añade al menos un producto', 'err'); return; }
 
-      try {
+try {
         for (const l of lineas) {
           await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad });
         }
+        const cliente = clientesDB.find(c => c.id === clienteSelId);
+        const ahora = new Date().toISOString();
+        const puntosNuevos = clienteSelPuntos + totalPuntos;
+        // Si no tiene fecha de inicio de puntos, establecerla ahora
+        const puntosDesdeFinal = cliente?.puntos_desde || ahora;
         await apiPatch('clientes', clienteSelId, {
-          puntos: clienteSelPuntos + totalPuntos,
-          ultima_compra: new Date().toISOString()
+          puntos: puntosNuevos,
+          ultima_compra: ahora,
+          puntos_desde: puntosDesdeFinal
         });
+        // Enviar email de puntos acumulados
+        if (cliente?.email) {
+          await enviarEmailPuntos(cliente.email, cliente.nombre, puntosNuevos, 'compra');
+        }
         toast(`<i class="fa-solid fa-star me-1"></i>Compra registrada — <strong>+${totalPuntos} pts</strong>`, 'ok');
         cerrarModal('modalPuntos');
         cargarDatos();
@@ -2367,6 +2378,60 @@ function exportarExcel() {
       function cerrarModal(id) {
         document.getElementById(id).classList.remove('visible');
       }
+async function enviarEmailPuntos(email, nombre, puntos, tipo) {
+  if (!email) return;
+
+  try {
+    const res = await fetch(
+      'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/clever-worker',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        },
+        body: JSON.stringify({ email, nombre, puntos, tipo })
+      }
+    );
+
+    console.log('Status:', res.status);
+
+    const text = await res.text();
+    console.log('Respuesta:', text);
+
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+async function comprobarCaducidadPuntos() {
+  const ahora = new Date();
+  for (const cliente of clientesDB) {
+    if (!cliente.puntos_desde || !cliente.puntos || cliente.puntos <= 0) continue;
+    const desde = new Date(cliente.puntos_desde);
+    const mesesTranscurridos = (ahora.getFullYear() - desde.getFullYear()) * 12
+      + (ahora.getMonth() - desde.getMonth());
+
+if (mesesTranscurridos >= 6) {
+      // Caducados: poner a 0 y avanzar el inicio al siguiente ciclo
+      const siguienteCiclo = new Date(desde);
+      siguienteCiclo.setMonth(siguienteCiclo.getMonth() + 6);
+      await apiPatch('clientes', cliente.id, {
+        puntos: 0,
+        puntos_desde: siguienteCiclo.toISOString()
+      });
+      cliente.puntos = 0;
+      cliente.puntos_desde = siguienteCiclo.toISOString();
+      toast(`Puntos de <strong>${cliente.nombre}</strong> reiniciados por caducidad`, 'info');
+
+    } else if (mesesTranscurridos === 5 && !cliente._avisoEnviado) {
+      // Mes 5: aviso por email (solo una vez por sesión)
+      if (cliente.email) {
+        await enviarEmailPuntos(cliente.email, cliente.nombre, cliente.puntos, 'aviso');
+      }
+      cliente._avisoEnviado = true; // evitar reenvíos en la misma sesión
+    }
+  }
+}
   </script>
 </body>
 
