@@ -163,6 +163,27 @@
       font-weight: 600;
     }
 
+    .btn-nav.bandeja-badge {
+      position: relative;
+    }
+
+    .badge-count {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #e53e3e;
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
     .btn-salir {
       background: transparent;
       border: 1px solid #5a4878;
@@ -429,6 +450,21 @@
       color: #b53987;
     }
 
+    .badge-sin_clasificar {
+      background: #fff3e0;
+      color: #c47a00;
+    }
+
+    .badge-clasificada {
+      background: #e8f5e9;
+      color: #2d7a4f;
+    }
+
+    .badge-descartada {
+      background: #f5f5f5;
+      color: #999;
+    }
+
     .badge-puntos {
       background: #ede5f5;
       color: #4a3b68;
@@ -578,6 +614,181 @@
       color: #fff;
     }
 
+    /* ── BANDEJA DE CLASIFICACIÓN ── */
+    .bandeja-wrap {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .bandeja-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid #ede5f5;
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+
+    .bandeja-card:hover {
+      box-shadow: 0 4px 16px rgba(74, 59, 104, .1);
+    }
+
+    .bandeja-card-head {
+      background: #f7f0f5;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ede5f5;
+    }
+
+    .bandeja-card-head .bc-proveedor {
+      font-weight: 700;
+      font-size: .92rem;
+      color: #4a3b68;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bandeja-card-head .bc-total {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #b53987;
+    }
+
+    .bandeja-card-body {
+      padding: 12px 14px;
+    }
+
+    .bc-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: .8rem;
+      margin-bottom: 5px;
+    }
+
+    .bc-row .bc-label {
+      color: #999;
+    }
+
+    .bc-row .bc-val {
+      color: #4a3b68;
+      font-weight: 500;
+    }
+
+    .bc-concepto {
+      font-size: .78rem;
+      color: #888;
+      margin: 6px 0 10px;
+      font-style: italic;
+      border-left: 3px solid #ede5f5;
+      padding-left: 8px;
+    }
+
+    .bc-remitente {
+      font-size: .75rem;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+
+    .bandeja-card-foot {
+      padding: 10px 14px;
+      border-top: 1px solid #f0eaf8;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-clasificar {
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .btn-clasificar.tienda {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1.5px solid #90caf9;
+    }
+
+    .btn-clasificar.tienda:hover {
+      background: #1565c0;
+      color: #fff;
+    }
+
+    .btn-clasificar.almacen {
+      background: #e8f5e9;
+      color: #2d7a4f;
+      border: 1.5px solid #81c784;
+    }
+
+    .btn-clasificar.almacen:hover {
+      background: #2d7a4f;
+      color: #fff;
+    }
+
+    .btn-clasificar.obra {
+      background: #fff3e0;
+      color: #c47a00;
+      border: 1.5px solid #f0c060;
+    }
+
+    .btn-clasificar.obra:hover {
+      background: #c47a00;
+      color: #fff;
+    }
+
+    .btn-clasificar.otros {
+      background: #f3e5f5;
+      color: #6a1b9a;
+      border: 1.5px solid #ce93d8;
+    }
+
+    .btn-clasificar.otros:hover {
+      background: #6a1b9a;
+      color: #fff;
+    }
+
+    .btn-clasificar.descartar {
+      background: transparent;
+      color: #ccc;
+      border: 1.5px solid #eee;
+    }
+
+    .btn-clasificar.descartar:hover {
+      background: #fce4ec;
+      color: #b53987;
+      border-color: #f48fb1;
+    }
+
+    .bandeja-empty {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: #bbb;
+      grid-column: 1/-1;
+    }
+
+    .bandeja-empty i {
+      font-size: 2.5rem;
+      margin-bottom: .75rem;
+      display: block;
+    }
+
+    .bandeja-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.25rem;
+    }
+
     /* AUTOCOMPLETE */
     .ac-wrap {
       position: relative;
@@ -664,8 +875,19 @@
       margin: auto;
     }
 
+    .modal-box-md {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
+      margin: auto;
+    }
+
     .modal-box h3,
-    .modal-box-sm h3 {
+    .modal-box-sm h3,
+    .modal-box-md h3 {
       font-size: 1.1rem;
       font-weight: 600;
       color: #4a3b68;
@@ -965,10 +1187,18 @@
         <span>Almacén Olivilla Tres</span>
       </div>
       <div class="nav-principal">
-        <button class="btn-nav active" onclick="cambiarSeccion('facturas_tienda')"><i
-            class="fa-solid fa-shop"></i>Facturas Tienda</button>
+        <button class="btn-nav bandeja-badge" id="btnBandeja" onclick="cambiarSeccion('bandeja')">
+          <i class="fa-solid fa-inbox"></i>Bandeja
+          <span class="badge-count" id="badgeCount" style="display:none">0</span>
+        </button>
+        <button class="btn-nav" onclick="cambiarSeccion('facturas_tienda')"><i
+            class="fa-solid fa-shop"></i>Tienda</button>
         <button class="btn-nav" onclick="cambiarSeccion('facturas_almacen')"><i
-            class="fa-solid fa-warehouse"></i>Facturas Almacén</button>
+            class="fa-solid fa-warehouse"></i>Almacén</button>
+        <button class="btn-nav" onclick="cambiarSeccion('facturas_obra')"><i
+            class="fa-solid fa-helmet-safety"></i>Obra</button>
+        <button class="btn-nav" onclick="cambiarSeccion('facturas_otros')"><i
+            class="fa-solid fa-layer-group"></i>Otros</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
             class="fa-solid fa-file-signature"></i>Albaranes</button>
         <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
@@ -980,8 +1210,8 @@
 
     <div class="main-wrap">
       <div class="page-title">
-        <i id="iconoSeccion" class="fa-solid fa-file-invoice" style="color:#b53987"></i>
-        <span id="txtSeccionTitulo">Facturas de Tienda</span>
+        <i id="iconoSeccion" class="fa-solid fa-inbox" style="color:#b53987"></i>
+        <span id="txtSeccionTitulo">Bandeja de clasificación</span>
       </div>
       <div class="alertas-wrap" id="alertasWrap"></div>
       <div id="statsContenedor" class="stats-grid" style="display:none">
@@ -1011,11 +1241,13 @@
         <select id="filtroEstado" onchange="renderTabla()">
           <option value="">Todos los estados</option>
         </select>
-        <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i>Añadir Nuevo</button>
+        <button class="btn-nueva" id="btnNuevo" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i>Añadir
+          Nuevo</button>
         <button class="btn-exportar" id="btnExportar" onclick="abrirModalExportar()" style="display:none"><i
             class="fa-solid fa-file-excel"></i>Exportar Excel</button>
       </div>
-      <div class="tabla-wrap">
+      <!-- Contenedor normal (tablas) -->
+      <div class="tabla-wrap" id="tablaContenedor">
         <table>
           <thead id="tablaHeader"></thead>
           <tbody id="tablaBody">
@@ -1026,6 +1258,11 @@
             </tr>
           </tbody>
         </table>
+      </div>
+      <!-- Contenedor bandeja (tarjetas) -->
+      <div id="bandejaContenedor" style="display:none">
+        <div class="bandeja-stats" id="bandejaStats"></div>
+        <div class="bandeja-wrap" id="bandejaWrap"></div>
       </div>
     </div>
   </div>
@@ -1048,8 +1285,19 @@
     <div class="modal-box" style="max-width:680px">
       <h3 id="modalDetalleTitulo"><i class="fa-solid fa-list" style="color:#b53987"></i>Detalle</h3>
       <div id="modalDetalleContenido"></div>
+      <div class="modal-btns"><button class="btn-cancelar" onclick="cerrarModal('modalDetalle')">Cerrar</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL CLASIFICAR FACTURA -->
+  <div class="modal-overlay" id="modalClasificar">
+    <div class="modal-box-md">
+      <h3><i class="fa-solid fa-tags" style="color:#b53987"></i>Clasificar factura</h3>
+      <div id="modalClasificarContenido"></div>
       <div class="modal-btns">
-        <button class="btn-cancelar" onclick="cerrarModal('modalDetalle')">Cerrar</button>
+        <button class="btn-cancelar" onclick="cerrarModal('modalClasificar')">Cancelar</button>
+        <button class="btn-guardar" onclick="confirmarClasificacion()"><i class="fa-solid fa-check me-1"></i>Confirmar y
+          mover</button>
       </div>
     </div>
   </div>
@@ -1060,34 +1308,16 @@
     <div class="modal-box-sm">
       <h3><i class="fa-solid fa-star" style="color:#b53987"></i>Registrar Compra de Cliente</h3>
       <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="form-group">
-          <label>Email cliente</label>
-          <input type="email" id="cliente_email" readonly>
-        </div>
-
-        <div class="form-group">
-          <label>Nombre</label>
-          <input type="text" id="cliente_nombre" readonly>
-        </div>
-
-        <div class="form-group">
-          <label>NIF</label>
-          <input type="text" id="cliente_nif" readonly>
-        </div>
-
-        <div class="form-group">
-          <label>Teléfono</label>
-          <input type="text" id="cliente_telefono" readonly>
-        </div>
-
-        <div class="form-group">
-          <label>Puntos Totales</label>
-          <input type="text" id="cliente_puntos" readonly>
-        </div>
+        <div class="form-group"><label>Email cliente</label><input type="email" id="cliente_email" readonly></div>
+        <div class="form-group"><label>Nombre</label><input type="text" id="cliente_nombre" readonly></div>
+        <div class="form-group"><label>NIF</label><input type="text" id="cliente_nif" readonly></div>
+        <div class="form-group"><label>Teléfono</label><input type="text" id="cliente_telefono" readonly></div>
+        <div class="form-group"><label>Puntos Totales</label><input type="text" id="cliente_puntos" readonly></div>
         <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Productos comprados</div>
         <p style="font-size:.78rem;color:#888;margin-top:-8px"><i class="fa-solid fa-info-circle me-1"></i>Cada producto
           descuenta stock y suma sus puntos al cliente automáticamente.</p>
         <div id="lineasCompra"></div>
+<<<<<<< HEAD
         <button type="button" class="btn-add-linea" onclick="addLineaCompra()">
           <i class="fa-solid fa-plus me-1"></i>Añadir producto
         </button>
@@ -1096,6 +1326,10 @@
           <input type="number" id="f_total_compra" placeholder="0.00" step="0.01" min="0"
             oninput="recalcPuntosPorTotal(this.value)" style="max-width:200px">
         </div>
+=======
+        <button type="button" class="btn-add-linea" onclick="addLineaCompra()"><i
+            class="fa-solid fa-plus me-1"></i>Añadir producto</button>
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
         <div
           style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:10px;border-top:1.5px solid #ede5f5">
           <span style="font-size:.85rem;color:#888;font-weight:600">Puntos que se añadirán:</span>
@@ -1109,6 +1343,7 @@
       </div>
     </div>
   </div>
+<<<<<<< HEAD
   <!-- MODAL EXPORTAR EXCEL -->
   <div class="modal-overlay" id="modalExportar">
     <div class="modal-box-sm">
@@ -1145,6 +1380,34 @@
       </div>
     </div>
   </div>
+=======
+
+  <!-- MODAL EXPORTAR EXCEL -->
+  <div class="modal-overlay" id="modalExportar">
+    <div class="modal-box-sm">
+      <h3><i class="fa-solid fa-file-excel" style="color:#b53987"></i>Exportar Excel</h3>
+      <div class="form-group"><label>Año</label><select id="exportYear"></select></div>
+      <div class="form-group"><label>Meses</label>
+        <div id="exportMeses" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:.85rem">
+          <label><input type="checkbox" value="1"> Enero</label><label><input type="checkbox" value="2"> Febrero</label>
+          <label><input type="checkbox" value="3"> Marzo</label><label><input type="checkbox" value="4"> Abril</label>
+          <label><input type="checkbox" value="5"> Mayo</label><label><input type="checkbox" value="6"> Junio</label>
+          <label><input type="checkbox" value="7"> Julio</label><label><input type="checkbox" value="8"> Agosto</label>
+          <label><input type="checkbox" value="9"> Septiembre</label><label><input type="checkbox" value="10">
+            Octubre</label>
+          <label><input type="checkbox" value="11"> Noviembre</label><label><input type="checkbox" value="12">
+            Diciembre</label>
+        </div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancelar" onclick="cerrarModal('modalExportar')">Cancelar</button>
+        <button class="btn-guardar" onclick="exportarExcel()"><i
+            class="fa-solid fa-file-excel me-1"></i>Exportar</button>
+      </div>
+    </div>
+  </div>
+
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script>
@@ -1159,20 +1422,22 @@
       'Prefer': 'return=representation'
     };
 
-    let tablaActual = 'facturas_tienda';
+    let tablaActual = 'bandeja';
     let registros = [];
     let inventarioDB = [];
     let clientesDB = [];
-    let proveedoresDB = [];   // ← fuente principal para autocompletado de empresa/proveedor
+    let proveedoresDB = [];
     let clienteSelId = null;
     let clienteSelPuntos = 0;
     let lineasCompraCount = 0;
     let lineasFacturaCount = 0;
+    let facturaClasificarId = null;
 
-    // ── UTILIDADES ────────────────────────────────────────────
+    // ── UTILIDADES ──────────────────────────────────────────────
     function fmt(v) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
     function fmtN(v) { if (v === null || v === undefined || v === '' || isNaN(parseFloat(v))) return '—'; return parseFloat(v).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function fmtF(f) { return f ? f.split('-').reverse().join('/') : '—'; }
+    function fmtFH(ts) { if (!ts) return '—'; const d = new Date(ts); return d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); }
     function hoy() { return new Date().toISOString().split('T')[0]; }
     function nvl(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
 
@@ -1185,17 +1450,15 @@
       setTimeout(() => t.classList.add('show'), 50);
       setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
     }
-    function emptyRow(cols, msg) {
-      return `<tr><td colspan="${cols}"><div class="empty-state"><i class="fa-solid fa-folder-open"></i>${msg}</div></td></tr>`;
-    }
+    function emptyRow(cols, msg) { return `<tr><td colspan="${cols}"><div class="empty-state"><i class="fa-solid fa-folder-open"></i>${msg}</div></td></tr>`; }
 
-    // ── AUTH ──────────────────────────────────────────────────
+    // ── AUTH ────────────────────────────────────────────────────
     function doLogin() {
       if (document.getElementById('pwdF').value === PASSWORD) {
         document.getElementById('loginView').style.display = 'none';
         document.getElementById('appView').style.display = 'flex';
         Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()])
-          .then(() => cambiarSeccion('facturas_tienda'));
+          .then(() => { cambiarSeccion('bandeja'); actualizarBadgeBandeja(); });
       } else {
         document.getElementById('loginErr').style.display = 'block';
       }
@@ -1206,30 +1469,24 @@
       document.getElementById('pwdF').value = '';
     }
 
-    // ── API ───────────────────────────────────────────────────
+    // ── API ─────────────────────────────────────────────────────
     async function apiGet(tabla, params = '') {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, { headers: hdrs });
       if (!r.ok) throw new Error(await r.text());
       return r.json();
     }
     async function apiPost(tabla, body) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {
-        method: 'POST', headers: hdrs, body: JSON.stringify(body)
-      });
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, { method: 'POST', headers: hdrs, body: JSON.stringify(body) });
       if (!r.ok) throw new Error(await r.text());
       return r.json();
     }
     async function apiPatch(tabla, id, body) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
-        method: 'PATCH', headers: hdrs, body: JSON.stringify(body)
-      });
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, { method: 'PATCH', headers: hdrs, body: JSON.stringify(body) });
       if (!r.ok) throw new Error(await r.text());
       return r.json();
     }
     async function apiDelete(tabla, id) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
-        method: 'DELETE', headers: hdrs
-      });
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, { method: 'DELETE', headers: hdrs });
       if (!r.ok) throw new Error(await r.text());
     }
 
@@ -1237,112 +1494,87 @@
     async function cargarClientesCache() { clientesDB = await apiGet('clientes', 'order=nombre'); }
     async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
 
-    // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
-    // Vincula un input de nombre y un input de NIF al listado de proveedoresDB.
-    // Al seleccionar un proveedor se rellena nombre Y nif automáticamente.
+    // ── BADGE BANDEJA ────────────────────────────────────────────
+    async function actualizarBadgeBandeja() {
+      try {
+        const data = await apiGet('pendientes_clasificacion', 'estado=eq.sin_clasificar&select=id');
+        const n = data.length;
+        const badge = document.getElementById('badgeCount');
+        if (n > 0) { badge.textContent = n > 99 ? '99+' : n; badge.style.display = 'flex'; }
+        else { badge.style.display = 'none'; }
+      } catch (e) { /* silencioso */ }
+    }
+
+    // ── AUTOCOMPLETADO PROVEEDORES ───────────────────────────────
     function setupProveedorAC(inputNombreId, inputNifId) {
       const inpN = document.getElementById(inputNombreId);
       const inpF = document.getElementById(inputNifId);
       if (!inpN || !inpF) return;
-
-      // Asegurar posición relativa en el contenedor del input nombre
       inpN.parentElement.style.position = 'relative';
       inpF.parentElement.style.position = 'relative';
-
-      // Lista bajo el campo nombre
       const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
-      // Lista bajo el campo NIF
       const listaF = _crearLista('ac_f_' + inputNifId, inpF.parentElement);
-
-      function filtrar(q) {
-        return proveedoresDB.filter(p =>
-          (p.nombre || '').toLowerCase().includes(q) ||
-          (p.nif || '').toLowerCase().includes(q)
-        ).slice(0, 10);
-      }
-
-      function seleccionar(prov) {
-        inpN.value = prov.nombre || '';
-        inpF.value = prov.nif || '';
-        listaN.style.display = 'none';
-        listaF.style.display = 'none';
-      }
-
+      function filtrar(q) { return proveedoresDB.filter(p => (p.nombre || '').toLowerCase().includes(q) || (p.nif || '').toLowerCase().includes(q)).slice(0, 10); }
+      function seleccionar(prov) { inpN.value = prov.nombre || ''; inpF.value = prov.nif || ''; listaN.style.display = 'none'; listaF.style.display = 'none'; }
       function renderLista(lista, items) {
         if (!items.length) { lista.style.display = 'none'; return; }
-        lista.innerHTML = items.map(p =>
-          `<div class="ac-item" data-id="${p.id}">
-        <span class="ac-nombre">${p.nombre || '—'}</span>
-        <span class="ac-nif">${p.nif || 'Sin NIF'}</span>
-      </div>`
-        ).join('');
+        lista.innerHTML = items.map(p => `<div class="ac-item" data-id="${p.id}"><span class="ac-nombre">${p.nombre || '—'}</span><span class="ac-nif">${p.nif || 'Sin NIF'}</span></div>`).join('');
         lista.style.display = 'block';
-        lista.querySelectorAll('.ac-item').forEach(el => {
-          el.addEventListener('mousedown', e => {
-            e.preventDefault();
-            const prov = proveedoresDB.find(p => p.id == el.dataset.id);
-            if (prov) seleccionar(prov);
-          });
-        });
+        lista.querySelectorAll('.ac-item').forEach(el => { el.addEventListener('mousedown', e => { e.preventDefault(); const prov = proveedoresDB.find(p => p.id == el.dataset.id); if (prov) seleccionar(prov); }); });
       }
-
-      // Input nombre
       inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
       inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
       inpN.addEventListener('blur', () => setTimeout(() => listaN.style.display = 'none', 160));
-
-      // Input NIF
       inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
       inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
       inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));
     }
-
     function _crearLista(id, parent) {
       let el = document.getElementById(id);
-      if (!el) {
-        el = document.createElement('div');
-        el.id = id;
-        el.className = 'ac-list';
-        el.style.display = 'none';
-        parent.appendChild(el);
-      }
+      if (!el) { el = document.createElement('div'); el.id = id; el.className = 'ac-list'; el.style.display = 'none'; parent.appendChild(el); }
       return el;
     }
 
-    // ── SECCIONES ─────────────────────────────────────────────
+    // ── SECCIONES ────────────────────────────────────────────────
     function cambiarSeccion(sec) {
       tablaActual = sec;
-      document.querySelectorAll('.btn-nav').forEach(b =>
-        b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
-      );
+      document.querySelectorAll('.btn-nav').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`)));
+      document.getElementById('btnBandeja').classList.toggle('active', sec === 'bandeja');
+
       const titulos = {
+        bandeja: ['Bandeja de clasificación', 'fa-inbox', false],
         facturas_tienda: ['Facturas de Tienda', 'fa-shop', true],
         facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
+        facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
+        facturas_otros: ['Otras Facturas', 'fa-layer-group', true],
         albaranes: ['Albaranes', 'fa-file-signature', false],
         clientes: ['Clientes', 'fa-users', false],
         inventario: ['Inventario', 'fa-boxes-stacked', false]
       };
-      const [tit, ico, stats] = titulos[sec];
+      const [tit, ico, stats] = titulos[sec] || ['', 'fa-file', false];
       document.getElementById('txtSeccionTitulo').textContent = tit;
       document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;
       document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
       document.getElementById('alertasWrap').innerHTML = '';
 
-      const esFacturas = sec === 'facturas_tienda' || sec === 'facturas_almacen';
+      const esBandeja = sec === 'bandeja';
+      const esFacturas = ['facturas_tienda', 'facturas_almacen', 'facturas_obra', 'facturas_otros'].includes(sec);
+
+      document.getElementById('tablaContenedor').style.display = esBandeja ? 'none' : 'block';
+      document.getElementById('bandejaContenedor').style.display = esBandeja ? 'block' : 'none';
+      document.getElementById('btnNuevo').style.display = esBandeja ? 'none' : 'flex';
       document.getElementById('btnExportar').style.display = esFacturas ? 'flex' : 'none';
 
       const sel = document.getElementById('filtroEstado');
       const sp = document.getElementById('searchInput');
-      if (esFacturas) {
-        sel.innerHTML = `<option value="">Todos los estados</option>
-      <option value="pendiente">Pendiente</option>
-      <option value="pagado">Pagada</option>
-      <option value="vencido">Vencida</option>`;
+      if (esBandeja) {
+        sel.innerHTML = `<option value="">Todas</option><option value="sin_clasificar">Sin clasificar</option><option value="clasificada">Clasificadas</option><option value="descartada">Descartadas</option>`;
+        sp.placeholder = 'Buscar proveedor, NIF, asunto...';
+      } else if (esFacturas) {
+        sel.innerHTML = `<option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option><option value="vencido">Vencida</option>`;
         sp.placeholder = 'Buscar por nº, empresa, NIF, concepto...';
       } else if (sec === 'albaranes') {
-        sel.innerHTML = `<option value="">Todos</option>
-      <option value="si">Facturado</option>
-      <option value="no">Sin facturar</option>`;
+        sel.innerHTML = `<option value="">Todos</option><option value="si">Facturado</option><option value="no">Sin facturar</option>`;
         sp.placeholder = 'Buscar empresa o NIF...';
       } else {
         sel.innerHTML = `<option value="">Todos</option>`;
@@ -1351,33 +1583,40 @@
       cargarDatos();
     }
 
-    // ── CARGAR DATOS ──────────────────────────────────────────
+    // ── CARGAR DATOS ─────────────────────────────────────────────
     async function cargarDatos() {
-      document.getElementById('tablaBody').innerHTML =
-        `<tr><td colspan="15"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
+      if (tablaActual !== 'bandeja') {
+        document.getElementById('tablaBody').innerHTML = `<tr><td colspan="15"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
+      } else {
+        document.getElementById('bandejaWrap').innerHTML = `<div class="bandeja-empty"><i class="fa-solid fa-spinner fa-spin"></i><p>Cargando bandeja...</p></div>`;
+      }
       try {
-        const orden = {
-          facturas_tienda: 'order=fecha.desc', facturas_almacen: 'order=fecha.desc',
-          albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre'
-        };
+        const orden = { bandeja: 'order=fecha_recibido.desc', facturas_tienda: 'order=fecha.desc', facturas_almacen: 'order=fecha.desc', facturas_obra: 'order=fecha.desc', facturas_otros: 'order=fecha.desc', albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre' };
         registros = await apiGet(tablaActual, orden[tablaActual] || '');
         inventarioDB = await apiGet('inventario', 'order=nombre');
         clientesDB = await apiGet('clientes', 'order=nombre');
         proveedoresDB = await apiGet('proveedores', 'order=nombre');
+<<<<<<< HEAD
 
         if (tablaActual === 'facturas_tienda' || tablaActual === 'facturas_almacen') {
           actualizarStats(); renderAlertas();
         }
+=======
+        const esFacturas = ['facturas_tienda', 'facturas_almacen', 'facturas_obra', 'facturas_otros'].includes(tablaActual);
+        if (esFacturas) { actualizarStats(); renderAlertas(); }
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
         await comprobarCaducidadPuntos();
         renderTabla();
+        actualizarBadgeBandeja();
       } catch (e) {
         toast('Error al cargar: ' + e.message, 'err');
-        document.getElementById('tablaBody').innerHTML =
-          `<tr><td colspan="15"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
+        if (tablaActual !== 'bandeja') {
+          document.getElementById('tablaBody').innerHTML = `<tr><td colspan="15"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
+        }
       }
     }
 
-    // ── STATS ─────────────────────────────────────────────────
+    // ── STATS ────────────────────────────────────────────────────
     function actualizarStats() {
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
       const pend = registros.filter(f => f.estado === 'pendiente');
@@ -1393,46 +1632,30 @@
 
     function renderAlertas() {
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
-      const alertas = registros
-        .filter(f => f.estado === 'pendiente' && f.fecha_vencimiento)
-        .map(f => ({ f, dias: Math.ceil((new Date(f.fecha_vencimiento) - hoyD) / 86400000) }))
-        .filter(x => x.dias <= 7)
-        .sort((a, b) => a.dias - b.dias);
+      const alertas = registros.filter(f => f.estado === 'pendiente' && f.fecha_vencimiento).map(f => ({ f, dias: Math.ceil((new Date(f.fecha_vencimiento) - hoyD) / 86400000) })).filter(x => x.dias <= 7).sort((a, b) => a.dias - b.dias);
       const wrap = document.getElementById('alertasWrap');
       if (!alertas.length) { wrap.innerHTML = ''; return; }
       wrap.innerHTML = alertas.map(({ f, dias }) => {
         const critica = dias <= 0;
-        // En facturas tienda el campo en DB es 'proveedor', en almacén también 'proveedor'
         const empresa = f.proveedor || '—';
         const msg = dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
-        return `<div class="alerta-item ${critica ? 'critica' : ''}">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      <div><strong>${empresa}</strong> — Ref: ${f.numero_factura || 's/n'} — <strong>${fmt(f.total)}</strong>
-      <span style="margin-left:8px;color:${critica ? '#e53e3e' : '#c47a00'}">${msg}</span></div>
-    </div>`;
+        return `<div class="alerta-item ${critica ? 'critica' : ''}"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>${empresa}</strong> — Ref: ${f.numero_factura || 's/n'} — <strong>${fmt(f.total)}</strong><span style="margin-left:8px;color:${critica ? '#e53e3e' : '#c47a00'}">${msg}</span></div></div>`;
       }).join('');
     }
 
-
-    // ── RENDER TABLA ──────────────────────────────────────────
+    // ── RENDER TABLA / BANDEJA ────────────────────────────────────
     function renderTabla() {
+      if (tablaActual === 'bandeja') { renderBandeja(); return; }
       const q = document.getElementById('searchInput').value.toLowerCase().trim();
       const fEst = document.getElementById('filtroEstado').value;
       const hdr = document.getElementById('tablaHeader');
       const bdy = document.getElementById('tablaBody');
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
 
-      // FACTURAS TIENDA — usa campo 'proveedor' en DB
-      if (tablaActual === 'facturas_tienda') {
-        hdr.innerHTML = `<tr>
-      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
-      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
-      <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
-      <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
-      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
-      <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
-    </tr>`;
+      const esFacturas = ['facturas_tienda', 'facturas_almacen', 'facturas_obra', 'facturas_otros'].includes(tablaActual);
+
+      if (esFacturas) {
+        hdr.innerHTML = `<tr><th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Vencimiento</th><th>Concepto</th><th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th><th class="pct-cell">%RE1</th><th class="num-cell">RE1</th><th class="num-cell">Tasas</th><th class="num-cell">Descuento</th><th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th><th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th></tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
           const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -1463,62 +1686,13 @@
         <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_tienda')">
+        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','${tablaActual}')">
           ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
         </button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
         }).join('');
 
-        // FACTURAS ALMACÉN
-      } else if (tablaActual === 'facturas_almacen') {
-        hdr.innerHTML = `<tr>
-      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
-      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
-      <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
-      <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
-      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
-      <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
-    </tr>`;
-        const lista = registros.filter(f => {
-          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
-          const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
-          const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
-          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
-        });
-        if (!lista.length) { bdy.innerHTML = emptyRow(21, 'No se encontraron facturas'); return; }
-        bdy.innerHTML = lista.map(f => {
-          const est = f.estado || 'pendiente';
-          const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
-          const eR = esVenc ? 'vencido' : est;
-          return `<tr>
-        <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td><strong>${f.numero_factura || '—'}</strong></td>
-        <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
-        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
-        <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
-        <td class="num-cell">${fmtN(f.base1)}</td>
-        <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_re1)}</td>
-        <td class="num-cell">${fmtN(f.tasas)}</td>
-        <td class="num-cell">${fmtN(f.descuento)}</td>
-        <td class="num-cell">${fmtN(f.base_retencion)}</td>
-        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_retencion)}</td>
-        <td class="td-total">${fmt(f.total)}</td>
-        <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_almacen')">
-          ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
-        </button></td>
-        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
-      </tr>`;
-        }).join('');
-
-        // ALBARANES
       } else if (tablaActual === 'albaranes') {
         hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Facturas por NIF</th><th>Acción</th><th></th></tr>`;
         const lista = registros.filter(f => {
@@ -1536,9 +1710,7 @@
         <td>${fmtF(f.fecha)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado ${fact ? 'badge-pagado' : 'badge-vencido'}">${fact ? 'SÍ' : 'NO'}</span></td>
-        <td>${f.nif
-              ? `<span class="link-badge factura" onclick="verFacturasNif('${f.nif}','${(f.empresa || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
-              : '<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
+        <td>${f.nif ? `<span class="link-badge factura" onclick="verFacturasNif('${f.nif}','${(f.empresa || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>` : '<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
         <td><button class="btn-toggle-facturado ${fact ? 'si' : 'no'}" onclick="toggleFacturado(${f.id},${fact})">
           ${fact ? '<i class="fa-solid fa-rotate-left me-1"></i>Sin facturar' : '<i class="fa-solid fa-file-circle-check me-1"></i>Marcar facturado'}
         </button></td>
@@ -1546,7 +1718,6 @@
       </tr>`;
         }).join('');
 
-        // CLIENTES
       } else if (tablaActual === 'clientes') {
         hdr.innerHTML = `<tr><th>Nombre</th><th>NIF</th><th>Email</th><th>Teléfono</th><th>Puntos</th><th>Última compra</th><th>Acciones</th><th></th></tr>`;
         const lista = registros.filter(f => [f.nombre, f.nif, f.email].some(v => (v || '').toLowerCase().includes(q)));
@@ -1556,28 +1727,20 @@
           const meses = uc ? Math.floor((new Date() - uc) / (1000 * 60 * 60 * 24 * 30)) : null;
           const alerta = meses !== null && meses >= 5;
           return `<tr style="${alerta ? 'background:#fff8e1' : ''}">
-        <td class="td-nombre">
-          ${alerta ? '<i class="fa-solid fa-triangle-exclamation" style="color:#c47a00;margin-right:5px"></i>' : ''}
-          <strong>${f.nombre || '—'}</strong>
-        </td>
+        <td class="td-nombre">${alerta ? '<i class="fa-solid fa-triangle-exclamation" style="color:#c47a00;margin-right:5px"></i>' : ''}<strong>${f.nombre || '—'}</strong></td>
         <td style="font-size:.8rem;color:#888">${f.nif || '—'}</td>
         <td style="font-size:.82rem">${f.email || '—'}</td>
         <td style="font-size:.82rem">${f.telefono || '—'}</td>
         <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${f.puntos || 0} pts</span></td>
-        <td style="font-size:.8rem;color:#888">${uc ? uc.toLocaleDateString('es-ES') : '—'}
-          ${alerta ? `<br><span style="color:#c47a00;font-size:.72rem">¡${meses} meses sin compra!</span>` : ''}
-        </td>
+        <td style="font-size:.8rem;color:#888">${uc ? uc.toLocaleDateString('es-ES') : '—'}${alerta ? `<br><span style="color:#c47a00;font-size:.72rem">¡${meses} meses sin compra!</span>` : ''}</td>
         <td><div class="td-acciones">
-          <button class="btn-puntos" onclick="abrirModalCompra(${f.id})">
-            <i class="fa-solid fa-cart-shopping me-1"></i>Registrar compra
-          </button>
+          <button class="btn-puntos" onclick="abrirModalCompra(${f.id})"><i class="fa-solid fa-cart-shopping me-1"></i>Registrar compra</button>
           ${f.nif ? `<span class="link-badge" onclick="verAlbaranesNif('${f.nif}','${(f.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-signature"></i>Albaranes</span>` : ''}
         </div></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
         }).join('');
 
-        // INVENTARIO
       } else if (tablaActual === 'inventario') {
         hdr.innerHTML = `<tr><th>Producto</th><th>Stock (uds.)</th><th>Pts/unidad</th><th></th></tr>`;
         const lista = registros.filter(p => (p.nombre || '').toLowerCase().includes(q));
@@ -1586,10 +1749,7 @@
           const agotado = parseFloat(p.stock || 0) <= 0;
           return `<tr>
         <td><strong>${p.nombre || '—'}</strong></td>
-        <td><span style="font-size:1.1rem;font-weight:700;color:${agotado ? '#b53987' : '#2d7a4f'}">${p.stock ?? 0}</span>
-          <span style="font-size:.78rem;color:#aaa"> uds.</span>
-          ${agotado ? '<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>' : ''}
-        </td>
+        <td><span style="font-size:1.1rem;font-weight:700;color:${agotado ? '#b53987' : '#2d7a4f'}">${p.stock ?? 0}</span><span style="font-size:.78rem;color:#aaa"> uds.</span>${agotado ? '<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>' : ''}</td>
         <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${p.puntos_por_unidad || 0} pts</span></td>
         <td><button class="btn-eliminar" onclick="eliminar(${p.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
@@ -1597,7 +1757,238 @@
       }
     }
 
-    // ── TOGGLE ESTADO FACTURA ─────────────────────────────────
+    // ── RENDER BANDEJA ────────────────────────────────────────────
+    function renderBandeja() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const fEst = document.getElementById('filtroEstado').value;
+      const wrap = document.getElementById('bandejaWrap');
+      const statsEl = document.getElementById('bandejaStats');
+
+      const lista = registros.filter(f => {
+        const mQ = [f.proveedor, f.nif, f.asunto_email, f.remitente_email, f.numero_factura, f.concepto].some(v => (v || '').toLowerCase().includes(q));
+        const mE = !fEst || f.estado === fEst;
+        return mQ && mE;
+      });
+
+      // Stats bandeja
+      const sinClasificar = registros.filter(f => f.estado === 'sin_clasificar').length;
+      const clasificadas = registros.filter(f => f.estado === 'clasificada').length;
+      const descartadas = registros.filter(f => f.estado === 'descartada').length;
+      statsEl.innerHTML = `
+    <div class="stat naranja"><div class="slabel">Sin clasificar</div><div class="sval">${sinClasificar}</div></div>
+    <div class="stat verde"><div class="slabel">Clasificadas</div><div class="sval">${clasificadas}</div></div>
+    <div class="stat"><div class="slabel">Descartadas</div><div class="sval">${descartadas}</div></div>
+    <div class="stat"><div class="slabel">Total recibidas</div><div class="sval">${registros.length}</div></div>`;
+
+      if (!lista.length) {
+        wrap.innerHTML = `<div class="bandeja-empty"><i class="fa-solid fa-inbox"></i><p>${sinClasificar === 0 ? 'Bandeja vacía — no hay facturas pendientes de clasificar' : 'No se encontraron resultados para esa búsqueda'}</p></div>`;
+        return;
+      }
+
+      wrap.innerHTML = lista.map(f => {
+        const yaClasificada = f.estado !== 'sin_clasificar';
+        const estadoBadge = `<span class="badge-estado badge-${f.estado}">${f.estado.replace('_', ' ').toUpperCase()}</span>`;
+        const destBadge = f.tabla_destino ? `<span style="font-size:.72rem;background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:20px;font-weight:600;margin-left:6px"><i class="fa-solid fa-arrow-right me-1"></i>${f.tabla_destino.replace('facturas_', '').toUpperCase()}</span>` : '';
+
+        return `<div class="bandeja-card">
+      <div class="bandeja-card-head">
+        <span class="bc-proveedor"><i class="fa-solid fa-building me-1" style="color:#b53987"></i>${f.proveedor || 'Proveedor desconocido'}</span>
+        <span class="bc-total">${f.total != null ? fmt(f.total) : '—'}</span>
+      </div>
+      <div class="bandeja-card-body">
+        <div class="bc-remitente"><i class="fa-solid fa-envelope me-1"></i>${f.remitente_email || f.asunto_email || 'Sin remitente'}</div>
+        <div class="bc-row"><span class="bc-label">Nº factura</span><span class="bc-val">${f.numero_factura || '—'}</span></div>
+        <div class="bc-row"><span class="bc-label">Fecha factura</span><span class="bc-val">${fmtF(f.fecha_factura)}</span></div>
+        <div class="bc-row"><span class="bc-label">NIF proveedor</span><span class="bc-val">${f.nif || '—'}</span></div>
+        <div class="bc-row"><span class="bc-label">Recibida</span><span class="bc-val">${fmtFH(f.fecha_recibido)}</span></div>
+        ${f.concepto ? `<div class="bc-concepto">${f.concepto}</div>` : ''}
+        <div style="margin-top:8px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">${estadoBadge}${destBadge}</div>
+      </div>
+      <div class="bandeja-card-foot">
+        ${!yaClasificada ? `
+          <button class="btn-clasificar tienda" onclick="abrirModalClasificar(${f.id})"><i class="fa-solid fa-tags me-1"></i>Clasificar</button>
+          <button class="btn-clasificar descartar" onclick="descartarFactura(${f.id})" title="No es una factura real"><i class="fa-solid fa-xmark me-1"></i>Descartar</button>
+        `: `
+          <span style="font-size:.78rem;color:#aaa"><i class="fa-solid fa-check-circle me-1" style="color:#2d7a4f"></i>Procesada el ${fmtFH(f.fecha_clasificacion)}</span>
+          <button class="btn-eliminar" onclick="eliminar(${f.id})" title="Eliminar de la bandeja"><i class="fa-solid fa-trash"></i></button>
+        `}
+      </div>
+    </div>`;
+      }).join('');
+    }
+
+    // ── MODAL CLASIFICAR ──────────────────────────────────────────
+    function abrirModalClasificar(id) {
+      facturaClasificarId = id;
+      const f = registros.find(r => r.id === id);
+      // Mostrar/ocultar sección inventario según destino elegido
+      document.querySelectorAll('input[name="destino"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          const dest = document.querySelector('input[name="destino"]:checked')?.value
+          const sec = document.getElementById('seccionInventarioClasif')
+          if (sec) sec.style.display =
+            (dest === 'facturas_tienda' || dest === 'facturas_almacen') ? 'block' : 'none'
+        })
+      })
+      if (!f) return;
+
+      document.getElementById('modalClasificarContenido').innerHTML = `
+    <div style="background:#f7f0f5;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:.95rem;color:#4a3b68;margin-bottom:8px">
+        <i class="fa-solid fa-building me-2" style="color:#b53987"></i>${f.proveedor || 'Proveedor desconocido'}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.82rem">
+        <div><span style="color:#999">Nº factura:</span> <strong>${f.numero_factura || '—'}</strong></div>
+        <div><span style="color:#999">Total:</span> <strong style="color:#b53987">${f.total != null ? fmt(f.total) : '—'}</strong></div>
+        <div><span style="color:#999">Fecha:</span> ${fmtF(f.fecha_factura)}</div>
+        <div><span style="color:#999">NIF:</span> ${f.nif || '—'}</div>
+      </div>
+      ${f.concepto ? `<div style="margin-top:8px;font-size:.78rem;color:#888;font-style:italic;border-left:3px solid #ede5f5;padding-left:8px">${f.concepto}</div>` : ''}
+    </div>
+
+    <p style="font-size:.85rem;color:#666;margin-bottom:14px">¿A qué sección pertenece esta factura? Revisa y corrige los datos si es necesario antes de confirmar.</p>
+
+    <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Sección de destino</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid #90caf9;border-radius:8px;cursor:pointer;background:#e3f2fd;font-size:.88rem;font-weight:600;color:#1565c0">
+        <input type="radio" name="destino" value="facturas_tienda" style="accent-color:#1565c0"> <i class="fa-solid fa-shop me-1"></i>Tienda
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid #81c784;border-radius:8px;cursor:pointer;background:#e8f5e9;font-size:.88rem;font-weight:600;color:#2d7a4f">
+        <input type="radio" name="destino" value="facturas_almacen" style="accent-color:#2d7a4f"> <i class="fa-solid fa-warehouse me-1"></i>Almacén
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid #f0c060;border-radius:8px;cursor:pointer;background:#fff3e0;font-size:.88rem;font-weight:600;color:#c47a00">
+        <input type="radio" name="destino" value="facturas_obra" style="accent-color:#c47a00"> <i class="fa-solid fa-helmet-safety me-1"></i>Obra
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid #ce93d8;border-radius:8px;cursor:pointer;background:#f3e5f5;font-size:.88rem;font-weight:600;color:#6a1b9a">
+        <input type="radio" name="destino" value="facturas_otros" style="accent-color:#6a1b9a"> <i class="fa-solid fa-layer-group me-1"></i>Otros
+      </label>
+    </div>
+
+    <div class="form-seccion">Revisar y corregir datos extraídos</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Proveedor</label><input type="text" id="cl_proveedor" value="${f.proveedor || ''}"></div>
+      <div class="form-group"><label>NIF</label><input type="text" id="cl_nif" value="${f.nif || ''}"></div>
+      <div class="form-group"><label>Nº Factura</label><input type="text" id="cl_num" value="${f.numero_factura || ''}"></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="cl_fecha" value="${f.fecha_factura || ''}"></div>
+      <div class="form-group"><label>Vencimiento</label><input type="date" id="cl_venc" value="${f.fecha_vencimiento || ''}"></div>
+      <div class="form-group"><label>Total (€)</label><input type="number" id="cl_total" value="${f.total || ''}" step="0.01"></div>
+      <div class="form-group span3"><label>Concepto</label><input type="text" id="cl_concepto" value="${f.concepto || ''}"></div>
+    </div>` + `
+<div id="seccionInventarioClasif" style="display:none">
+  <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(actualizan stock)</span></div>
+  <p style="font-size:.78rem;color:#888;margin-bottom:10px">
+    <i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>
+    Opcional: indica qué productos trae esta factura para actualizar el stock.
+  </p>
+  <div id="lineasClasifInv"></div>
+  <button type="button" class="btn-add-linea" onclick="addLineaClasifInv()">
+    <i class="fa-solid fa-plus me-1"></i>Añadir producto
+  </button>
+</div>`;
+
+      document.getElementById('modalClasificar').classList.add('visible');
+    }
+    let lineasClasifCount = 0
+
+    function addLineaClasifInv() {
+      lineasClasifCount++
+      const idx = lineasClasifCount
+      const opts = inventarioDB.map(p =>
+        `<option value="${p.id}" data-stock="${p.stock || 0}">
+      ${p.nombre} (stock: ${p.stock || 0})
+    </option>`
+      ).join('')
+      const div = document.createElement('div')
+      div.id = `lcl_${idx}`
+      div.className = 'linea-prod'
+      div.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Producto</label>
+      <select id="lcl_prod_${idx}">
+        <option value="">— Selecciona —</option>${opts}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Cantidad recibida</label>
+      <input type="number" id="lcl_cant_${idx}" value="1" min="1" style="text-align:center">
+    </div>
+    <div style="width:80px"></div>
+    <button type="button" 
+      onclick="document.getElementById('lcl_${idx}').remove()"
+      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`
+      document.getElementById('lineasClasifInv').appendChild(div)
+    }
+
+    // En confirmarClasificacion(), antes del toast final, añade:
+    async function actualizarStockClasificacion() {
+      const lineas = []
+      document.querySelectorAll('[id^="lcl_prod_"]').forEach(sel => {
+        if (!sel.value) return
+        const idx = sel.id.split('_')[2]
+        const cant = parseFloat(document.getElementById(`lcl_cant_${idx}`)?.value || 0)
+        const stockActual = parseFloat(sel.selectedOptions[0]?.dataset.stock || 0)
+        if (cant > 0) lineas.push({ id: parseInt(sel.value), stock: stockActual + cant })
+      })
+      for (const l of lineas) {
+        await apiPatch('inventario', l.id, { stock: l.stock })
+      }
+      return lineas.length
+    }
+    async function confirmarClasificacion() {
+      const destino = document.querySelector('input[name="destino"]:checked')?.value;
+      if (!destino) { toast('Selecciona una sección de destino', 'err'); return; }
+      if (!facturaClasificarId) { return; }
+
+      const proveedor = document.getElementById('cl_proveedor').value.trim();
+      const fecha = document.getElementById('cl_fecha').value;
+      if (!proveedor || !fecha) { toast('Proveedor y fecha son obligatorios', 'err'); return; }
+
+      const payload = {
+        numero_factura: document.getElementById('cl_num').value.trim() || null,
+        fecha: fecha,
+        proveedor: proveedor,
+        nif: document.getElementById('cl_nif').value.trim() || null,
+        concepto: document.getElementById('cl_concepto').value.trim() || null,
+        total: parseFloat(document.getElementById('cl_total').value || 0),
+        fecha_vencimiento: document.getElementById('cl_venc').value || null,
+        estado: 'pendiente'
+      };
+
+      // Copiar también campos de IVA si los tiene la factura original
+      const orig = registros.find(r => r.id === facturaClasificarId);
+      if (orig) {
+        const campos = ['base1', 'pct_iva1', 'total_iva1', 'pct_re1', 'total_re1', 'tasas', 'descuento', 'base2', 'pct_iva2', 'total_iva2', 'base3', 'pct_iva3', 'total_iva3', 'exento', 'base_retencion', 'pct_retencion', 'total_retencion'];
+        campos.forEach(c => { if (orig[c] != null) payload[c] = orig[c]; });
+      }
+
+      try {
+        await apiPost(destino, payload);
+        await apiPatch('pendientes_clasificacion', facturaClasificarId, {
+          estado: 'clasificada',
+          tabla_destino: destino,
+          fecha_clasificacion: new Date().toISOString()
+        });
+        const productosActualizados = await actualizarStockClasificacion()
+        const nombreDest = { facturas_tienda: 'Tienda', facturas_almacen: 'Almacén', facturas_obra: 'Obra', facturas_otros: 'Otros' }[destino]
+        toast(`<i class="fa-solid fa-check me-1"></i>Factura movida a <strong>${nombreDest}</strong>${productosActualizados ? ` · ${productosActualizados} productos actualizados` : ''}`, 'ok')
+        cerrarModal('modalClasificar');
+        facturaClasificarId = null;
+        cargarDatos();
+      } catch (e) { toast('Error al clasificar: ' + e.message, 'err'); }
+    }
+
+    async function descartarFactura(id) {
+      if (!confirm('¿Marcar esta entrada como descartada? No es una factura real.')) return;
+      try {
+        await apiPatch('pendientes_clasificacion', id, { estado: 'descartada', fecha_clasificacion: new Date().toISOString() });
+        toast('Entrada descartada', 'info');
+        cargarDatos();
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+
+    // ── TOGGLE ESTADO FACTURA ─────────────────────────────────────
     async function toggleEstado(id, estadoActual, tabla) {
       const nuevo = estadoActual === 'pagado' ? 'pendiente' : 'pagado';
       try {
@@ -1619,27 +2010,27 @@
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
 
-    // ── VER FACTURAS POR NIF ──────────────────────────────────
+    // ── VER FACTURAS / ALBARANES POR NIF ─────────────────────────
     async function verFacturasNif(nif, empresa) {
       try {
-        const [ft, fa] = await Promise.all([
+        const [ft, fa, fo, fot] = await Promise.all([
           apiGet('facturas_tienda', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
-          apiGet('facturas_almacen', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`)
+          apiGet('facturas_almacen', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
+          apiGet('facturas_obra', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
+          apiGet('facturas_otros', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`)
         ]);
-        const todas = [...ft.map(f => ({ ...f, _o: 'Tienda' })), ...fa.map(f => ({ ...f, _o: 'Almacén' }))];
-        document.getElementById('modalDetalleTitulo').innerHTML =
-          `<i class="fa-solid fa-file-invoice" style="color:#b53987"></i>Facturas de ${empresa} (NIF: ${nif})`;
+        const todas = [...ft.map(f => ({ ...f, _o: 'Tienda' })), ...fa.map(f => ({ ...f, _o: 'Almacén' })), ...fo.map(f => ({ ...f, _o: 'Obra' })), ...fot.map(f => ({ ...f, _o: 'Otros' }))];
+        document.getElementById('modalDetalleTitulo').innerHTML = `<i class="fa-solid fa-file-invoice" style="color:#b53987"></i>Facturas de ${empresa} (NIF: ${nif})`;
         document.getElementById('modalDetalleContenido').innerHTML = !todas.length
           ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin facturas para este NIF</p>`
           : `<table class="mini-table"><thead><tr><th>Origen</th><th>Nº Factura</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>
-          ${todas.map(f => `<tr>
-            <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${f._o === 'Tienda' ? '#e3f2fd' : '#f3e5f5'};color:${f._o === 'Tienda' ? '#1565c0' : '#6a1b9a'}">${f._o}</span></td>
-            <td><strong>${f.numero_factura || '—'}</strong></td>
-            <td>${fmtF(f.fecha)}</td>
-            <td><strong>${fmt(f.total)}</strong></td>
-            <td><span class="badge-estado badge-${f.estado || 'pendiente'}">${(f.estado || 'pendiente').toUpperCase()}</span></td>
-          </tr>`).join('')}
-        </tbody></table>`;
+      ${todas.map(f => `<tr>
+        <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:#e3f2fd;color:#1565c0">${f._o}</span></td>
+        <td><strong>${f.numero_factura || '—'}</strong></td><td>${fmtF(f.fecha)}</td>
+        <td><strong>${fmt(f.total)}</strong></td>
+        <td><span class="badge-estado badge-${f.estado || 'pendiente'}">${(f.estado || 'pendiente').toUpperCase()}</span></td>
+      </tr>`).join('')}
+      </tbody></table>`;
         document.getElementById('modalDetalle').classList.add('visible');
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
@@ -1647,22 +2038,17 @@
     async function verAlbaranesNif(nif, nombre) {
       try {
         const albs = await apiGet('albaranes', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`);
-        document.getElementById('modalDetalleTitulo').innerHTML =
-          `<i class="fa-solid fa-file-signature" style="color:#b53987"></i>Albaranes de ${nombre}`;
+        document.getElementById('modalDetalleTitulo').innerHTML = `<i class="fa-solid fa-file-signature" style="color:#b53987"></i>Albaranes de ${nombre}`;
         document.getElementById('modalDetalleContenido').innerHTML = !albs.length
           ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin albaranes para este NIF</p>`
           : `<table class="mini-table"><thead><tr><th>Nº Albarán</th><th>Fecha</th><th>Total</th><th>Facturado</th></tr></thead><tbody>
-          ${albs.map(a => `<tr>
-            <td><strong>${a.numero_albaran || '—'}</strong></td>
-            <td>${fmtF(a.fecha)}</td>
-            <td><strong>${fmt(a.total)}</strong></td>
-            <td><span class="badge-estado ${a.facturado ? 'badge-pagado' : 'badge-vencido'}">${a.facturado ? 'SÍ' : 'NO'}</span></td>
-          </tr>`).join('')}
-        </tbody></table>`;
+      ${albs.map(a => `<tr><td><strong>${a.numero_albaran || '—'}</strong></td><td>${fmtF(a.fecha)}</td><td><strong>${fmt(a.total)}</strong></td><td><span class="badge-estado ${a.facturado ? 'badge-pagado' : 'badge-vencido'}">${a.facturado ? 'SÍ' : 'NO'}</span></td></tr>`).join('')}
+      </tbody></table>`;
         document.getElementById('modalDetalle').classList.add('visible');
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
 
+<<<<<<< HEAD
     // Rangos Puntos
     function calcularPuntosPorTotal(total) {
       if (total < 0) return 0;
@@ -1690,14 +2076,13 @@
 
 
     // ── MODAL COMPRA CLIENTE ──────────────────────────────────
+=======
+    // ── MODAL COMPRA CLIENTE ──────────────────────────────────────
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
     function abrirModalCompra(clienteId) {
-
-      const cliente =
-        clientesDB.find(
-          c => c.id == clienteId
-        );
-
+      const cliente = clientesDB.find(c => c.id == clienteId);
       if (!cliente) return;
+<<<<<<< HEAD
 
       clienteSelId = cliente.id;
       clienteSelPuntos = cliente.puntos || 0;
@@ -1725,71 +2110,34 @@
       const tcInput = document.getElementById("f_total_compra");
       if (tcInput) tcInput.value = '';
       document.getElementById("totalPuntosCompra").textContent = '0 pts';
+=======
+      clienteSelId = cliente.id; clienteSelPuntos = cliente.puntos || 0;
+      document.getElementById('cliente_nombre').value = cliente.nombre || '';
+      document.getElementById('cliente_nif').value = cliente.nif || '';
+      document.getElementById('cliente_telefono').value = cliente.telefono || '';
+      document.getElementById('cliente_email').value = cliente.email || '';
+      document.getElementById('cliente_puntos').value = cliente.puntos || 0;
+      document.getElementById('modalPuntos').classList.add('visible');
+      document.getElementById('lineasCompra').innerHTML = '';
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
       addLineaCompra();
 
-    }
-    async function buscarClienteEmail() {
-
-      const email = document.getElementById("cliente_email")
-        .value
-        .trim()
-        .toLowerCase();
-
-      const cliente = clientesDB.find(
-        c => (c.email || "").toLowerCase() === email
-      );
-
-      if (!cliente) {
-        toast("Cliente no encontrado", "err");
-        return;
-      }
-
-      clienteSelId = cliente.id;
-      clienteSelPuntos = cliente.puntos || 0;
-
-      document.getElementById("cliente_nombre").value =
-        cliente.nombre || "";
-
-      document.getElementById("cliente_nif").value =
-        cliente.nif || "";
-
-      document.getElementById("cliente_telefono").value =
-        cliente.telefono || "";
-
-      document.getElementById("cliente_puntos").value =
-        (cliente.puntos || 0) + " puntos";
     }
 
     function addLineaCompra() {
       lineasCompraCount++;
       const idx = lineasCompraCount;
-      const opts = inventarioDB.map(p =>
-        `<option value="${p.id}" data-pts="${p.puntos_por_unidad || 0}" data-stock="${p.stock || 0}">
-      ${p.nombre} (stock: ${p.stock || 0}) — ${p.puntos_por_unidad || 0} pts/ud
-    </option>`
-      ).join('');
+      const opts = inventarioDB.map(p => `<option value="${p.id}" data-pts="${p.puntos_por_unidad || 0}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0}) — ${p.puntos_por_unidad || 0} pts/ud</option>`).join('');
       const div = document.createElement('div');
-      div.id = `lc_${idx}`;
-      div.className = 'linea-prod';
+      div.id = `lc_${idx}`; div.className = 'linea-prod';
       div.innerHTML = `
-    <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Producto</label>
-      <select id="lc_prod_${idx}" onchange="recalcPuntos()">
-        <option value="">— Elige producto —</option>${opts}
-      </select>
-    </div>
-    <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Cantidad</label>
-      <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center" oninput="recalcPuntos()">
-    </div>
-    <div class="form-group" style="margin:0;width:70px">
-      <label style="font-size:.75rem">Puntos</label>
-      <input type="text" id="lc_pts_${idx}" readonly style="text-align:center;background:#f7f0f5;font-weight:600;color:#b53987" value="0">
-    </div>
-    <button type="button" onclick="document.getElementById('lc_${idx}').remove();recalcPuntos()"
-      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
-      <i class="fa-solid fa-xmark"></i>
-    </button>`;
+    <div class="form-group" style="margin:0"><label style="font-size:.75rem">Producto</label>
+    <select id="lc_prod_${idx}" onchange="recalcPuntos()"><option value="">— Elige producto —</option>${opts}</select></div>
+    <div class="form-group" style="margin:0"><label style="font-size:.75rem">Cantidad</label>
+    <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center" oninput="recalcPuntos()"></div>
+    <div class="form-group" style="margin:0;width:70px"><label style="font-size:.75rem">Puntos</label>
+    <input type="text" id="lc_pts_${idx}" readonly style="text-align:center;background:#f7f0f5;font-weight:600;color:#b53987" value="0"></div>
+    <button type="button" onclick="document.getElementById('lc_${idx}').remove();recalcPuntos()" style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end"><i class="fa-solid fa-xmark"></i></button>`;
       document.getElementById('lineasCompra').appendChild(div);
     }
 
@@ -1803,25 +2151,30 @@
     }
 
     async function guardarCompraCliente() {
+<<<<<<< HEAD
       const lineas = [];
       let ok = true;
       if (!clienteSelId) {
         toast("Introduce primero un email válido", "err");
         return;
       }
+=======
+      const lineas = []; let totalPuntos = 0; let ok = true;
+      if (!clienteSelId) { toast('Introduce primero un email válido', 'err'); return; }
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
       document.querySelectorAll('[id^="lc_prod_"]').forEach(sel => {
         if (!sel.value) return;
         const idx = sel.id.split('_')[2];
         const cant = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value || 0);
         const stock = parseFloat(sel.selectedOptions[0]?.dataset.stock || 0);
         const nombre = sel.selectedOptions[0]?.text.split('(')[0].trim();
-        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; return; }
+        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"','err`); ok = false; return; }
         if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; return; }
         lineas.push({ producto_id: parseInt(sel.value), cantidad: cant, nombre, stock });
       });
-
       if (!ok) return;
       if (!lineas.length) { toast('Añade al menos un producto', 'err'); return; }
+<<<<<<< HEAD
 
       const totalCompra = parseFloat(document.getElementById('f_total_compra')?.value || 0);
       const totalPuntos = calcularPuntosPorTotal(totalCompra);
@@ -1830,10 +2183,15 @@
         for (const l of lineas) {
           await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad });
         }
+=======
+      try {
+        for (const l of lineas) { await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad }); }
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
         const cliente = clientesDB.find(c => c.id === clienteSelId);
         const ahora = new Date().toISOString();
         const puntosNuevos = clienteSelPuntos + totalPuntos;
         const puntosDesdeFinal = cliente?.puntos_desde || ahora;
+<<<<<<< HEAD
         await apiPatch('clientes', clienteSelId, {
           puntos: puntosNuevos,
           ultima_compra: ahora,
@@ -1842,13 +2200,16 @@
         if (cliente?.email) {
           await enviarEmailPuntos(cliente.email, cliente.nombre, puntosNuevos, 'compra');
         }
+=======
+        await apiPatch('clientes', clienteSelId, { puntos: puntosNuevos, ultima_compra: ahora, puntos_desde: puntosDesdeFinal });
+        if (cliente?.email) { await enviarEmailPuntos(cliente.email, cliente.nombre, puntosNuevos, 'compra'); }
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
         toast(`<i class="fa-solid fa-star me-1"></i>Compra registrada — <strong>+${totalPuntos} pts</strong>`, 'ok');
-        cerrarModal('modalPuntos');
-        cargarDatos();
+        cerrarModal('modalPuntos'); cargarDatos();
       } catch (e) { toast('Error al guardar compra: ' + e.message, 'err'); }
     }
 
-    // ── CAMPOS IVA / BASES ────────────────────────────────────
+    // ── CAMPOS IVA ────────────────────────────────────────────────
     function htmlCamposExcel() {
       return `
     <div class="form-seccion">Bases e IVA</div>
@@ -1856,19 +2217,15 @@
       <div class="form-group"><label>Base 1</label><input type="number" id="f_base1" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>% IVA 1</label><input type="number" id="f_pct_iva1" step="0.01" placeholder="21"></div>
       <div class="form-group"><label>Total IVA 1</label><input type="number" id="f_total_iva1" step="0.01" placeholder="0.00"></div>
-
       <div class="form-group"><label>% RE 1</label><input type="number" id="f_pct_re1" step="0.01" placeholder="5.2"></div>
       <div class="form-group"><label>Total RE 1</label><input type="number" id="f_total_re1" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>Tasas</label><input type="number" id="f_tasas" step="0.01" placeholder="0.00"></div>
-
       <div class="form-group"><label>Base 2</label><input type="number" id="f_base2" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>% IVA 2</label><input type="number" id="f_pct_iva2" step="0.01" placeholder="10"></div>
       <div class="form-group"><label>Total IVA 2</label><input type="number" id="f_total_iva2" step="0.01" placeholder="0.00"></div>
-
       <div class="form-group"><label>Base 3</label><input type="number" id="f_base3" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>% IVA 3</label><input type="number" id="f_pct_iva3" step="0.01" placeholder="4"></div>
       <div class="form-group"><label>Total IVA 3</label><input type="number" id="f_total_iva3" step="0.01" placeholder="0.00"></div>
-
       <div class="form-group"><label>Exento</label><input type="number" id="f_exento" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>Descuento</label><input type="number" id="f_descuento" step="0.01" placeholder="0.00"></div>
       <div class="form-group"></div>
@@ -1883,160 +2240,58 @@
 
     function recogerCamposExcel() {
       const n = id => { const v = document.getElementById(id)?.value; return (v === '' || v === null || v === undefined) ? null : parseFloat(v); };
-      return {
-        base1: n('f_base1'), pct_iva1: n('f_pct_iva1'), total_iva1: n('f_total_iva1'),
-        pct_re1: n('f_pct_re1'), total_re1: n('f_total_re1'), tasas: n('f_tasas'),
-        base2: n('f_base2'), pct_iva2: n('f_pct_iva2'), total_iva2: n('f_total_iva2'),
-        base3: n('f_base3'), pct_iva3: n('f_pct_iva3'), total_iva3: n('f_total_iva3'),
-        exento: n('f_exento'), descuento: n('f_descuento'),
-        base_retencion: n('f_base_ret'), pct_retencion: n('f_pct_ret'), total_retencion: n('f_total_ret'),
-      };
+      return { base1: n('f_base1'), pct_iva1: n('f_pct_iva1'), total_iva1: n('f_total_iva1'), pct_re1: n('f_pct_re1'), total_re1: n('f_total_re1'), tasas: n('f_tasas'), base2: n('f_base2'), pct_iva2: n('f_pct_iva2'), total_iva2: n('f_total_iva2'), base3: n('f_base3'), pct_iva3: n('f_pct_iva3'), total_iva3: n('f_total_iva3'), exento: n('f_exento'), descuento: n('f_descuento'), base_retencion: n('f_base_ret'), pct_retencion: n('f_pct_ret'), total_retencion: n('f_total_ret') };
     }
 
-    // ── MODAL NUEVO REGISTRO ──────────────────────────────────
+    // ── MODAL NUEVO REGISTRO ──────────────────────────────────────
     function abrirModalNuevo() {
       lineasFacturaCount = 0;
       const cont = document.getElementById('modalFormContenido');
+      const esFacturas = ['facturas_tienda', 'facturas_almacen', 'facturas_obra', 'facturas_otros'].includes(tablaActual);
+      const nombresFactura = { facturas_tienda: 'Nueva Factura de Tienda', facturas_almacen: 'Nueva Factura de Almacén', facturas_obra: 'Nueva Factura de Obra', facturas_otros: 'Nueva Factura (Otros)' };
 
-      // ── FACTURA TIENDA ──
-      if (tablaActual === 'facturas_tienda') {
-        document.getElementById('modalTitulo').textContent = 'Nueva Factura de Tienda';
+      if (esFacturas) {
+        document.getElementById('modalTitulo').textContent = nombresFactura[tablaActual];
+        const opts = inventarioDB.map(p => `<option value="${p.id}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0})</option>`).join('');
         cont.innerHTML = `
       <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
       <div class="form-grid">
         <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
-        <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FT-2026-001"></div>
+        <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="F-2026-001"></div>
         <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
-
-        <div class="form-group span2 ac-wrap">
-          <label>Proveedor *</label>
+        <div class="form-group span2 ac-wrap"><label>Proveedor *</label>
           <div style="display:flex;gap:6px;align-items:center">
-  <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
-  <button type="button" class="btn-add-linea" style="padding:6px 10px;font-size:.8rem"
-    onclick="crearProveedorRapido()">
-    <i class="fa-solid fa-plus"></i>
-  </button>
-</div>
+            <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+            <button type="button" class="btn-add-linea" style="padding:6px 10px;font-size:.8rem" onclick="crearProveedorRapido()"><i class="fa-solid fa-plus"></i></button>
+          </div>
         </div>
-        <div class="form-group ac-wrap">
-          <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
-          <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
-        </div>
-
+        <div class="form-group ac-wrap"><label>NIF</label><input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor"></div>
         <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
-
-        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
-        <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
-        <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
-      </div>
-      ${htmlCamposExcel()} <div class="form-seccion">
-  Productos comprados
-  <span style="font-weight:400;font-size:.75rem;color:#888">
-    (suman stock automáticamente)
-  </span>
-</div>
-
-<p style="font-size:.78rem;color:#888;margin-bottom:10px">
-  <i class="fa-solid fa-arrow-trend-up me-1"
-     style="color:#2d7a4f"></i>
-  Al guardar, la cantidad se sumará al stock del producto.
-</p>
-
-<div id="lineasFactAlm"></div>
-
-<button
-  type="button"
-  class="btn-add-linea"
-  onclick="addLineaFactAlm()">
-  <i class="fa-solid fa-plus me-1"></i>
-  Añadir producto
-</button>`;
-
-        const opts = inventarioDB.map(p =>
-          `<option value="${p.id}"
-     data-stock="${p.stock || 0}">
-     ${p.nombre} (stock: ${p.stock || 0})
-   </option>`
-        ).join('');
-
-        window._optsFactAlm = opts;
-
-        document.getElementById('modalNueva')
-          .classList.add('visible');
-
-        setTimeout(() => {
-          setupProveedorAC('f_prov', 'f_nif');
-          addLineaFactAlm();
-        }, 50);
-
-
-
-
-
-
-
-
-
-
-
-
-        // ── FACTURA ALMACÉN ──
-      } else if (tablaActual === 'facturas_almacen') {
-        document.getElementById('modalTitulo').textContent = 'Nueva Factura de Almacén';
-        const opts = inventarioDB.map(p =>
-          `<option value="${p.id}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0})</option>`
-        ).join('');
-        cont.innerHTML = `
-      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
-      <div class="form-grid">
-        <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
-        <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FA-2026-001"></div>
-        <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
-
-        <div class="form-group span2 ac-wrap">
-          <label>Proveedor *</label>
-          <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
-        </div>
-        <div class="form-group ac-wrap">
-          <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
-          <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
-        </div>
-
-        <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
-
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       </div>
       ${htmlCamposExcel()}
-      <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock automáticamente)</span></div>
-      <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
+      <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock)</span></div>
+      <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se sumará al stock.</p>
       <div id="lineasFactAlm"></div>
-      <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
+      <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto</button>`;
         window._optsFactAlm = opts;
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => { setupProveedorAC('f_prov', 'f_nif'); addLineaFactAlm(); }, 50);
 
-        // ── ALBARÁN ──
       } else if (tablaActual === 'albaranes') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Albarán';
         cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_num" placeholder="ALB-2026-001"></div>
       <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
-      <div class="form-group span2 ac-wrap">
-        <label>Proveedor / Empresa *</label>
-        <input type="text" id="f_empresa" placeholder="Escribe el nombre para buscar...">
-      </div>
-      <div class="form-group span2 ac-wrap">
-        <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
-        <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
-      </div>
+      <div class="form-group span2 ac-wrap"><label>Proveedor / Empresa *</label><input type="text" id="f_empresa" placeholder="Escribe el nombre..."></div>
+      <div class="form-group span2 ac-wrap"><label>NIF</label><input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor"></div>
       <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
     </div>`;
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => setupProveedorAC('f_empresa', 'f_nif'), 50);
 
-        // ── CLIENTE ──
       } else if (tablaActual === 'clientes') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Cliente';
         cont.innerHTML = `<div class="form-grid-2">
@@ -2048,18 +2303,17 @@
     </div>`;
         document.getElementById('modalNueva').classList.add('visible');
 
-        // ── INVENTARIO ──
       } else if (tablaActual === 'inventario') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Producto';
         cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group span2"><label>Nombre del producto *</label><input type="text" id="f_nombre" placeholder="Ej: Cemento CEM II 25kg"></div>
       <div class="form-group"><label>Stock inicial (uds.)</label><input type="number" id="f_stock" value="0" min="0"></div>
       <div class="form-group"><label>Puntos por unidad</label><input type="number" id="f_pts" value="0" min="0"></div>
-    </div>
-    <p style="font-size:.78rem;color:#888;margin-top:10px"><i class="fa-solid fa-info-circle me-1"></i>Los puntos por unidad se usarán automáticamente al registrar una compra de cliente.</p>`;
+    </div>`;
         document.getElementById('modalNueva').classList.add('visible');
       }
     }
+<<<<<<< HEAD
     async function crearProveedorRapido() {
       const nombre = document.getElementById('f_prov').value.trim();
 
@@ -2108,43 +2362,48 @@
 
       document.getElementById('modalExportar').classList.add('visible');
     }
+=======
+
+    async function crearProveedorRapido() {
+      const nombre = document.getElementById('f_prov').value.trim();
+      if (!nombre) { toast('Introduce un nombre de proveedor', 'err'); return; }
+      const nif = document.getElementById('f_nif').value.trim() || null;
+      try {
+        await apiPost('proveedores', { nombre, nif });
+        toast('Proveedor creado correctamente');
+        proveedoresDB = await apiGet('proveedores', 'order=nombre');
+        const prov = proveedoresDB.find(p => p.nombre === nombre);
+        if (prov) { document.getElementById('f_nif').value = prov.nif || ''; }
+      } catch (e) { toast('Error creando proveedor: ' + e.message, 'err'); }
+    }
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
 
     function addLineaFactAlm() {
       lineasFacturaCount++;
       const idx = lineasFacturaCount;
       const div = document.createElement('div');
-      div.id = `lfa_${idx}`;
-      div.className = 'linea-prod';
+      div.id = `lfa_${idx}`; div.className = 'linea-prod';
       div.innerHTML = `
-    <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Producto</label>
-      <select id="lfa_prod_${idx}">
-        <option value="">— Selecciona producto —</option>${window._optsFactAlm || ''}
-      </select>
-    </div>
-    <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Cantidad recibida</label>
-      <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center">
-    </div>
+    <div class="form-group" style="margin:0"><label style="font-size:.75rem">Producto</label>
+    <select id="lfa_prod_${idx}"><option value="">— Selecciona producto —</option>${window._optsFactAlm || ''}</select></div>
+    <div class="form-group" style="margin:0"><label style="font-size:.75rem">Cantidad</label>
+    <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center"></div>
     <div style="width:80px"></div>
-    <button type="button" onclick="document.getElementById('lfa_${idx}').remove()"
-      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
-      <i class="fa-solid fa-xmark"></i>
-    </button>`;
+    <button type="button" onclick="document.getElementById('lfa_${idx}').remove()" style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end"><i class="fa-solid fa-xmark"></i></button>`;
       document.getElementById('lineasFactAlm').appendChild(div);
     }
 
-    // ── GUARDAR ───────────────────────────────────────────────
+    // ── GUARDAR ───────────────────────────────────────────────────
     async function guardarRegistro() {
       const btn = document.getElementById('btnGuardar');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Guardando...';
+      btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Guardando...';
       try {
-
-        if (tablaActual === 'facturas_tienda') {
+        const esFacturas = ['facturas_tienda', 'facturas_almacen', 'facturas_obra', 'facturas_otros'].includes(tablaActual);
+        if (esFacturas) {
           const prov = document.getElementById('f_prov').value.trim();
           const fecha = document.getElementById('f_fecha').value;
           if (!prov || !fecha) { toast('Proveedor y fecha son obligatorios', 'err'); return; }
+<<<<<<< HEAD
           await apiPost('facturas_tienda', {
 
             numero_interno: document.getElementById('f_num_interno').value.trim() || null,
@@ -2235,91 +2494,56 @@
             return;
           }
 
+=======
+          const numFactura = document.getElementById('f_num').value.trim();
+          const existe = numFactura && registros.some(r => (r.numero_factura || '').toLowerCase() === numFactura.toLowerCase());
+          if (existe) { toast('⚠️ Ya existe una factura con ese número', 'err'); return; }
+          await apiPost(tablaActual, { numero_interno: document.getElementById('f_num_interno').value.trim() || null, numero_factura: numFactura || null, fecha, proveedor: prov, nif: document.getElementById('f_nif').value.trim() || null, concepto: document.getElementById('f_concepto').value.trim() || null, total: parseFloat(document.getElementById('f_total').value || 0), estado: document.getElementById('f_est').value, fecha_vencimiento: document.getElementById('f_venc').value || null, ...recogerCamposExcel() });
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
           const lineas = [];
           document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
             if (!sel.value) return;
             const idx = sel.id.split('_')[2];
             const cant = parseFloat(document.getElementById(`lfa_cant_${idx}`)?.value || 0);
-            if (cant > 0) lineas.push({
-              producto_id: parseInt(sel.value),
-              cantidad: cant,
-              stock_actual: parseFloat(sel.selectedOptions[0]?.dataset.stock || 0)
-            });
+            if (cant > 0) lineas.push({ producto_id: parseInt(sel.value), cantidad: cant, stock_actual: parseFloat(sel.selectedOptions[0]?.dataset.stock || 0) });
           });
-
-          for (const l of lineas) {
-
-            await apiPatch(
-              'inventario',
-              l.producto_id,
-              {
-                stock: l.stock_actual + l.cantidad
-              }
-            );
-          }
+          for (const l of lineas) { await apiPatch('inventario', l.producto_id, { stock: l.stock_actual + l.cantidad }); }
           toast(`Factura guardada${lineas.length ? ' y stock actualizado' : ''}`);
-          cerrarModal('modalNueva');
-          lineasFacturaCount = 0;
-          cargarDatos();
-          return;
 
         } else if (tablaActual === 'albaranes') {
           const empresa = document.getElementById('f_empresa').value.trim();
           const fecha = document.getElementById('f_fecha').value;
           if (!empresa || !fecha) { toast('Empresa y fecha son obligatorios', 'err'); return; }
-          await apiPost('albaranes', {
-            numero_albaran: document.getElementById('f_num').value.trim() || null,
-            fecha,
-            empresa,
-            nif: document.getElementById('f_nif').value.trim() || null,
-            total: parseFloat(document.getElementById('f_total').value || 0),
-            facturado: false
-          });
+          await apiPost('albaranes', { numero_albaran: document.getElementById('f_num').value.trim() || null, fecha, empresa, nif: document.getElementById('f_nif').value.trim() || null, total: parseFloat(document.getElementById('f_total').value || 0), facturado: false });
+          toast('Albarán guardado');
 
         } else if (tablaActual === 'clientes') {
           const nombre = document.getElementById('f_nombre').value.trim();
           if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
-          await apiPost('clientes', {
-            nombre,
-            nif: document.getElementById('f_nif').value.trim() || null,
-            telefono: document.getElementById('f_tel').value.trim() || null,
-            email: document.getElementById('f_email').value.trim() || null,
-            puntos: parseInt(document.getElementById('f_puntos').value || 0),
-            ultima_compra: new Date().toISOString()
-          });
+          await apiPost('clientes', { nombre, nif: document.getElementById('f_nif').value.trim() || null, telefono: document.getElementById('f_tel').value.trim() || null, email: document.getElementById('f_email').value.trim() || null, puntos: parseInt(document.getElementById('f_puntos').value || 0), ultima_compra: new Date().toISOString() });
+          toast('Cliente guardado');
 
         } else if (tablaActual === 'inventario') {
           const nombre = document.getElementById('f_nombre').value.trim();
           if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
-          await apiPost('inventario', {
-            nombre,
-            stock: parseFloat(document.getElementById('f_stock').value || 0),
-            puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0)
-          });
+          await apiPost('inventario', { nombre, stock: parseFloat(document.getElementById('f_stock').value || 0), puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0) });
+          toast('Producto guardado');
         }
-
-        toast('Guardado correctamente');
-        cerrarModal('modalNueva');
-        lineasFacturaCount = 0;
-        cargarDatos();
-      } catch (e) {
-        toast('Error al guardar: ' + e.message, 'err');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
-      }
+        cerrarModal('modalNueva'); lineasFacturaCount = 0; cargarDatos();
+      } catch (e) { toast('Error al guardar: ' + e.message, 'err'); }
+      finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar'; }
     }
 
-    // ── ELIMINAR ──────────────────────────────────────────────
+    // ── ELIMINAR ──────────────────────────────────────────────────
     async function eliminar(id) {
       if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
       try {
         await apiDelete(tablaActual, id);
-        toast('Eliminado correctamente');
-        cargarDatos();
+        toast('Eliminado correctamente'); cargarDatos();
       } catch (e) { toast('Error al eliminar: ' + e.message, 'err'); }
     }
 
+<<<<<<< HEAD
     // ── EXPORTAR EXCEL ────────────────────────────────────────
     function exportarExcel() {
       if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
@@ -2428,11 +2652,59 @@
         console.error('Error:', e);
       }
     }
+=======
+    // ── EXPORTAR EXCEL ────────────────────────────────────────────
+    function abrirModalExportar() {
+      const sel = document.getElementById('exportYear'); sel.innerHTML = '';
+      const y = new Date().getFullYear();
+      for (let i = y; i >= y - 5; i--) { const o = document.createElement('option'); o.value = i; o.textContent = i; sel.appendChild(o); }
+      sel.value = y;
+      document.getElementById('modalExportar').classList.add('visible');
+    }
+
+    function exportarExcel() {
+      if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
+      const year = parseInt(document.getElementById('exportYear').value);
+      const meses = Array.from(document.querySelectorAll('#exportMeses input:checked')).map(i => parseInt(i.value));
+      const filtrados = registros.filter(f => {
+        if (!f.fecha) return false;
+        const [y, m] = f.fecha.split('-').map(Number);
+        if (y !== year) return false;
+        if (meses.length && !meses.includes(m)) return false;
+        return true;
+      });
+      if (!filtrados.length) { toast('No hay datos para ese filtro', 'err'); return; }
+      const cabeceras = ['NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', 'FACTURA', 'CONCEPTO', 'Base 1', '%IVA1', 'Total IVA1', '%RE1', 'Total RE1', 'TASAS', 'Base 2', '%IVA2', 'Total IVA2', 'Base3', '%IVA3', 'Total IVA3', 'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención', 'Total', 'Estado', 'Vencimiento'];
+      const filas = filtrados.map(f => ({ 'NUMERACION INTERNA EMP': f.numero_interno || '', 'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '', 'NIF': f.nif || '', 'NOMBRE': f.proveedor || '', 'FACTURA': f.numero_factura || '', 'CONCEPTO': f.concepto || '', 'Base 1': f.base1 != null ? parseFloat(f.base1) : '', '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '', 'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '', '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '', 'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '', 'TASAS': f.tasas != null ? parseFloat(f.tasas) : '', 'Base 2': f.base2 != null ? parseFloat(f.base2) : '', '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '', 'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '', 'Base3': f.base3 != null ? parseFloat(f.base3) : '', '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '', 'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '', 'Exento': f.exento != null ? parseFloat(f.exento) : '', 'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '', 'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '', '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '', 'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '', 'Total': f.total != null ? parseFloat(f.total) : 0, 'Estado': (f.estado || 'pendiente').toUpperCase(), 'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : '' }));
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
+      ws['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 30 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, ws, tablaActual.replace('facturas_', '').toUpperCase());
+      const fecha = new Date().toISOString().split('T')[0];
+      const nombre = `${tablaActual}_${fecha}.xlsx`;
+      XLSX.writeFile(wb, nombre);
+      toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel: <strong>${nombre}</strong>`, 'ok');
+    }
+
+    // ── CERRAR MODALES ────────────────────────────────────────────
+    function cerrarModal(id) { document.getElementById(id).classList.remove('visible'); }
+
+    // ── EMAIL PUNTOS ──────────────────────────────────────────────
+    async function enviarEmailPuntos(email, nombre, puntos, tipo) {
+      if (!email) return;
+      try {
+        await fetch('https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/enviar-email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY }, body: JSON.stringify({ email, nombre, puntos, tipo }) });
+      } catch (e) { console.error('Error email:', e); }
+    }
+
+    // ── CADUCIDAD PUNTOS ──────────────────────────────────────────
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
     async function comprobarCaducidadPuntos() {
       const ahora = new Date();
       for (const cliente of clientesDB) {
         if (!cliente.puntos_desde || !cliente.puntos || cliente.puntos <= 0) continue;
         const desde = new Date(cliente.puntos_desde);
+<<<<<<< HEAD
         const mesesTranscurridos = (ahora.getFullYear() - desde.getFullYear()) * 12
           + (ahora.getMonth() - desde.getMonth());
 
@@ -2454,6 +2726,17 @@
             await enviarEmailPuntos(cliente.email, cliente.nombre, cliente.puntos, 'aviso');
           }
           cliente._avisoEnviado = true; // evitar reenvíos en la misma sesión
+=======
+        const meses = (ahora.getFullYear() - desde.getFullYear()) * 12 + (ahora.getMonth() - desde.getMonth());
+        if (meses >= 6) {
+          const sig = new Date(desde); sig.setMonth(sig.getMonth() + 6);
+          await apiPatch('clientes', cliente.id, { puntos: 0, puntos_desde: sig.toISOString() });
+          cliente.puntos = 0; cliente.puntos_desde = sig.toISOString();
+          toast(`Puntos de <strong>${cliente.nombre}</strong> reiniciados por caducidad`, 'info');
+        } else if (meses === 5 && !cliente._avisoEnviado) {
+          if (cliente.email) { await enviarEmailPuntos(cliente.email, cliente.nombre, cliente.puntos, 'aviso'); }
+          cliente._avisoEnviado = true;
+>>>>>>> ecef74acc695555fe539081c265487a56fcc6b7e
         }
       }
     }
