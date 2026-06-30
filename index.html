@@ -1212,6 +1212,21 @@
       if (!r.ok) throw new Error(await r.text());
       return r.json();
     }
+    async function apiGetAll(tabla, params = '') {
+      let todos = [];
+      let desde = 0;
+      const tam = 1000;
+      while (true) {
+        const sep = params ? '&' : '';
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}${sep}limit=${tam}&offset=${desde}`, { headers: hdrs });
+        if (!r.ok) throw new Error(await r.text());
+        const lote = await r.json();
+        todos = todos.concat(lote);
+        if (lote.length < tam) break;
+        desde += tam;
+      }
+      return todos;
+    }
     async function apiPost(tabla, body) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {
         method: 'POST', headers: hdrs, body: JSON.stringify(body)
@@ -1233,8 +1248,8 @@
       if (!r.ok) throw new Error(await r.text());
     }
 
-    async function cargarInventarioCache() { inventarioDB = await apiGet('inventario', 'order=nombre'); }
-    async function cargarClientesCache() { clientesDB = await apiGet('clientes', 'order=nombre'); }
+    async function cargarInventarioCache() { inventarioDB = await apiGetAll('inventario', 'order=nombre'); }
+    async function cargarClientesCache() { clientesDB = await apiGetAll('clientes', 'order=nombre'); }
     async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
 
     // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
@@ -1360,10 +1375,10 @@
           facturas_tienda: 'order=fecha.desc', facturas_almacen: 'order=fecha.desc',
           albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre'
         };
-        registros = await apiGet(tablaActual, orden[tablaActual] || '');
-        inventarioDB = await apiGet('inventario', 'order=nombre');
-        clientesDB = await apiGet('clientes', 'order=nombre');
-        proveedoresDB = await apiGet('proveedores', 'order=nombre');
+        registros = await apiGetAll(tablaActual, orden[tablaActual] || '');
+        inventarioDB = await apiGetAll('inventario', 'order=nombre');
+        clientesDB = await apiGetAll('clientes', 'order=nombre');
+        proveedoresDB = await apiGetAll('proveedores', 'order=nombre');
 
         if (tablaActual === 'facturas_tienda' || tablaActual === 'facturas_almacen') {
           actualizarStats(); renderAlertas();
@@ -1774,19 +1789,19 @@
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
-      <select id="lc_prod_${idx}" onchange="recalcPuntos()">
+      <select id="lc_prod_${idx}">
         <option value="">— Elige producto —</option>${opts}
       </select>
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad</label>
-      <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center" oninput="recalcPuntos()">
+      <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center">
     </div>
     <div class="form-group" style="margin:0;width:70px">
       <label style="font-size:.75rem">Puntos</label>
       <input type="text" id="lc_pts_${idx}" readonly style="text-align:center;background:#f7f0f5;font-weight:600;color:#b53987" value="0">
     </div>
-    <button type="button" onclick="document.getElementById('lc_${idx}').remove();recalcPuntos()"
+    <button type="button" onclick="document.getElementById('lc_${idx}').remove()"
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
     </button>`;
