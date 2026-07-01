@@ -407,7 +407,6 @@
     }
 
     .td-acciones {
-      display: flex;
       gap: 6px;
       align-items: center;
       flex-wrap: wrap;
@@ -987,6 +986,8 @@
         <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
         <button class="btn-nav" onclick="cambiarSeccion('inventario')"><i
             class="fa-solid fa-boxes-stacked"></i>Inventario</button>
+        <button class="btn-nav" onclick="cambiarSeccion('materiales_obra')"><i
+            class="fa-solid fa-boxes-stacked"></i>Material Obra</button>
       </div>
       <button class="btn-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
     </div>
@@ -1124,6 +1125,59 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL MATERIAL OBRA -->
+  <div class="modal-overlay" id="modalMaterialObra">
+    <div class="modal-box-sm">
+      <h3><i class="fa-solid fa-boxes-stacked" style="color:#b53987"></i>Registrar Material de Obra</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label>Nombre de la obra *</label>
+          <input type="text" id="mo_nombre_obra" placeholder="Ej: Reforma Calle Mayor 12">
+        </div>
+        <div class="form-group">
+          <label>Nombre del empleado *</label>
+          <input type="text" id="mo_nombre_empleado" placeholder="Nombre y apellidos">
+        </div>
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="mo_fecha">
+        </div>
+        <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Materiales que se lleva</div>
+        <p style="font-size:.78rem;color:#888;margin-top:-8px"><i class="fa-solid fa-info-circle me-1"></i>Cada producto
+          descuenta stock automáticamente.</p>
+        <div id="lineasMaterial"></div>
+        <button type="button" class="btn-add-linea" onclick="addLineaMaterial()">
+          <i class="fa-solid fa-plus me-1"></i>Añadir material
+        </button>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancelar" onclick="cerrarModal('modalMaterialObra')">Cancelar</button>
+        <button class="btn-guardar" onclick="guardarMaterialObra()"><i
+            class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EXPORTAR MATERIALES OBRA -->
+  <div class="modal-overlay" id="modalExportarMateriales">
+    <div class="modal-box-sm">
+      <h3><i class="fa-solid fa-file-excel" style="color:#b53987"></i>Exportar Materiales por Obra</h3>
+      <div class="form-group">
+        <label>Obra</label>
+        <select id="exportObraSelect"></select>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancelar" onclick="cerrarModal('modalExportarMateriales')">Cancelar</button>
+        <button class="btn-guardar" onclick="exportarMaterialesExcel()">
+          <i class="fa-solid fa-file-excel me-1"></i>Exportar
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+
   <!-- MODAL EXPORTAR EXCEL -->
   <div class="modal-overlay" id="modalExportar">
     <div class="modal-box-sm">
@@ -1175,6 +1229,9 @@
     };
 
     let tablaActual = 'clasificacion';
+
+    // 'clasificacion' es la clave interna de la sección; la tabla real es 'facturas_pendientes'
+    function tablaReal(t) { return t === 'clasificacion' ? 'facturas_pendientes' : t; }
     let modalDestinoTabla = null;   // tabla destino del modal "Nuevo registro" (puede diferir de tablaActual)
     let registros = [];
     let inventarioDB = [];
@@ -1184,6 +1241,7 @@
     let clienteSelPuntos = 0;
     let lineasCompraCount = 0;
     let lineasFacturaCount = 0;
+    let lineasMaterialCount = 0;
 
     // Datos que se llevan de una factura pendiente a su formulario de clasificación
     window._pendienteOrigenId = null;
@@ -1365,7 +1423,9 @@
         facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
         albaranes: ['Albaranes', 'fa-file-signature', false],
         clientes: ['Clientes', 'fa-users', false],
-        inventario: ['Inventario', 'fa-boxes-stacked', false]
+        inventario: ['Inventario', 'fa-boxes-stacked', false],
+        materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false]
+
       };
       const [tit, ico, stats] = titulos[sec];
       document.getElementById('txtSeccionTitulo').textContent = tit;
@@ -1375,7 +1435,7 @@
       document.getElementById('badgePendientes').style.display = 'none';
 
       const esFacturas = sec === 'facturas_almacen' || sec === 'facturas_obra';
-      document.getElementById('btnExportar').style.display = esFacturas ? 'flex' : 'none';
+      document.getElementById('btnExportar').style.display = (esFacturas || sec === 'materiales_obra') ? 'flex' : 'none';
 
       const btnTxt = document.getElementById('btnNuevaTxt');
       btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : 'Añadir Nuevo';
@@ -1393,9 +1453,12 @@
         sp.placeholder = 'Buscar remitente o asunto...';
       } else if (sec === 'albaranes') {
         sel.innerHTML = `<option value="">Todos</option>
-      <option value="si">Facturado</option>
-      <option value="no">Sin facturar</option>`;
+  <option value="si">Facturado</option>
+  <option value="no">Sin facturar</option>`;
         sp.placeholder = 'Buscar empresa o NIF...';
+      } else if (sec === 'materiales_obra') {
+        sel.innerHTML = `<option value="">Todas</option>`;
+        sp.placeholder = 'Buscar por obra o empleado...';
       } else {
         sel.innerHTML = `<option value="">Todos</option>`;
         sp.placeholder = sec === 'clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
@@ -1412,9 +1475,10 @@
           clasificacion: 'clasificado=eq.false&order=fecha_recibido.desc',
           facturas_almacen: 'order=fecha.desc',
           facturas_obra: 'order=fecha.desc',
-          albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre'
+          albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre',
+          materiales_obra: 'select=*,materiales_obra_items(*)&order=fecha.desc'
         };
-        registros = await apiGetAll(tablaActual, orden[tablaActual] || '');
+        registros = await apiGetAll(tablaReal(tablaActual), orden[tablaActual] || '');
         inventarioDB = await apiGetAll('inventario', 'order=nombre');
         clientesDB = await apiGetAll('clientes', 'order=nombre');
         proveedoresDB = await apiGetAll('proveedores', 'order=nombre');
@@ -1573,7 +1637,7 @@
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Acción</th><th></th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Capturado</th><th>Acción</th><th></th>
     </tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto, f.nombre_obra].some(v => (v || '').toLowerCase().includes(q));
@@ -1581,7 +1645,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(23, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(25, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -1607,10 +1671,12 @@
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
-        <td class="td-acciones">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
+        <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
+        <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
         <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_obra')">
           ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
         </button></td>
+        
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
         }).join('');
@@ -1691,6 +1757,26 @@
         <td><button class="btn-eliminar" onclick="eliminar(${p.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
         }).join('');
+        // MATERIALES OBRA
+      } else if (tablaActual === 'materiales_obra') {
+        hdr.innerHTML = `<tr><th>Obra</th><th>Empleado</th><th>Fecha</th><th>Materiales</th><th>Detalle</th><th></th></tr>`;
+        const lista = registros.filter(f => [f.nombre_obra, f.nombre_empleado].some(v => (v || '').toLowerCase().includes(q)));
+        if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay materiales registrados'); return; }
+        bdy.innerHTML = lista.map(f => {
+          const items = f.materiales_obra_items || [];
+          const resumen = items.length
+            ? items.slice(0, 2).map(i => `${i.producto_nombre} (${i.cantidad})`).join(', ') + (items.length > 2 ? ` +${items.length - 2} más` : '')
+            : 'Sin materiales';
+          return `<tr>
+        <td class="td-nombre"><strong>${f.nombre_obra || '—'}</strong></td>
+        <td>${f.nombre_empleado || '—'}</td>
+        <td>${fmtF(f.fecha)}</td>
+        <td class="td-concepto" title="${resumen}">${resumen}</td>
+        <td><span class="link-badge" onclick="verDetalleMaterial(${f.id})"><i class="fa-solid fa-list"></i>Ver detalle</span></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+        }).join('');
+
       }
     }
 
@@ -1771,6 +1857,20 @@
         </tbody></table>`;
         document.getElementById('modalDetalle').classList.add('visible');
       } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+    function verDetalleMaterial(id) {
+      const reg = registros.find(r => r.id === id);
+      if (!reg) return;
+      const items = reg.materiales_obra_items || [];
+      document.getElementById('modalDetalleTitulo').innerHTML =
+        `<i class="fa-solid fa-boxes-stacked" style="color:#b53987"></i>Materiales — ${reg.nombre_obra || '—'}`;
+      document.getElementById('modalDetalleContenido').innerHTML = !items.length
+        ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin materiales registrados</p>`
+        : `<p style="font-size:.85rem;color:#888;margin-bottom:8px">Empleado: <strong>${reg.nombre_empleado || '—'}</strong> · Fecha: <strong>${fmtF(reg.fecha)}</strong></p>
+        <table class="mini-table"><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>
+        ${items.map(i => `<tr><td>${i.producto_nombre || '—'}</td><td><strong>${i.cantidad}</strong></td></tr>`).join('')}
+      </tbody></table>`;
+      document.getElementById('modalDetalle').classList.add('visible');
     }
 
     // Rangos Puntos
@@ -1891,6 +1991,33 @@
         cargarDatos();
       } catch (e) { toast('Error al guardar compra: ' + e.message, 'err'); }
     }
+    function addLineaMaterial() {
+      lineasMaterialCount++;
+      const idx = lineasMaterialCount;
+      const opts = inventarioDB.map(p =>
+        `<option value="${p.id}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0})</option>`
+      ).join('');
+      const div = document.createElement('div');
+      div.id = `lm_${idx}`;
+      div.className = 'linea-prod';
+      div.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Producto</label>
+      <select id="lm_prod_${idx}">
+        <option value="">— Elige producto —</option>${opts}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Cantidad</label>
+      <input type="number" id="lm_cant_${idx}" value="1" min="1" style="text-align:center">
+    </div>
+    <div style="width:70px"></div>
+    <button type="button" onclick="document.getElementById('lm_${idx}').remove()"
+      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`;
+      document.getElementById('lineasMaterial').appendChild(div);
+    }
 
     // ── CAMPOS IVA / BASES ────────────────────────────────────
     function htmlCamposExcel() {
@@ -1940,6 +2067,18 @@
     // ── MODAL NUEVO REGISTRO ──────────────────────────────────
     function abrirModalNuevo(tablaOverride) {
       const tabla = tablaOverride || tablaActual;
+
+      if (tabla === 'materiales_obra') {
+        document.getElementById('mo_nombre_obra').value = '';
+        document.getElementById('mo_nombre_empleado').value = '';
+        document.getElementById('mo_fecha').value = hoy();
+        document.getElementById('lineasMaterial').innerHTML = '';
+        lineasMaterialCount = 0;
+        document.getElementById('modalMaterialObra').classList.add('visible');
+        addLineaMaterial();
+        return;
+      }
+
       modalDestinoTabla = tabla;
       lineasFacturaCount = 0;
       const cont = document.getElementById('modalFormContenido');
@@ -2111,6 +2250,16 @@
     }
 
     function abrirModalExportar() {
+      if (tablaActual === 'materiales_obra') {
+        abrirModalExportarMateriales();
+        return;
+      }
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra') {
+        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra y Material de Obra', 'err');
+        return;
+      }
+
+
       if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra') {
         toast('La exportación solo está disponible en Facturas Almacén y Facturas Obra', 'err');
         return;
@@ -2283,12 +2432,94 @@
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
       }
     }
+    async function guardarMaterialObra() {
+      const nombre_obra = document.getElementById('mo_nombre_obra').value.trim();
+      const nombre_empleado = document.getElementById('mo_nombre_empleado').value.trim();
+      const fecha = document.getElementById('mo_fecha').value;
+      if (!nombre_obra || !nombre_empleado || !fecha) {
+        toast('Obra, empleado y fecha son obligatorios', 'err'); return;
+      }
+
+      const lineas = [];
+      let ok = true;
+      document.querySelectorAll('[id^="lm_prod_"]').forEach(sel => {
+        if (!sel.value) return;
+        const idx = sel.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lm_cant_${idx}`)?.value || 0);
+        const stock = parseFloat(sel.selectedOptions[0]?.dataset.stock || 0);
+        const nombre = sel.selectedOptions[0]?.text.split('(')[0].trim();
+        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; return; }
+        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; return; }
+        lineas.push({ producto_id: parseInt(sel.value), producto_nombre: nombre, cantidad: cant, stock });
+      });
+      if (!ok) return;
+      if (!lineas.length) { toast('Añade al menos un material', 'err'); return; }
+
+      try {
+        const [header] = await apiPost('materiales_obra', { nombre_obra, nombre_empleado, fecha });
+        const items = lineas.map(l => ({
+          materiales_obra_id: header.id,
+          producto_id: l.producto_id,
+          producto_nombre: l.producto_nombre,
+          cantidad: l.cantidad
+        }));
+        await apiPost('materiales_obra_items', items);
+        for (const l of lineas) {
+          await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad });
+        }
+        toast('Material de obra registrado correctamente');
+        cerrarModal('modalMaterialObra');
+        cargarDatos();
+      } catch (e) {
+        toast('Error al guardar: ' + e.message, 'err');
+      }
+    }
+    function abrirModalExportarMateriales() {
+      const obras = [...new Set(registros.map(r => r.nombre_obra).filter(Boolean))].sort();
+      const sel = document.getElementById('exportObraSelect');
+      sel.innerHTML = `<option value="">Todas las obras</option>` +
+        obras.map(o => `<option value="${o}">${o}</option>`).join('');
+      document.getElementById('modalExportarMateriales').classList.add('visible');
+    }
+
+    function exportarMaterialesExcel() {
+      const obraSel = document.getElementById('exportObraSelect').value;
+      const filtrados = obraSel ? registros.filter(r => r.nombre_obra === obraSel) : registros;
+      if (!filtrados.length) { toast('No hay datos para exportar', 'err'); return; }
+
+      const filas = [];
+      filtrados.forEach(r => {
+        const items = r.materiales_obra_items || [];
+        if (!items.length) {
+          filas.push({ 'OBRA': r.nombre_obra || '', 'EMPLEADO': r.nombre_empleado || '', 'FECHA': r.fecha ? r.fecha.split('-').reverse().join('/') : '', 'PRODUCTO': '', 'CANTIDAD': '' });
+        } else {
+          items.forEach(i => {
+            filas.push({
+              'OBRA': r.nombre_obra || '',
+              'EMPLEADO': r.nombre_empleado || '',
+              'FECHA': r.fecha ? r.fecha.split('-').reverse().join('/') : '',
+              'PRODUCTO': i.producto_nombre || '',
+              'CANTIDAD': i.cantidad != null ? parseFloat(i.cantidad) : ''
+            });
+          });
+        }
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(filas, { header: ['OBRA', 'EMPLEADO', 'FECHA', 'PRODUCTO', 'CANTIDAD'] });
+      ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 12 }, { wch: 30 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, ws, 'Materiales Obra');
+      const fecha = new Date().toISOString().split('T')[0];
+      const nombre = `materiales_obra_${obraSel || 'todas'}_${fecha}.xlsx`;
+      XLSX.writeFile(wb, nombre);
+      toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
+    }
 
     // ── ELIMINAR ──────────────────────────────────────────────
     async function eliminar(id) {
       if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
       try {
-        await apiDelete(tablaActual, id);
+        await apiDelete(tablaReal(tablaActual), id);
         toast('Eliminado correctamente');
         cargarDatos();
       } catch (e) { toast('Error al eliminar: ' + e.message, 'err'); }
@@ -2399,6 +2630,7 @@
         console.error('Error:', e);
       }
     }
+
 
     async function comprobarCaducidadPuntos() {
       const ahora = new Date();
