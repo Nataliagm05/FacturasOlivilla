@@ -198,6 +198,16 @@
       flex-wrap: wrap;
     }
 
+    .badge-nuevo {
+      background: #e53e3e;
+      color: #fff;
+      font-size: .68rem;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+      margin-left: 4px;
+    }
+
     .alertas-wrap {
       margin-bottom: 1.25rem;
     }
@@ -561,6 +571,7 @@
       cursor: pointer;
       transition: background .2s;
       white-space: nowrap;
+      text-decoration: none;
     }
 
     .link-badge:hover {
@@ -965,10 +976,12 @@
         <span>Almacén Olivilla Tres</span>
       </div>
       <div class="nav-principal">
-        <button class="btn-nav active" onclick="cambiarSeccion('facturas_tienda')"><i
-            class="fa-solid fa-shop"></i>Facturas Tienda</button>
+        <button class="btn-nav active" onclick="cambiarSeccion('clasificacion')"><i
+            class="fa-solid fa-inbox"></i>Clasificación</button>
         <button class="btn-nav" onclick="cambiarSeccion('facturas_almacen')"><i
             class="fa-solid fa-warehouse"></i>Facturas Almacén</button>
+        <button class="btn-nav" onclick="cambiarSeccion('facturas_obra')"><i
+            class="fa-solid fa-helmet-safety"></i>Facturas Obra</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
             class="fa-solid fa-file-signature"></i>Albaranes</button>
         <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
@@ -980,8 +993,9 @@
 
     <div class="main-wrap">
       <div class="page-title">
-        <i id="iconoSeccion" class="fa-solid fa-file-invoice" style="color:#b53987"></i>
-        <span id="txtSeccionTitulo">Facturas de Tienda</span>
+        <i id="iconoSeccion" class="fa-solid fa-inbox" style="color:#b53987"></i>
+        <span id="txtSeccionTitulo">Bandeja de Clasificación</span>
+        <span id="badgePendientes" class="badge-nuevo" style="display:none"></span>
       </div>
       <div class="alertas-wrap" id="alertasWrap"></div>
       <div id="statsContenedor" class="stats-grid" style="display:none">
@@ -1011,7 +1025,8 @@
         <select id="filtroEstado" onchange="renderTabla()">
           <option value="">Todos los estados</option>
         </select>
-        <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i>Añadir Nuevo</button>
+        <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i><span
+            id="btnNuevaTxt">Añadir Nuevo</span></button>
         <button class="btn-exportar" id="btnExportar" onclick="abrirModalExportar()" style="display:none"><i
             class="fa-solid fa-file-excel"></i>Exportar Excel</button>
       </div>
@@ -1159,7 +1174,8 @@
       'Prefer': 'return=representation'
     };
 
-    let tablaActual = 'facturas_tienda';
+    let tablaActual = 'clasificacion';
+    let modalDestinoTabla = null;   // tabla destino del modal "Nuevo registro" (puede diferir de tablaActual)
     let registros = [];
     let inventarioDB = [];
     let clientesDB = [];
@@ -1168,6 +1184,10 @@
     let clienteSelPuntos = 0;
     let lineasCompraCount = 0;
     let lineasFacturaCount = 0;
+
+    // Datos que se llevan de una factura pendiente a su formulario de clasificación
+    window._pendienteOrigenId = null;
+    window._prellenado = null;
 
     // ── UTILIDADES ────────────────────────────────────────────
     function fmt(v) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
@@ -1195,7 +1215,7 @@
         document.getElementById('loginView').style.display = 'none';
         document.getElementById('appView').style.display = 'flex';
         Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()])
-          .then(() => cambiarSeccion('facturas_tienda'));
+          .then(() => cambiarSeccion('clasificacion'));
       } else {
         document.getElementById('loginErr').style.display = 'block';
       }
@@ -1248,25 +1268,36 @@
       if (!r.ok) throw new Error(await r.text());
     }
 
+    // Sube un fichero (PDF/imagen) al bucket "facturas-entrantes" de Supabase Storage
+    async function subirArchivoStorage(file) {
+      const rutaArchivo = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/facturas-entrantes/${rutaArchivo}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': file.type || 'application/octet-stream'
+        },
+        body: file
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return `${SUPABASE_URL}/storage/v1/object/public/facturas-entrantes/${rutaArchivo}`;
+    }
+
     async function cargarInventarioCache() { inventarioDB = await apiGetAll('inventario', 'order=nombre'); }
     async function cargarClientesCache() { clientesDB = await apiGetAll('clientes', 'order=nombre'); }
     async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
 
     // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
-    // Vincula un input de nombre y un input de NIF al listado de proveedoresDB.
-    // Al seleccionar un proveedor se rellena nombre Y nif automáticamente.
     function setupProveedorAC(inputNombreId, inputNifId) {
       const inpN = document.getElementById(inputNombreId);
       const inpF = document.getElementById(inputNifId);
       if (!inpN || !inpF) return;
 
-      // Asegurar posición relativa en el contenedor del input nombre
       inpN.parentElement.style.position = 'relative';
       inpF.parentElement.style.position = 'relative';
 
-      // Lista bajo el campo nombre
       const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
-      // Lista bajo el campo NIF
       const listaF = _crearLista('ac_f_' + inputNifId, inpF.parentElement);
 
       function filtrar(q) {
@@ -1301,12 +1332,10 @@
         });
       }
 
-      // Input nombre
       inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
       inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
       inpN.addEventListener('blur', () => setTimeout(() => listaN.style.display = 'none', 160));
 
-      // Input NIF
       inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
       inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
       inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));
@@ -1331,8 +1360,9 @@
         b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
       );
       const titulos = {
-        facturas_tienda: ['Facturas de Tienda', 'fa-shop', true],
+        clasificacion: ['Bandeja de Clasificación', 'fa-inbox', false],
         facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
+        facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
         albaranes: ['Albaranes', 'fa-file-signature', false],
         clientes: ['Clientes', 'fa-users', false],
         inventario: ['Inventario', 'fa-boxes-stacked', false]
@@ -1342,9 +1372,13 @@
       document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;
       document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
       document.getElementById('alertasWrap').innerHTML = '';
+      document.getElementById('badgePendientes').style.display = 'none';
 
-      const esFacturas = sec === 'facturas_tienda' || sec === 'facturas_almacen';
+      const esFacturas = sec === 'facturas_almacen' || sec === 'facturas_obra';
       document.getElementById('btnExportar').style.display = esFacturas ? 'flex' : 'none';
+
+      const btnTxt = document.getElementById('btnNuevaTxt');
+      btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : 'Añadir Nuevo';
 
       const sel = document.getElementById('filtroEstado');
       const sp = document.getElementById('searchInput');
@@ -1353,7 +1387,10 @@
       <option value="pendiente">Pendiente</option>
       <option value="pagado">Pagada</option>
       <option value="vencido">Vencida</option>`;
-        sp.placeholder = 'Buscar por nº, empresa, NIF, concepto...';
+        sp.placeholder = sec === 'facturas_obra' ? 'Buscar por nº, proveedor, NIF, obra...' : 'Buscar por nº, proveedor, NIF, concepto...';
+      } else if (sec === 'clasificacion') {
+        sel.innerHTML = `<option value="">Todas</option>`;
+        sp.placeholder = 'Buscar remitente o asunto...';
       } else if (sec === 'albaranes') {
         sel.innerHTML = `<option value="">Todos</option>
       <option value="si">Facturado</option>
@@ -1369,10 +1406,12 @@
     // ── CARGAR DATOS ──────────────────────────────────────────
     async function cargarDatos() {
       document.getElementById('tablaBody').innerHTML =
-        `<tr><td colspan="15"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
+        `<tr><td colspan="23"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
       try {
         const orden = {
-          facturas_tienda: 'order=fecha.desc', facturas_almacen: 'order=fecha.desc',
+          clasificacion: 'clasificado=eq.false&order=fecha_recibido.desc',
+          facturas_almacen: 'order=fecha.desc',
+          facturas_obra: 'order=fecha.desc',
           albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre'
         };
         registros = await apiGetAll(tablaActual, orden[tablaActual] || '');
@@ -1380,15 +1419,20 @@
         clientesDB = await apiGetAll('clientes', 'order=nombre');
         proveedoresDB = await apiGetAll('proveedores', 'order=nombre');
 
-        if (tablaActual === 'facturas_tienda' || tablaActual === 'facturas_almacen') {
+        if (tablaActual === 'facturas_almacen' || tablaActual === 'facturas_obra') {
           actualizarStats(); renderAlertas();
+        }
+        if (tablaActual === 'clasificacion' && registros.length) {
+          const bd = document.getElementById('badgePendientes');
+          bd.textContent = `${registros.length} sin clasificar`;
+          bd.style.display = 'inline-block';
         }
         await comprobarCaducidadPuntos();
         renderTabla();
       } catch (e) {
         toast('Error al cargar: ' + e.message, 'err');
         document.getElementById('tablaBody').innerHTML =
-          `<tr><td colspan="15"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
+          `<tr><td colspan="23"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
       }
     }
 
@@ -1417,7 +1461,6 @@
       if (!alertas.length) { wrap.innerHTML = ''; return; }
       wrap.innerHTML = alertas.map(({ f, dias }) => {
         const critica = dias <= 0;
-        // En facturas tienda el campo en DB es 'proveedor', en almacén también 'proveedor'
         const empresa = f.proveedor || '—';
         const msg = dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
         return `<div class="alerta-item ${critica ? 'critica' : ''}">
@@ -1428,6 +1471,23 @@
       }).join('');
     }
 
+    // ── TOGGLE REVISIÓN (por persona) ─────────────────────────
+    async function toggleRevisado(id, campo, tabla, actual) {
+      try {
+        await apiPatch(tabla, id, { [campo]: !actual });
+        const reg = registros.find(r => r.id === id);
+        if (reg) reg[campo] = !actual;
+        renderTabla();
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+
+    function chipRevisado(f, campo, tabla, etiqueta) {
+      const activo = !!f[campo];
+      return `<button class="btn-toggle-facturado ${activo ? 'si' : 'no'}" style="padding:4px 8px;font-size:.72rem"
+        onclick="toggleRevisado(${f.id},'${campo}','${tabla}',${activo})">
+        ${activo ? '<i class="fa-solid fa-check"></i> ' : ''}${etiqueta}
+      </button>`;
+    }
 
     // ── RENDER TABLA ──────────────────────────────────────────
     function renderTabla() {
@@ -1437,53 +1497,22 @@
       const bdy = document.getElementById('tablaBody');
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
 
-      // FACTURAS TIENDA — usa campo 'proveedor' en DB
-      if (tablaActual === 'facturas_tienda') {
-        hdr.innerHTML = `<tr>
-      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
-      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
-      <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
-      <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
-      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
-      <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
-    </tr>`;
-        const lista = registros.filter(f => {
-          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
-          const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
-          const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
-          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
-        });
-        if (!lista.length) { bdy.innerHTML = emptyRow(21, 'No se encontraron facturas'); return; }
-        bdy.innerHTML = lista.map(f => {
-          const est = f.estado || 'pendiente';
-          const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
-          const eR = esVenc ? 'vencido' : est;
-          return `<tr>
-        <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td><strong>${f.numero_factura || '—'}</strong></td>
-        <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
-        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
-        <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
-        <td class="num-cell">${fmtN(f.base1)}</td>
-        <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_re1)}</td>
-        <td class="num-cell">${fmtN(f.tasas)}</td>
-        <td class="num-cell">${fmtN(f.descuento)}</td>
-        <td class="num-cell">${fmtN(f.base_retencion)}</td>
-        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_retencion)}</td>
-        <td class="td-total">${fmt(f.total)}</td>
-        <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_tienda')">
-          ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
-        </button></td>
+      // BANDEJA DE CLASIFICACIÓN
+      if (tablaActual === 'clasificacion') {
+        hdr.innerHTML = `<tr><th>Recibido</th><th>Remitente</th><th>Asunto</th><th>Archivo</th><th>Clasificar como</th><th></th></tr>`;
+        const lista = registros.filter(f => [f.remitente, f.asunto].some(v => (v || '').toLowerCase().includes(q)));
+        if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay facturas pendientes de clasificar'); return; }
+        bdy.innerHTML = lista.map(f => `<tr>
+        <td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
+        <td class="td-nombre">${f.remitente || '—'}</td>
+        <td class="td-concepto" title="${f.asunto || ''}">${f.asunto || '—'}</td>
+        <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-file-pdf"></i>Ver archivo</a>` : '<span style="color:#ccc;font-size:.78rem">Sin archivo</span>'}</td>
+        <td class="td-acciones">
+          <button class="btn-toggle-pago pagado" onclick="clasificarPendiente(${f.id},'facturas_almacen')"><i class="fa-solid fa-warehouse me-1"></i>Almacén</button>
+          <button class="btn-toggle-pago vencido" onclick="clasificarPendiente(${f.id},'facturas_obra')"><i class="fa-solid fa-helmet-safety me-1"></i>Obra</button>
+        </td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
-      </tr>`;
-        }).join('');
+      </tr>`).join('');
 
         // FACTURAS ALMACÉN
       } else if (tablaActual === 'facturas_almacen') {
@@ -1494,7 +1523,7 @@
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Acción</th><th></th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Acción</th><th></th>
     </tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
@@ -1502,7 +1531,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(21, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(22, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -1526,7 +1555,60 @@
         <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
+        <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
+        <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
         <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_almacen')">
+          ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
+        </button></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+        }).join('');
+
+        // FACTURAS OBRA
+      } else if (tablaActual === 'facturas_obra') {
+        hdr.innerHTML = `<tr>
+      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th><th>Obra</th>
+      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
+      <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
+      <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
+      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
+      <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Acción</th><th></th>
+    </tr>`;
+        const lista = registros.filter(f => {
+          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto, f.nombre_obra].some(v => (v || '').toLowerCase().includes(q));
+          const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
+          const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
+          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
+        });
+        if (!lista.length) { bdy.innerHTML = emptyRow(23, 'No se encontraron facturas'); return; }
+        bdy.innerHTML = lista.map(f => {
+          const est = f.estado || 'pendiente';
+          const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
+          const eR = esVenc ? 'vencido' : est;
+          return `<tr>
+        <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
+        <td><strong>${f.numero_factura || '—'}</strong></td>
+        <td class="td-nombre">${f.proveedor || '—'}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
+        <td class="td-nombre">${f.nombre_obra || '—'}</td>
+        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
+        <td class="num-cell">${fmtN(f.base1)}</td>
+        <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva1)}</td>
+        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_re1)}</td>
+        <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.descuento)}</td>
+        <td class="num-cell">${fmtN(f.base_retencion)}</td>
+        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_retencion)}</td>
+        <td class="td-total">${fmt(f.total)}</td>
+        <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
+        <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
+        <td class="td-acciones">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
+        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_obra')">
           ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
         </button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
@@ -1612,6 +1694,19 @@
       }
     }
 
+    // ── CLASIFICAR UNA FACTURA PENDIENTE ──────────────────────
+    function clasificarPendiente(id, tablaDestino) {
+      const p = registros.find(r => r.id === id);
+      if (!p) return;
+      window._pendienteOrigenId = id;
+      window._prellenado = {
+        proveedor: p.remitente || '',
+        concepto: p.asunto || '',
+        archivo_url: p.archivo_url || ''
+      };
+      abrirModalNuevo(tablaDestino);
+    }
+
     // ── TOGGLE ESTADO FACTURA ─────────────────────────────────
     async function toggleEstado(id, estadoActual, tabla) {
       const nuevo = estadoActual === 'pagado' ? 'pendiente' : 'pagado';
@@ -1637,18 +1732,18 @@
     // ── VER FACTURAS POR NIF ──────────────────────────────────
     async function verFacturasNif(nif, empresa) {
       try {
-        const [ft, fa] = await Promise.all([
-          apiGet('facturas_tienda', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
-          apiGet('facturas_almacen', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`)
+        const [fa, fo] = await Promise.all([
+          apiGet('facturas_almacen', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`),
+          apiGet('facturas_obra', `nif=eq.${encodeURIComponent(nif)}&order=fecha.desc`)
         ]);
-        const todas = [...ft.map(f => ({ ...f, _o: 'Tienda' })), ...fa.map(f => ({ ...f, _o: 'Almacén' }))];
+        const todas = [...fa.map(f => ({ ...f, _o: 'Almacén' })), ...fo.map(f => ({ ...f, _o: 'Obra' }))];
         document.getElementById('modalDetalleTitulo').innerHTML =
           `<i class="fa-solid fa-file-invoice" style="color:#b53987"></i>Facturas de ${empresa} (NIF: ${nif})`;
         document.getElementById('modalDetalleContenido').innerHTML = !todas.length
           ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin facturas para este NIF</p>`
           : `<table class="mini-table"><thead><tr><th>Origen</th><th>Nº Factura</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>
           ${todas.map(f => `<tr>
-            <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${f._o === 'Tienda' ? '#e3f2fd' : '#f3e5f5'};color:${f._o === 'Tienda' ? '#1565c0' : '#6a1b9a'}">${f._o}</span></td>
+            <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${f._o === 'Almacén' ? '#e3f2fd' : '#f3e5f5'};color:${f._o === 'Almacén' ? '#1565c0' : '#6a1b9a'}">${f._o}</span></td>
             <td><strong>${f.numero_factura || '—'}</strong></td>
             <td>${fmtF(f.fecha)}</td>
             <td><strong>${fmt(f.total)}</strong></td>
@@ -1681,98 +1776,35 @@
     // Rangos Puntos
     function calcularPuntosPorTotal(total) {
       if (total < 0) return 0;
-
-      // TRAMO 1: 0€ - 499€ → 1 punto por cada 50€
       if (total < 500) {
         return Math.floor(total / 50);
       }
-
-      // TRAMO 2: 500€ - 999€ → 2 puntos por cada 50€ desde 500€
       if (total < 1000) {
         return 10 + Math.floor((total - 500) / 50) * 2;
       }
-
-      // TRAMO 3: 1000€ en adelante → 3 puntos por cada 50€ desde 1000€
       return 30 + Math.floor((total - 1000) / 50) * 3;
     }
 
-
-
-
-
-
-
-
-
     // ── MODAL COMPRA CLIENTE ──────────────────────────────────
     function abrirModalCompra(clienteId) {
-
-      const cliente =
-        clientesDB.find(
-          c => c.id == clienteId
-        );
-
+      const cliente = clientesDB.find(c => c.id == clienteId);
       if (!cliente) return;
 
       clienteSelId = cliente.id;
       clienteSelPuntos = cliente.puntos || 0;
 
-      document.getElementById("cliente_nombre").value =
-        cliente.nombre || "";
+      document.getElementById("cliente_nombre").value = cliente.nombre || "";
+      document.getElementById("cliente_nif").value = cliente.nif || "";
+      document.getElementById("cliente_telefono").value = cliente.telefono || "";
+      document.getElementById("cliente_email").value = cliente.email || "";
+      document.getElementById("cliente_puntos").value = cliente.puntos || 0;
 
-      document.getElementById("cliente_nif").value =
-        cliente.nif || "";
-
-      document.getElementById("cliente_telefono").value =
-        cliente.telefono || "";
-
-      document.getElementById("cliente_email").value =
-        cliente.email || "";
-
-      document.getElementById("cliente_puntos").value =
-        cliente.puntos || 0;
-
-      document.getElementById("modalPuntos")
-        .classList.add("visible");
-
-      document.getElementById("lineasCompra")
-        .innerHTML = "";
+      document.getElementById("modalPuntos").classList.add("visible");
+      document.getElementById("lineasCompra").innerHTML = "";
       const tcInput = document.getElementById("f_total_compra");
       if (tcInput) tcInput.value = '';
       document.getElementById("totalPuntosCompra").textContent = '0 pts';
       addLineaCompra();
-
-    }
-    async function buscarClienteEmail() {
-
-      const email = document.getElementById("cliente_email")
-        .value
-        .trim()
-        .toLowerCase();
-
-      const cliente = clientesDB.find(
-        c => (c.email || "").toLowerCase() === email
-      );
-
-      if (!cliente) {
-        toast("Cliente no encontrado", "err");
-        return;
-      }
-
-      clienteSelId = cliente.id;
-      clienteSelPuntos = cliente.puntos || 0;
-
-      document.getElementById("cliente_nombre").value =
-        cliente.nombre || "";
-
-      document.getElementById("cliente_nif").value =
-        cliente.nif || "";
-
-      document.getElementById("cliente_telefono").value =
-        cliente.telefono || "";
-
-      document.getElementById("cliente_puntos").value =
-        (cliente.puntos || 0) + " puntos";
     }
 
     function addLineaCompra() {
@@ -1807,9 +1839,6 @@
     </button>`;
       document.getElementById('lineasCompra').appendChild(div);
     }
-
-
-
 
     function recalcPuntosPorTotal(val) {
       const total = parseFloat(val ?? document.getElementById('f_total_compra')?.value ?? 0);
@@ -1909,94 +1938,24 @@
     }
 
     // ── MODAL NUEVO REGISTRO ──────────────────────────────────
-    function abrirModalNuevo() {
+    function abrirModalNuevo(tablaOverride) {
+      const tabla = tablaOverride || tablaActual;
+      modalDestinoTabla = tabla;
       lineasFacturaCount = 0;
       const cont = document.getElementById('modalFormContenido');
 
-      // ── FACTURA TIENDA ──
-      if (tablaActual === 'facturas_tienda') {
-        document.getElementById('modalTitulo').textContent = 'Nueva Factura de Tienda';
-        cont.innerHTML = `
-      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
-      <div class="form-grid">
-        <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
-        <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FT-2026-001"></div>
-        <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
-
-        <div class="form-group span2 ac-wrap">
-          <label>Proveedor *</label>
-          <div style="display:flex;gap:6px;align-items:center">
-  <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
-  <button type="button" class="btn-add-linea" style="padding:6px 10px;font-size:.8rem"
-    onclick="crearProveedorRapido()">
-    <i class="fa-solid fa-plus"></i>
-  </button>
-</div>
-        </div>
-        <div class="form-group ac-wrap">
-          <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
-          <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
-        </div>
-
-        <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
-
-        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
-        <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
-        <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
-      </div>
-      ${htmlCamposExcel()} <div class="form-seccion">
-  Productos comprados
-  <span style="font-weight:400;font-size:.75rem;color:#888">
-    (suman stock automáticamente)
-  </span>
-</div>
-
-<p style="font-size:.78rem;color:#888;margin-bottom:10px">
-  <i class="fa-solid fa-arrow-trend-up me-1"
-     style="color:#2d7a4f"></i>
-  Al guardar, la cantidad se sumará al stock del producto.
-</p>
-
-<div id="lineasFactAlm"></div>
-
-<button
-  type="button"
-  class="btn-add-linea"
-  onclick="addLineaFactAlm()">
-  <i class="fa-solid fa-plus me-1"></i>
-  Añadir producto
-</button>`;
-
-        const opts = inventarioDB.map(p =>
-          `<option value="${p.id}"
-     data-stock="${p.stock || 0}">
-     ${p.nombre} (stock: ${p.stock || 0})
-   </option>`
-        ).join('');
-
-        window._optsFactAlm = opts;
-
-        document.getElementById('modalNueva')
-          .classList.add('visible');
-
-        setTimeout(() => {
-          setupProveedorAC('f_prov', 'f_nif');
-          addLineaFactAlm();
-        }, 50);
-
-
-
-
-
-
-
-
-
-
-
+      // ── BANDEJA DE CLASIFICACIÓN (añadir manualmente) ──
+      if (tabla === 'clasificacion') {
+        document.getElementById('modalTitulo').textContent = 'Añadir factura pendiente';
+        cont.innerHTML = `<div class="form-grid-2">
+      <div class="form-group span2"><label>Remitente / Proveedor</label><input type="text" id="f_remitente" placeholder="nombre@empresa.com o nombre del proveedor"></div>
+      <div class="form-group span2"><label>Asunto</label><input type="text" id="f_asunto" placeholder="Asunto del correo o breve descripción"></div>
+      <div class="form-group span2"><label>Archivo (PDF o imagen)</label><input type="file" id="f_archivo" accept="application/pdf,image/*"></div>
+    </div>`;
+        document.getElementById('modalNueva').classList.add('visible');
 
         // ── FACTURA ALMACÉN ──
-      } else if (tablaActual === 'facturas_almacen') {
+      } else if (tabla === 'facturas_almacen') {
         document.getElementById('modalTitulo').textContent = 'Nueva Factura de Almacén';
         const opts = inventarioDB.map(p =>
           `<option value="${p.id}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0})</option>`
@@ -2010,7 +1969,12 @@
 
         <div class="form-group span2 ac-wrap">
           <label>Proveedor *</label>
-          <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+            <button type="button" class="btn-add-linea" style="padding:6px 10px;font-size:.8rem" onclick="crearProveedorRapido()">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
         </div>
         <div class="form-group ac-wrap">
           <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
@@ -2030,10 +1994,56 @@
       <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
         window._optsFactAlm = opts;
         document.getElementById('modalNueva').classList.add('visible');
-        setTimeout(() => { setupProveedorAC('f_prov', 'f_nif'); addLineaFactAlm(); }, 50);
+        setTimeout(() => {
+          setupProveedorAC('f_prov', 'f_nif');
+          addLineaFactAlm();
+          _aplicarPrellenado();
+        }, 50);
+
+        // ── FACTURA OBRA ──
+      } else if (tabla === 'facturas_obra') {
+        document.getElementById('modalTitulo').textContent = 'Nueva Factura de Obra';
+        const opts = inventarioDB.map(p =>
+          `<option value="${p.id}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0})</option>`
+        ).join('');
+        cont.innerHTML = `
+      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Datos principales</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
+        <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FO-2026-001"></div>
+        <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+
+        <div class="form-group span2 ac-wrap">
+          <label>Proveedor *</label>
+          <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+        </div>
+        <div class="form-group ac-wrap">
+          <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
+          <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
+        </div>
+
+        <div class="form-group span3"><label>Nombre de la obra *</label><input type="text" id="f_obra" placeholder="Ej: Reforma Calle Mayor 12"></div>
+        <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
+
+        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
+        <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
+      </div>
+      ${htmlCamposExcel()}
+      <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock automáticamente)</span></div>
+      <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
+      <div id="lineasFactAlm"></div>
+      <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
+        window._optsFactAlm = opts;
+        document.getElementById('modalNueva').classList.add('visible');
+        setTimeout(() => {
+          setupProveedorAC('f_prov', 'f_nif');
+          addLineaFactAlm();
+          _aplicarPrellenado();
+        }, 50);
 
         // ── ALBARÁN ──
-      } else if (tablaActual === 'albaranes') {
+      } else if (tabla === 'albaranes') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Albarán';
         cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_num" placeholder="ALB-2026-001"></div>
@@ -2052,7 +2062,7 @@
         setTimeout(() => setupProveedorAC('f_empresa', 'f_nif'), 50);
 
         // ── CLIENTE ──
-      } else if (tablaActual === 'clientes') {
+      } else if (tabla === 'clientes') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Cliente';
         cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group span2"><label>Nombre *</label><input type="text" id="f_nombre" placeholder="Nombre completo"></div>
@@ -2064,7 +2074,7 @@
         document.getElementById('modalNueva').classList.add('visible');
 
         // ── INVENTARIO ──
-      } else if (tablaActual === 'inventario') {
+      } else if (tabla === 'inventario') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Producto';
         cont.innerHTML = `<div class="form-grid-2">
       <div class="form-group span2"><label>Nombre del producto *</label><input type="text" id="f_nombre" placeholder="Ej: Cemento CEM II 25kg"></div>
@@ -2075,52 +2085,46 @@
         document.getElementById('modalNueva').classList.add('visible');
       }
     }
+
+    // Rellena proveedor/concepto cuando el modal se abre desde "Clasificar" una factura pendiente
+    function _aplicarPrellenado() {
+      if (!window._prellenado) return;
+      const pv = document.getElementById('f_prov');
+      const cc = document.getElementById('f_concepto');
+      if (pv) pv.value = window._prellenado.proveedor || '';
+      if (cc) cc.value = window._prellenado.concepto || '';
+    }
+
     async function crearProveedorRapido() {
       const nombre = document.getElementById('f_prov').value.trim();
-
-      if (!nombre) {
-        toast('Introduce un nombre de proveedor', 'err');
-        return;
-      }
-
+      if (!nombre) { toast('Introduce un nombre de proveedor', 'err'); return; }
       const nif = document.getElementById('f_nif').value.trim() || null;
-
       try {
-        const nuevo = await apiPost('proveedores', {
-          nombre,
-          nif
-        });
-
+        await apiPost('proveedores', { nombre, nif });
         toast('Proveedor creado correctamente');
-
-        // recargar cache
         proveedoresDB = await apiGet('proveedores', 'order=nombre');
-
-        // auto rellenar si viene nif vacío o coincidencia
         const prov = proveedoresDB.find(p => p.nombre === nombre);
-        if (prov) {
-          document.getElementById('f_nif').value = prov.nif || '';
-        }
-
+        if (prov) document.getElementById('f_nif').value = prov.nif || '';
       } catch (e) {
         toast('Error creando proveedor: ' + e.message, 'err');
       }
     }
+
     function abrirModalExportar() {
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra') {
+        toast('La exportación solo está disponible en Facturas Almacén y Facturas Obra', 'err');
+        return;
+      }
       const sel = document.getElementById('exportYear');
       sel.innerHTML = '';
-
       const currentYear = new Date().getFullYear();
-
       for (let y = currentYear; y >= currentYear - 5; y--) {
         const opt = document.createElement('option');
         opt.value = y;
         opt.textContent = y;
         sel.appendChild(opt);
       }
-
       sel.value = currentYear;
-
       document.getElementById('modalExportar').classList.add('visible');
     }
 
@@ -2154,80 +2158,42 @@
       const btn = document.getElementById('btnGuardar');
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Guardando...';
+      const tabla = modalDestinoTabla || tablaActual;
       try {
 
-        if (tablaActual === 'facturas_tienda') {
+        if (tabla === 'clasificacion') {
+          const remitente = document.getElementById('f_remitente').value.trim();
+          const asunto = document.getElementById('f_asunto').value.trim();
+          if (!remitente && !asunto) { toast('Indica al menos el remitente o el asunto', 'err'); return; }
+          const fileInput = document.getElementById('f_archivo');
+          let archivo_url = null;
+          if (fileInput && fileInput.files.length) {
+            archivo_url = await subirArchivoStorage(fileInput.files[0]);
+          }
+          await apiPost('facturas_pendientes', {
+            remitente: remitente || null,
+            asunto: asunto || null,
+            archivo_url,
+            clasificado: false
+          });
+
+        } else if (tabla === 'facturas_almacen' || tabla === 'facturas_obra') {
           const prov = document.getElementById('f_prov').value.trim();
           const fecha = document.getElementById('f_fecha').value;
           if (!prov || !fecha) { toast('Proveedor y fecha son obligatorios', 'err'); return; }
-          await apiPost('facturas_tienda', {
+          if (tabla === 'facturas_obra' && !document.getElementById('f_obra').value.trim()) {
+            toast('Indica el nombre de la obra', 'err'); return;
+          }
 
-            numero_interno: document.getElementById('f_num_interno').value.trim() || null,
-            numero_factura: document.getElementById('f_num').value.trim() || null,
-            fecha,
-            proveedor: prov,          // ← campo correcto en la tabla
-            nif: document.getElementById('f_nif').value.trim() || null,
-            concepto: document.getElementById('f_concepto').value.trim() || null,
-            total: parseFloat(document.getElementById('f_total').value || 0),
-            estado: document.getElementById('f_est').value,
-            fecha_vencimiento: document.getElementById('f_venc').value || null,
-            ...recogerCamposExcel()
-          });
           const numFactura = document.getElementById('f_num').value.trim();
-          const existe = numFactura && registros.some(r =>
-            (r.numero_factura || '').toLowerCase() === numFactura.toLowerCase()
-          );
-
-          if (existe) {
-            toast('⚠️ Ya existe una factura con ese número', 'err');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
-            return;
-          }
-          const lineas = [];
-
-          document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
-
-            if (!sel.value) return;
-
-            const idx = sel.id.split('_')[2];
-
-            const cant = parseFloat(
-              document.getElementById(`lfa_cant_${idx}`)?.value || 0
-            );
-
-            if (cant > 0) {
-              lineas.push({
-                producto_id: parseInt(sel.value),
-                cantidad: cant,
-                stock_actual: parseFloat(
-                  sel.selectedOptions[0]?.dataset.stock || 0
-                )
-              });
-            }
-
-          });
-
-          for (const l of lineas) {
-
-            await apiPatch(
-              'inventario',
-              l.producto_id,
-              {
-                stock: l.stock_actual + l.cantidad
-              }
-            );
-
+          if (numFactura) {
+            const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
+            if (dup.length) { toast('⚠️ Ya existe una factura con ese número', 'err'); return; }
           }
 
-        } else if (tablaActual === 'facturas_almacen') {
-          const prov = document.getElementById('f_prov').value.trim();
-          const fecha = document.getElementById('f_fecha').value;
-          if (!prov || !fecha) { toast('Proveedor y fecha son obligatorios', 'err'); return; }
-
-          const [fac] = await apiPost('facturas_almacen', {
+          const payload = {
             numero_interno: document.getElementById('f_num_interno').value.trim() || null,
-            numero_factura: document.getElementById('f_num').value.trim() || null,
+            numero_factura: numFactura || null,
             fecha,
             proveedor: prov,
             nif: document.getElementById('f_nif').value.trim() || null,
@@ -2235,20 +2201,12 @@
             total: parseFloat(document.getElementById('f_total').value || 0),
             estado: document.getElementById('f_est').value,
             fecha_vencimiento: document.getElementById('f_venc').value || null,
+            archivo_url: (window._prellenado && window._prellenado.archivo_url) || null,
             ...recogerCamposExcel()
+          };
+          if (tabla === 'facturas_obra') payload.nombre_obra = document.getElementById('f_obra').value.trim();
 
-          });
-          const numFactura2 = document.getElementById('f_num').value.trim();
-          const existe = numFactura2 && registros.some(r =>
-            (r.numero_factura || '').toLowerCase() === numFactura2.toLowerCase()
-          );
-
-          if (existe) {
-            toast('⚠️ Ya existe una factura con ese número', 'err');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
-            return;
-          }
+          await apiPost(tabla, payload);
 
           const lineas = [];
           document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
@@ -2261,24 +2219,24 @@
               stock_actual: parseFloat(sel.selectedOptions[0]?.dataset.stock || 0)
             });
           });
-
           for (const l of lineas) {
-
-            await apiPatch(
-              'inventario',
-              l.producto_id,
-              {
-                stock: l.stock_actual + l.cantidad
-              }
-            );
+            await apiPatch('inventario', l.producto_id, { stock: l.stock_actual + l.cantidad });
           }
+
+          if (window._pendienteOrigenId) {
+            await apiDelete('facturas_pendientes', window._pendienteOrigenId);
+            window._pendienteOrigenId = null;
+          }
+          window._prellenado = null;
+
           toast(`Factura guardada${lineas.length ? ' y stock actualizado' : ''}`);
           cerrarModal('modalNueva');
           lineasFacturaCount = 0;
+          modalDestinoTabla = null;
           cargarDatos();
           return;
 
-        } else if (tablaActual === 'albaranes') {
+        } else if (tabla === 'albaranes') {
           const empresa = document.getElementById('f_empresa').value.trim();
           const fecha = document.getElementById('f_fecha').value;
           if (!empresa || !fecha) { toast('Empresa y fecha son obligatorios', 'err'); return; }
@@ -2291,7 +2249,7 @@
             facturado: false
           });
 
-        } else if (tablaActual === 'clientes') {
+        } else if (tabla === 'clientes') {
           const nombre = document.getElementById('f_nombre').value.trim();
           if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
           await apiPost('clientes', {
@@ -2303,7 +2261,7 @@
             ultima_compra: new Date().toISOString()
           });
 
-        } else if (tablaActual === 'inventario') {
+        } else if (tabla === 'inventario') {
           const nombre = document.getElementById('f_nombre').value.trim();
           if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
           await apiPost('inventario', {
@@ -2316,6 +2274,7 @@
         toast('Guardado correctamente');
         cerrarModal('modalNueva');
         lineasFacturaCount = 0;
+        modalDestinoTabla = null;
         cargarDatos();
       } catch (e) {
         toast('Error al guardar: ' + e.message, 'err');
@@ -2337,79 +2296,77 @@
 
     // ── EXPORTAR EXCEL ────────────────────────────────────────
     function exportarExcel() {
-      if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
-
-      const year = parseInt(document.getElementById('exportYear').value);
-
-      const meses = Array.from(
-        document.querySelectorAll('#exportMeses input:checked')
-      ).map(i => parseInt(i.value));
-
-      const filtrados = registros.filter(f => {
-        if (!f.fecha) return false;
-
-        const [y, m] = f.fecha.split('-').map(Number);
-
-        if (y !== year) return false;
-        if (meses.length && !meses.includes(m)) return false;
-
-        return true;
-      });
-
-      if (!filtrados.length) {
-        toast('No hay datos para ese filtro', 'err');
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra') {
+        toast('La exportación solo está disponible en Facturas Almacén y Facturas Obra', 'err');
         return;
       }
       if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
-      const esTienda = tablaActual === 'facturas_tienda';
+
+      const year = parseInt(document.getElementById('exportYear').value);
+      const meses = Array.from(document.querySelectorAll('#exportMeses input:checked')).map(i => parseInt(i.value));
+
+      const filtrados = registros.filter(f => {
+        if (!f.fecha) return false;
+        const [y, m] = f.fecha.split('-').map(Number);
+        if (y !== year) return false;
+        if (meses.length && !meses.includes(m)) return false;
+        return true;
+      });
+
+      if (!filtrados.length) { toast('No hay datos para ese filtro', 'err'); return; }
+
+      const esObra = tablaActual === 'facturas_obra';
       const cabeceras = [
-        'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', 'FACTURA', 'CONCEPTO',
+        'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', ...(esObra ? ['OBRA'] : []), 'FACTURA', 'CONCEPTO',
         'Base 1', '%IVA1', 'Total IVA1', '%RE1', 'Total RE1', 'TASAS',
         'Base 2', '%IVA2', 'Total IVA2', 'Base3', '%IVA3', 'Total IVA3',
         'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención',
         'Total', 'Estado', 'Vencimiento'
       ];
-      const filas = filtrados.map(f => ({
-        'NUMERACION INTERNA EMP': f.numero_interno || '',
-        'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
-        'NIF': f.nif || '',
-        'NOMBRE': f.proveedor || '',   // ambas tablas usan campo 'proveedor'
-        'FACTURA': f.numero_factura || '',
-        'CONCEPTO': f.concepto || '',
-        'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
-        '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
-        'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
-        '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
-        'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
-        'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
-        'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
-        '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
-        'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
-        'Base3': f.base3 != null ? parseFloat(f.base3) : '',
-        '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
-        'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
-        'Exento': f.exento != null ? parseFloat(f.exento) : '',
-        'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
-        'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
-        '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
-        'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
-        'Total': f.total != null ? parseFloat(f.total) : 0,
-        'Estado': (f.estado || 'pendiente').toUpperCase(),
-        'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
-      }));
+      const filas = filtrados.map(f => {
+        const fila = {
+          'NUMERACION INTERNA EMP': f.numero_interno || '',
+          'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
+          'NIF': f.nif || '',
+          'NOMBRE': f.proveedor || '',
+        };
+        if (esObra) fila['OBRA'] = f.nombre_obra || '';
+        Object.assign(fila, {
+          'FACTURA': f.numero_factura || '',
+          'CONCEPTO': f.concepto || '',
+          'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
+          '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
+          'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+          '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
+          'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
+          'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
+          'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
+          '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
+          'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
+          'Base3': f.base3 != null ? parseFloat(f.base3) : '',
+          '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
+          'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
+          'Exento': f.exento != null ? parseFloat(f.exento) : '',
+          'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
+          'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
+          '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
+          'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
+          'Total': f.total != null ? parseFloat(f.total) : 0,
+          'Estado': (f.estado || 'pendiente').toUpperCase(),
+          'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
+        });
+        return fila;
+      });
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
-      ws['!cols'] = [
-        { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 30 },
-        { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 },
-        { wch: 10 }, { wch: 7 }, { wch: 10 }, { wch: 10 }, { wch: 7 }, { wch: 10 },
-        { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 14 },
-        { wch: 12 }, { wch: 12 }, { wch: 12 }
-      ];
-      XLSX.utils.book_append_sheet(wb, ws, esTienda ? 'Facturas Tienda' : 'Facturas Almacén');
+      const anchos = [18, 12, 14, 28];
+      if (esObra) anchos.push(22);
+      anchos.push(18, 30, 10, 7, 10, 7, 10, 10, 10, 7, 10, 10, 7, 10, 10, 10, 14, 10, 14, 12, 12, 12);
+      ws['!cols'] = anchos.map(w => ({ wch: w }));
+      XLSX.utils.book_append_sheet(wb, ws, esObra ? 'Facturas Obra' : 'Facturas Almacén');
       const fecha = new Date().toISOString().split('T')[0];
-      const nombre = `${esTienda ? 'facturas_tienda' : 'facturas_almacen'}_${fecha}.xlsx`;
+      const nombre = `${tablaActual}_${fecha}.xlsx`;
       XLSX.writeFile(wb, nombre);
       toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
     }
@@ -2417,32 +2374,32 @@
     // ── CERRAR MODALES ────────────────────────────────────────
     function cerrarModal(id) {
       document.getElementById(id).classList.remove('visible');
+      if (id === 'modalNueva') {
+        modalDestinoTabla = null;
+        window._pendienteOrigenId = null;
+        window._prellenado = null;
+      }
     }
+
     async function enviarEmailPuntos(email, nombre, puntos, tipo) {
       if (!email) return;
-
       try {
         const res = await fetch(
           'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/clever-worker',
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + SUPABASE_KEY
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
             body: JSON.stringify({ email, nombre, puntos, tipo })
           }
         );
-
         console.log('Status:', res.status);
-
         const text = await res.text();
         console.log('Respuesta:', text);
-
       } catch (e) {
         console.error('Error:', e);
       }
     }
+
     async function comprobarCaducidadPuntos() {
       const ahora = new Date();
       for (const cliente of clientesDB) {
@@ -2452,7 +2409,6 @@
           + (ahora.getMonth() - desde.getMonth());
 
         if (mesesTranscurridos >= 6) {
-          // Caducados: poner a 0 y avanzar el inicio al siguiente ciclo
           const siguienteCiclo = new Date(desde);
           siguienteCiclo.setMonth(siguienteCiclo.getMonth() + 6);
           await apiPatch('clientes', cliente.id, {
@@ -2464,11 +2420,10 @@
           toast(`Puntos de <strong>${cliente.nombre}</strong> reiniciados por caducidad`, 'info');
 
         } else if (mesesTranscurridos === 5 && !cliente._avisoEnviado) {
-          // Mes 5: aviso por email (solo una vez por sesión)
           if (cliente.email) {
             await enviarEmailPuntos(cliente.email, cliente.nombre, cliente.puntos, 'aviso');
           }
-          cliente._avisoEnviado = true; // evitar reenvíos en la misma sesión
+          cliente._avisoEnviado = true;
         }
       }
     }
