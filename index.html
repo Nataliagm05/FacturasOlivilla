@@ -1621,10 +1621,28 @@
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
-        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_almacen')">
-          ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
-        </button></td>
-        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+<td>
+  <button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_almacen')">
+    ${est === 'pagado'
+              ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente'
+              : '<i class="fa-solid fa-check me-1"></i>Pagada'}
+  </button>
+</td>
+
+<td>
+  <button
+    class="btn-toggle-pago pendiente"
+    onclick="moverFactura(${f.id},'facturas_almacen','facturas_obra')">
+    <i class="fa-solid fa-helmet-safety"></i>
+    Obra
+  </button>
+</td>
+
+<td>
+  <button class="btn-eliminar" onclick="eliminar(${f.id})">
+    <i class="fa-solid fa-trash"></i>
+  </button>
+</td>
       </tr>`;
         }).join('');
 
@@ -1673,11 +1691,28 @@
         <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
         <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
-        <td><button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_obra')">
-          ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Pagada'}
-        </button></td>
-        
-        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+<td>
+  <button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_obra')">
+    ${est === 'pagado'
+              ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente'
+              : '<i class="fa-solid fa-check me-1"></i>Pagada'}
+  </button>
+</td>
+
+<td>
+  <button
+    class="btn-toggle-pago pendiente"
+    onclick="moverFactura(${f.id},'facturas_obra','facturas_almacen')">
+    <i class="fa-solid fa-warehouse"></i>
+    Almacén
+  </button>
+</td>
+
+<td>
+  <button class="btn-eliminar" onclick="eliminar(${f.id})">
+    <i class="fa-solid fa-trash"></i>
+  </button>
+</td>
       </tr>`;
         }).join('');
 
@@ -2514,6 +2549,66 @@
       XLSX.writeFile(wb, nombre);
       toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
     }
+    // MOVER FACTURA A OTRA TABLA
+    async function moverFactura(id, origen, destino) {
+      try {
+
+        // Obtener la factura
+        const factura = await apiGet(origen, `id=eq.${id}`);
+
+        if (!factura || !factura.length) {
+          toast("Factura no encontrada", "err");
+          return;
+        }
+
+        // Copiar todos los datos
+        const nueva = { ...factura[0] };
+
+        // Quitar el id
+        delete nueva.id;
+
+
+        // Si pasa de Obra a Almacén
+        if (origen === 'facturas_obra' && destino === 'facturas_almacen') {
+          delete nueva.nombre_obra;
+          // Estas columnas de revisión solo existen en facturas_obra
+          delete nueva.revisado_angel;
+          delete nueva.revisado_juandavid;
+        }
+
+        // Si pasa de Almacén a Obra
+        if (origen === 'facturas_almacen' && destino === 'facturas_obra') {
+          if (!('nombre_obra' in nueva)) {
+            nueva.nombre_obra = '';
+          }
+        }
+
+        // Quitar metadatos que no deben copiarse (los genera la BD)
+        delete nueva.created_at;
+        delete nueva.updated_at;
+
+        // Insertar en la tabla destino
+        await apiPost(destino, nueva);
+
+        // Eliminar de la tabla origen
+        await apiDelete(origen, id);
+
+        toast("Factura movida correctamente");
+
+        cargarDatos();
+
+      } catch (e) {
+        console.error("ERROR:", e);
+
+        if (e instanceof Error) {
+          alert(e.message);
+        } else {
+          alert(typeof e === "string" ? e : JSON.stringify(e, null, 2));
+        }
+      }
+    }
+
+
 
     // ── ELIMINAR ──────────────────────────────────────────────
     async function eliminar(id) {
