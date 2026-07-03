@@ -1,4 +1,0 @@
-pywin32
-requests
-pypdf
-python-dotenv
