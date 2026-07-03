@@ -1581,11 +1581,14 @@
         // FACTURAS ALMACÉN
       } else if (tablaActual === 'facturas_almacen') {
         hdr.innerHTML = `<tr>
-      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th>
-      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
+      <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th>
+      <th>Nº Factura</th><th>Concepto</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
-      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
+      <th class="num-cell">Tasas</th>
+      <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
+      <th class="num-cell">Base3</th><th class="pct-cell">%IVA3</th><th class="num-cell">IVA3</th>
+      <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
       <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Acción</th><th></th>
     </tr>`;
@@ -1595,17 +1598,17 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(22, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(29, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = esVenc ? 'vencido' : est;
           return `<tr>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td><strong>${f.numero_factura || '—'}</strong></td>
-        <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
+        <td class="td-nombre">${f.proveedor || '—'}</td>
+        <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
@@ -1613,6 +1616,13 @@
         <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_re1)}</td>
         <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.base2)}</td>
+        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva2)}</td>
+        <td class="num-cell">${fmtN(f.base3)}</td>
+        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva3)}</td>
+        <td class="num-cell">${fmtN(f.exento)}</td>
         <td class="num-cell">${fmtN(f.descuento)}</td>
         <td class="num-cell">${fmtN(f.base_retencion)}</td>
         <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
@@ -1649,11 +1659,14 @@
         // FACTURAS OBRA
       } else if (tablaActual === 'facturas_obra') {
         hdr.innerHTML = `<tr>
-      <th>Nº Int. Emp</th><th>Nº Factura</th><th>Proveedor</th><th>NIF</th><th>Obra</th>
-      <th>Fecha</th><th>Vencimiento</th><th>Concepto</th>
+      <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
+      <th>Nº Factura</th><th>Concepto</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
-      <th class="num-cell">Tasas</th><th class="num-cell">Descuento</th>
+      <th class="num-cell">Tasas</th>
+      <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
+      <th class="num-cell">Base3</th><th class="pct-cell">%IVA3</th><th class="num-cell">IVA3</th>
+      <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
       <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Capturado</th><th>Acción</th><th></th>
     </tr>`;
@@ -1663,18 +1676,18 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(25, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(32, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = esVenc ? 'vencido' : est;
           return `<tr>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td><strong>${f.numero_factura || '—'}</strong></td>
-        <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
-        <td class="td-nombre">${f.nombre_obra || '—'}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
+        <td class="td-nombre">${f.proveedor || '—'}</td>
+        <td class="td-nombre">${f.nombre_obra || '—'}</td>
+        <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
@@ -1682,6 +1695,13 @@
         <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_re1)}</td>
         <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.base2)}</td>
+        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva2)}</td>
+        <td class="num-cell">${fmtN(f.base3)}</td>
+        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva3)}</td>
+        <td class="num-cell">${fmtN(f.exento)}</td>
         <td class="num-cell">${fmtN(f.descuento)}</td>
         <td class="num-cell">${fmtN(f.base_retencion)}</td>
         <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
@@ -2643,52 +2663,48 @@
 
       const esObra = tablaActual === 'facturas_obra';
       const cabeceras = [
-        'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', ...(esObra ? ['OBRA'] : []), 'FACTURA', 'CONCEPTO',
+        'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', 'FACTURA', 'CONCEPTO',
         'Base 1', '%IVA1', 'Total IVA1', '%RE1', 'Total RE1', 'TASAS',
         'Base 2', '%IVA2', 'Total IVA2', 'Base3', '%IVA3', 'Total IVA3',
-        'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención',
-        'Total', 'Estado', 'Vencimiento'
+        'Base4', '%IVA4', 'Total IVA4', 'Base5', '%IVA5', 'Total IVA5',
+        'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención', 'Total'
       ];
-      const filas = filtrados.map(f => {
-        const fila = {
-          'NUMERACION INTERNA EMP': f.numero_interno || '',
-          'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
-          'NIF': f.nif || '',
-          'NOMBRE': f.proveedor || '',
-        };
-        if (esObra) fila['OBRA'] = f.nombre_obra || '';
-        Object.assign(fila, {
-          'FACTURA': f.numero_factura || '',
-          'CONCEPTO': f.concepto || '',
-          'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
-          '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
-          'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
-          '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
-          'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
-          'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
-          'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
-          '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
-          'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
-          'Base3': f.base3 != null ? parseFloat(f.base3) : '',
-          '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
-          'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
-          'Exento': f.exento != null ? parseFloat(f.exento) : '',
-          'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
-          'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
-          '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
-          'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
-          'Total': f.total != null ? parseFloat(f.total) : 0,
-          'Estado': (f.estado || 'pendiente').toUpperCase(),
-          'Vencimiento': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : ''
-        });
-        return fila;
-      });
+      const filas = filtrados.map(f => ({
+        'NUMERACION INTERNA EMP': f.numero_interno || '',
+        'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
+        'NIF': f.nif || '',
+        'NOMBRE': f.proveedor || '',
+        'FACTURA': f.numero_factura || '',
+        'CONCEPTO': f.concepto || '',
+        'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
+        '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
+        'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+        '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
+        'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
+        'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
+        'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
+        '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
+        'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
+        'Base3': f.base3 != null ? parseFloat(f.base3) : '',
+        '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
+        'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
+        'Base4': '',
+        '%IVA4': '',
+        'Total IVA4': '',
+        'Base5': '',
+        '%IVA5': '',
+        'Total IVA5': '',
+        'Exento': f.exento != null ? parseFloat(f.exento) : '',
+        'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
+        'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
+        '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
+        'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
+        'Total': f.total != null ? parseFloat(f.total) : 0
+      }));
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
-      const anchos = [18, 12, 14, 28];
-      if (esObra) anchos.push(22);
-      anchos.push(18, 30, 10, 7, 10, 7, 10, 10, 10, 7, 10, 10, 7, 10, 10, 10, 14, 10, 14, 12, 12, 12);
+      const anchos = [18, 12, 14, 28, 18, 30, 10, 7, 10, 7, 10, 10, 10, 7, 10, 10, 7, 10, 10, 7, 10, 10, 7, 10, 10, 14, 12, 10, 14, 12];
       ws['!cols'] = anchos.map(w => ({ wch: w }));
       XLSX.utils.book_append_sheet(wb, ws, esObra ? 'Facturas Obra' : 'Facturas Almacén');
       const fecha = new Date().toISOString().split('T')[0];
