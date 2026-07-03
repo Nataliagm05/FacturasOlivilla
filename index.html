@@ -1233,6 +1233,7 @@
     // 'clasificacion' es la clave interna de la sección; la tabla real es 'facturas_pendientes'
     function tablaReal(t) { return t === 'clasificacion' ? 'facturas_pendientes' : t; }
     let modalDestinoTabla = null;   // tabla destino del modal "Nuevo registro" (puede diferir de tablaActual)
+    let modalEditId = null;   // id del registro que se está editando (null = modo "nuevo")
     let registros = [];
     let inventarioDB = [];
     let clientesDB = [];
@@ -1590,7 +1591,7 @@
       <th class="num-cell">Base3</th><th class="pct-cell">%IVA3</th><th class="num-cell">IVA3</th>
       <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Acción</th><th></th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th></th>
     </tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
@@ -1598,7 +1599,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(29, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(30, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -1631,6 +1632,11 @@
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
+<td>
+  <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_almacen')" title="Editar factura">
+    <i class="fa-solid fa-pen"></i>
+  </button>
+</td>
 <td>
   <button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_almacen')">
     ${est === 'pagado'
@@ -1668,7 +1674,7 @@
       <th class="num-cell">Base3</th><th class="pct-cell">%IVA3</th><th class="num-cell">IVA3</th>
       <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Capturado</th><th>Acción</th><th></th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Capturado</th><th>Editar</th><th>Acción</th><th></th>
     </tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto, f.nombre_obra].some(v => (v || '').toLowerCase().includes(q));
@@ -1676,7 +1682,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(32, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(33, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -1711,6 +1717,11 @@
         <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
         <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
+<td>
+  <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_obra')" title="Editar factura">
+    <i class="fa-solid fa-pen"></i>
+  </button>
+</td>
 <td>
   <button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','facturas_obra')">
     ${est === 'pagado'
@@ -2080,7 +2091,7 @@
     <div class="form-seccion">Bases e IVA</div>
     <div class="form-grid">
       <div class="form-group"><label>Base 1</label><input type="number" id="f_base1" step="0.01" placeholder="0.00"></div>
-      <div class="form-group"><label>% IVA 1</label><input type="number" id="f_pct_iva1" step="0.01" placeholder="21"></div>
+      <div class="form-group"><label>% IVA 1</label><input type="number" id="f_pct_iva1" step="0.01" value="21"></div>
       <div class="form-group"><label>Total IVA 1</label><input type="number" id="f_total_iva1" step="0.01" placeholder="0.00"></div>
 
       <div class="form-group"><label>% RE 1</label><input type="number" id="f_pct_re1" step="0.01" placeholder="5.2"></div>
@@ -2117,6 +2128,37 @@
         exento: n('f_exento'), descuento: n('f_descuento'),
         base_retencion: n('f_base_ret'), pct_retencion: n('f_pct_ret'), total_retencion: n('f_total_ret'),
       };
+    }
+
+    // ── MODAL EDITAR REGISTRO (facturas almacén / obra) ────────
+    function abrirModalEditar(id, tabla) {
+      const f = registros.find(r => r.id === id);
+      if (!f) { toast('No se ha encontrado el registro', 'err'); return; }
+      modalEditId = id;
+      abrirModalNuevo(tabla);
+      setTimeout(() => {
+        document.getElementById('modalTitulo').textContent =
+          tabla === 'facturas_obra' ? 'Editar Factura de Obra' : 'Editar Factura de Almacén';
+        const btn = document.getElementById('btnGuardar');
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios';
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v ?? ''); };
+        set('f_num_interno', f.numero_interno);
+        set('f_num', f.numero_factura);
+        set('f_fecha', f.fecha);
+        set('f_prov', f.proveedor);
+        set('f_nif', f.nif);
+        set('f_concepto', f.concepto);
+        set('f_total', f.total);
+        set('f_venc', f.fecha_vencimiento);
+        set('f_est', f.estado || 'pendiente');
+        if (tabla === 'facturas_obra') set('f_obra', f.nombre_obra);
+        set('f_base1', f.base1); set('f_pct_iva1', f.pct_iva1 != null ? f.pct_iva1 : 21); set('f_total_iva1', f.total_iva1);
+        set('f_pct_re1', f.pct_re1); set('f_total_re1', f.total_re1); set('f_tasas', f.tasas);
+        set('f_base2', f.base2); set('f_pct_iva2', f.pct_iva2); set('f_total_iva2', f.total_iva2);
+        set('f_base3', f.base3); set('f_pct_iva3', f.pct_iva3); set('f_total_iva3', f.total_iva3);
+        set('f_exento', f.exento); set('f_descuento', f.descuento);
+        set('f_base_ret', f.base_retencion); set('f_pct_ret', f.pct_retencion); set('f_total_ret', f.total_retencion);
+      }, 60);
     }
 
     // ── MODAL NUEVO REGISTRO ──────────────────────────────────
@@ -2392,7 +2434,8 @@
           const numFactura = document.getElementById('f_num').value.trim();
           if (numFactura) {
             const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
-            if (dup.length) { toast('⚠️ Ya existe una factura con ese número', 'err'); return; }
+            const dupOtro = dup.filter(d => d.id !== modalEditId);
+            if (dupOtro.length) { toast('⚠️ Ya existe una factura con ese número', 'err'); return; }
           }
 
           const payload = {
@@ -2410,7 +2453,12 @@
           };
           if (tabla === 'facturas_obra') payload.nombre_obra = document.getElementById('f_obra').value.trim();
 
-          await apiPost(tabla, payload);
+          if (modalEditId) {
+            delete payload.archivo_url; // no pisar el archivo ya adjuntado al editar
+            await apiPatch(tabla, modalEditId, payload);
+          } else {
+            await apiPost(tabla, payload);
+          }
 
           const lineas = [];
           document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
@@ -2433,10 +2481,11 @@
           }
           window._prellenado = null;
 
-          toast(`Factura guardada${lineas.length ? ' y stock actualizado' : ''}`);
+          toast(modalEditId ? 'Factura actualizada correctamente' : `Factura guardada${lineas.length ? ' y stock actualizado' : ''}`);
           cerrarModal('modalNueva');
           lineasFacturaCount = 0;
           modalDestinoTabla = null;
+          modalEditId = null;
           cargarDatos();
           return;
 
@@ -2718,6 +2767,7 @@
       document.getElementById(id).classList.remove('visible');
       if (id === 'modalNueva') {
         modalDestinoTabla = null;
+        modalEditId = null;
         window._pendienteOrigenId = null;
         window._prellenado = null;
       }
