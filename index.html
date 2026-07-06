@@ -1668,6 +1668,7 @@
 
         if (tablaActual === 'facturas_almacen' || tablaActual === 'facturas_obra') {
           actualizarStats(); renderAlertas();
+          comprobarFacturasVencidasSinRevisar();
         }
         if (tablaActual === 'facturas_obra') {
           const obras = [...new Set(registros.map(r => r.nombre_obra).filter(Boolean))].sort();
@@ -2642,7 +2643,7 @@
     }
 
 
-    
+
     async function asegurarProveedor(nombre, nif) {
       if (!nombre) return;
       const existente = proveedoresDB.find(p =>
@@ -3029,6 +3030,7 @@
 
         // Insertar en la tabla destino
         await apiPost(destino, nueva);
+        notificarRevisoresFactura(destino, nueva);
 
         // Eliminar de la tabla origen
         await apiDelete(origen, id);
@@ -3153,13 +3155,12 @@
     // Debe coincidir con REVISORES en supabase_service.py (FacturaSync)
     const REVISORES = {
       facturas_obra: [
-        { nombre: 'Angel', email: 'angelperez@olivillatres.com' },
-        // Juan David: falta su email, añadir aquí cuando se tenga
-        { nombre: 'Emilio', email: 'efernandez@olivillatres.com' }
+        { nombre: 'Angel', email: 'angelperez@olivillatres.com', campo: 'revisado_angel' },
+        { nombre: 'Emilio', email: 'efernandez@olivillatres.com', campo: 'revisado_emilio' }
       ],
       facturas_almacen: [
-        { nombre: 'Cynthia', email: 'cynthiagomez@olivillatres.com' },
-        { nombre: 'Emilio', email: 'efernandez@olivillatres.com' }
+        { nombre: 'Cynthia', email: 'cynthiagomez@olivillatres.com', campo: 'revisado_cynthia' },
+        { nombre: 'Emilio', email: 'efernandez@olivillatres.com', campo: 'revisado_emilio' }
       ]
     };
 
@@ -3196,7 +3197,57 @@
     }
 
 
+    async function comprobarFacturasVencidasSinRevisar() {
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra') return;
+      const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
+      const revisores = REVISORES[tablaActual] || [];
+      if (!revisores.length) return;
 
+      for (const f of registros) {
+        if (!f.fecha_vencimiento) continue;
+        if (f.aviso_vencimiento_enviado) continue;
+        if (new Date(f.fecha_vencimiento) > hoyD) continue;
+
+        const pendientes = revisores.filter(r => !f[r.campo]);
+        if (!pendientes.length) continue;
+
+        const tipo = tablaActual === 'facturas_obra' ? 'aviso_vencimiento_obra' : 'aviso_vencimiento_almacen';
+
+        for (const rev of pendientes) {
+          try {
+            await fetch(
+              'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/clever-worker',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+                body: JSON.stringify({
+                  tipo,
+                  email: rev.email,
+                  nombre: rev.nombre,
+                  factura: {
+                    proveedor: f.proveedor,
+                    numero_factura: f.numero_factura,
+                    fecha: f.fecha,
+                    fecha_vencimiento: f.fecha_vencimiento,
+                    total: f.total,
+                    nombre_obra: f.nombre_obra || null
+                  }
+                })
+              }
+            );
+          } catch (e) {
+            console.error('Error avisando vencimiento a', rev.nombre, e);
+          }
+        }
+
+        try {
+          await apiPatch(tablaActual, f.id, { aviso_vencimiento_enviado: true });
+          f.aviso_vencimiento_enviado = true;
+        } catch (e) {
+          console.error('No se pudo marcar aviso_vencimiento_enviado:', e);
+        }
+      }
+    }
 
 
 
@@ -3233,17 +3284,24 @@
           siguienteCiclo.setMonth(siguienteCiclo.getMonth() + 6);
           await apiPatch('clientes', cliente.id, {
             puntos: 0,
-            puntos_desde: siguienteCiclo.toISOString()
+            puntos_desde: siguienteCiclo.toISOString(),
+            aviso_puntos_enviado: false
           });
           cliente.puntos = 0;
           cliente.puntos_desde = siguienteCiclo.toISOString();
+          cliente.aviso_puntos_enviado = false;
           toast(`Puntos de <strong>${cliente.nombre}</strong> reiniciados por caducidad`, 'info');
 
-        } else if (mesesTranscurridos === 5 && !cliente._avisoEnviado) {
+        } else if (mesesTranscurridos === 5 && !cliente.aviso_puntos_enviado) {
           if (cliente.email) {
             await enviarEmailPuntos(cliente.email, cliente.nombre, cliente.puntos, 'aviso');
           }
-          cliente._avisoEnviado = true;
+          try {
+            await apiPatch('clientes', cliente.id, { aviso_puntos_enviado: true });
+            cliente.aviso_puntos_enviado = true;
+          } catch (e) {
+            console.error('No se pudo marcar aviso_puntos_enviado:', e);
+          }
         }
       }
     }
