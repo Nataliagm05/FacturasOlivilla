@@ -2660,16 +2660,39 @@
     }
 
 
+    async function buscarFacturaDuplicada(numFactura, nif, fecha, total, idExcluir) {
+      const tablas = ['facturas_almacen', 'facturas_obra'];
+
+      if (numFactura) {
+        for (const tabla of tablas) {
+          const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
+          const encontrado = dup.find(d => d.id !== idExcluir);
+          if (encontrado) return { tabla, id: encontrado.id };
+        }
+      }
+
+      if (nif && fecha && total != null) {
+        for (const tabla of tablas) {
+          const dup = await apiGet(tabla, `nif=eq.${encodeURIComponent(nif)}&fecha=eq.${fecha}&total=eq.${total}`);
+          const encontrado = dup.find(d => d.id !== idExcluir);
+          if (encontrado) return { tabla, id: encontrado.id };
+        }
+      }
+
+      return null;
+    }
+
+
 
     async function guardarDesdeIA(tabla, datos) {
       try {
-        if (datos.numero_factura) {
-          const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(datos.numero_factura)}`);
-          if (dup.length) {
-            toast('⚠️ Ya existe una factura con ese número — revísala a mano', 'err');
-            abrirModalNuevo(tabla);
-            return;
-          }
+        const duplicado = await buscarFacturaDuplicada(
+          datos.numero_factura, datos.nif, datos.fecha, parseFloat(datos.total || 0), null
+        );
+        if (duplicado) {
+          toast(`⚠️ Ya existe una factura igual en ${duplicado.tabla === 'facturas_obra' ? 'Obra' : 'Almacén'} — revísala a mano`, 'err');
+          abrirModalNuevo(tabla);
+          return;
         }
 
         const payload = {
@@ -2803,10 +2826,12 @@
           const numFactura = document.getElementById('f_num').value.trim();
           const nifCampo = document.getElementById('f_nif').value.trim() || null;
           await asegurarProveedor(prov, nifCampo);
-          if (numFactura) {
-            const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
-            const dupOtro = dup.filter(d => d.id !== modalEditId);
-            if (dupOtro.length) { toast('⚠️ Ya existe una factura con ese número', 'err'); return; }
+
+          const totalCampo = parseFloat(document.getElementById('f_total').value || 0);
+          const duplicado = await buscarFacturaDuplicada(numFactura, nifCampo, fecha, totalCampo, modalEditId);
+          if (duplicado) {
+            toast(`⚠️ Ya existe una factura igual en ${duplicado.tabla === 'facturas_obra' ? 'Obra' : 'Almacén'}`, 'err');
+            return;
           }
 
           const payload = {
