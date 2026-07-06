@@ -1981,7 +1981,7 @@
     }
 
     // ── CLASIFICAR UNA FACTURA PENDIENTE ──────────────────────
-    function clasificarPendiente(id, tablaDestino) {
+    async function clasificarPendiente(id, tablaDestino) {
       const p = registros.find(r => r.id === id);
       if (!p) return;
       window._pendienteOrigenId = id;
@@ -1990,6 +1990,30 @@
         concepto: p.asunto || '',
         archivo_url: p.archivo_url || ''
       };
+
+      if (p.archivo_url) {
+        try {
+          const res = await fetch(
+            'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/analizar-factura',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+              body: JSON.stringify({ archivo_url: p.archivo_url })
+            }
+          );
+          const datos = await res.json();
+          if (res.ok && datos && !datos.error) {
+            window._prellenado = { ...window._prellenado, ...datos, archivo_url: p.archivo_url };
+            if (datos.proveedor) window._prellenado.proveedor = datos.proveedor;
+            toast('Factura leída con IA — revisa los datos antes de guardar');
+          } else {
+            toast('No se pudo leer la factura con IA, rellénala a mano', 'err');
+          }
+        } catch (e) {
+          toast('No se pudo leer la factura con IA, rellénala a mano', 'err');
+        }
+      }
+
       abrirModalNuevo(tablaDestino);
     }
 
@@ -2456,13 +2480,39 @@
       }
     }
 
-    // Rellena proveedor/concepto cuando el modal se abre desde "Clasificar" una factura pendiente
+    // Rellena el formulario cuando el modal se abre desde "Clasificar" una factura pendiente
     function _aplicarPrellenado() {
       if (!window._prellenado) return;
-      const pv = document.getElementById('f_prov');
-      const cc = document.getElementById('f_concepto');
-      if (pv) pv.value = window._prellenado.proveedor || '';
-      if (cc) cc.value = window._prellenado.concepto || '';
+      const p = window._prellenado;
+      const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined && val !== null && val !== '') el.value = val;
+      };
+      set('f_prov', p.proveedor);
+      set('f_nif', p.nif);
+      set('f_num', p.numero_factura);
+      set('f_num_interno', p.numero_interno);
+      set('f_fecha', p.fecha);
+      set('f_venc', p.fecha_vencimiento);
+      set('f_concepto', p.concepto);
+      set('f_total', p.total);
+      set('f_base1', p.base1);
+      set('f_pct_iva1', p.pct_iva1);
+      set('f_total_iva1', p.total_iva1);
+      set('f_pct_re1', p.pct_re1);
+      set('f_total_re1', p.total_re1);
+      set('f_tasas', p.tasas);
+      set('f_base2', p.base2);
+      set('f_pct_iva2', p.pct_iva2);
+      set('f_total_iva2', p.total_iva2);
+      set('f_base3', p.base3);
+      set('f_pct_iva3', p.pct_iva3);
+      set('f_total_iva3', p.total_iva3);
+      set('f_exento', p.exento);
+      set('f_descuento', p.descuento);
+      set('f_base_ret', p.base_retencion);
+      set('f_pct_ret', p.pct_retencion);
+      set('f_total_ret', p.total_retencion);
     }
 
     async function crearProveedorRapido() {
