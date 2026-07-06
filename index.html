@@ -2419,6 +2419,24 @@
     }
 
     // ── CAMPOS IVA / BASES ────────────────────────────────────
+    function htmlCampoArchivo() {
+      return `
+    <div class="form-grid">
+      <div class="form-group span3">
+        <label>Archivo de la factura (PDF o imagen) <span style="font-size:.72rem;color:#888" id="f_archivo_hint">— opcional</span></label>
+        <input type="file" id="f_archivo_factura" accept="application/pdf,image/*" onchange="_previsualizarArchivoFactura(this)">
+      </div>
+    </div>`;
+    }
+
+    function _previsualizarArchivoFactura(input) {
+      if (input.files && input.files.length) {
+        mostrarPdfModal(URL.createObjectURL(input.files[0]), input.files[0].name);
+        const hint = document.getElementById('f_archivo_hint');
+        if (hint) hint.textContent = '— se subirá al guardar y sustituirá al actual si lo hubiera';
+      }
+    }
+
     function htmlCamposExcel() {
       return `
     <div class="form-seccion">Bases e IVA</div>
@@ -2495,6 +2513,8 @@
 
         if (f.archivo_url) {
           mostrarPdfModal(f.archivo_url, f.proveedor || f.numero_factura || 'Factura');
+          const hint = document.getElementById('f_archivo_hint');
+          if (hint) hint.textContent = '— ya tiene un archivo adjunto; sube uno solo si quieres sustituirlo';
         } else {
           ocultarPdfModal();
         }
@@ -2564,6 +2584,7 @@
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       </div>
+      ${htmlCampoArchivo()}
       ${htmlCamposExcel()}
       <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock automáticamente)</span></div>
       <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
@@ -2616,6 +2637,7 @@
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       </div>
+      ${htmlCampoArchivo()}
       ${htmlCamposExcel()}
       <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock automáticamente)</span></div>
       <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
@@ -2667,6 +2689,7 @@
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       </div>
+      ${htmlCampoArchivo()}
       ${htmlCamposExcel()}
       <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock automáticamente)</span></div>
       <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
@@ -2976,6 +2999,15 @@
             return;
           }
 
+          // Si se ha elegido un archivo nuevo en el modal, lo subimos a Storage.
+          // Si no, mantenemos el que viniera de la IA (clasificación) o, al
+          // editar, el que ya tenía la factura (no se toca el campo).
+          const fileInputFactura = document.getElementById('f_archivo_factura');
+          let archivo_url = (window._prellenado && window._prellenado.archivo_url) || null;
+          if (fileInputFactura && fileInputFactura.files.length) {
+            archivo_url = await subirArchivoStorage(fileInputFactura.files[0]);
+          }
+
           const payload = {
             numero_interno: document.getElementById('f_num_interno').value.trim() || null,
             numero_factura: numFactura || null,
@@ -2986,13 +3018,14 @@
             total: parseFloat(document.getElementById('f_total').value || 0),
             estado: document.getElementById('f_est').value,
             fecha_vencimiento: document.getElementById('f_venc').value || null,
-            archivo_url: (window._prellenado && window._prellenado.archivo_url) || null,
+            archivo_url,
             ...recogerCamposExcel()
           };
           if (tabla === 'facturas_obra') payload.nombre_obra = document.getElementById('f_obra').value.trim();
 
           if (modalEditId) {
-            delete payload.archivo_url; // no pisar el archivo ya adjuntado al editar
+            // Si no se ha elegido un archivo nuevo, no pisar el que ya tenía
+            if (!fileInputFactura || !fileInputFactura.files.length) delete payload.archivo_url;
             await apiPatch(tabla, modalEditId, payload);
           } else {
             await apiPost(tabla, payload);
@@ -3510,5 +3543,6 @@
     }
   </script>
 </body>
+
 
 </html>
