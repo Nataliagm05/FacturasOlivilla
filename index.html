@@ -16,7 +16,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    
+
     body {
       background: #f7f9fa;
       color: #4a3b68;
@@ -2690,9 +2690,6 @@
         };
 
         await asegurarProveedor(payload.proveedor, payload.nif);
-        await apiPost(tabla, payload);
-        notificarRevisoresFactura(tabla, payload);
-
         await apiPost(tabla, payload);
         notificarRevisoresFactura(tabla, payload);
 
