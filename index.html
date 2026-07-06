@@ -1051,7 +1051,7 @@
     </div>
   </div>
 
-  
+
   <!-- APP -->
   <div id="appView" style="display:none;flex-direction:column;flex:1;">
     <div class="topbar">
@@ -2531,6 +2531,61 @@
       }
     }
 
+
+
+    async function guardarDesdeIA(tabla, datos) {
+      try {
+        if (datos.numero_factura) {
+          const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(datos.numero_factura)}`);
+          if (dup.length) {
+            toast('⚠️ Ya existe una factura con ese número — revísala a mano', 'err');
+            abrirModalNuevo(tabla);
+            return;
+          }
+        }
+
+        const payload = {
+          numero_interno: datos.numero_interno || null,
+          numero_factura: datos.numero_factura || null,
+          fecha: datos.fecha,
+          proveedor: datos.proveedor,
+          nif: datos.nif || null,
+          concepto: datos.concepto || null,
+          total: parseFloat(datos.total || 0),
+          estado: 'pendiente',
+          fecha_vencimiento: datos.fecha_vencimiento || null,
+          archivo_url: (window._prellenado && window._prellenado.archivo_url) || null,
+          base1: datos.base1 ?? null, pct_iva1: datos.pct_iva1 ?? null, total_iva1: datos.total_iva1 ?? null,
+          pct_re1: datos.pct_re1 ?? null, total_re1: datos.total_re1 ?? null, tasas: datos.tasas ?? null,
+          base2: datos.base2 ?? null, pct_iva2: datos.pct_iva2 ?? null, total_iva2: datos.total_iva2 ?? null,
+          base3: datos.base3 ?? null, pct_iva3: datos.pct_iva3 ?? null, total_iva3: datos.total_iva3 ?? null,
+          exento: datos.exento ?? null, descuento: datos.descuento ?? null,
+          base_retencion: datos.base_retencion ?? null, pct_retencion: datos.pct_retencion ?? null, total_retencion: datos.total_retencion ?? null,
+        };
+
+        await apiPost(tabla, payload);
+        notificarRevisoresFactura(tabla, payload);
+
+        if (window._pendienteOrigenId) {
+          await apiDelete('facturas_pendientes', window._pendienteOrigenId);
+          window._pendienteOrigenId = null;
+        }
+        window._prellenado = null;
+
+        toast('Factura clasificada automáticamente con IA ✅');
+        cargarDatos();
+      } catch (e) {
+        toast('La IA leyó la factura, pero no se pudo guardar sola. Revísala a mano: ' + e.message, 'err');
+        abrirModalNuevo(tabla);
+      }
+    }
+
+
+
+
+
+
+
     function abrirModalExportar() {
       if (tablaActual === 'materiales_obra') {
         abrirModalExportarMateriales();
@@ -2643,6 +2698,7 @@
             await apiPatch(tabla, modalEditId, payload);
           } else {
             await apiPost(tabla, payload);
+            notificarRevisoresFactura(tabla, payload); // no bloqueante, no esperamos con await aquí para no ralentizar el guardado
           }
 
           const lineas = [];
@@ -2957,6 +3013,61 @@
         window._prellenado = null;
       }
     }
+
+
+
+
+
+
+    // Debe coincidir con REVISORES en supabase_service.py (FacturaSync)
+    const REVISORES = {
+      facturas_obra: [
+        { nombre: 'Angel', email: 'nataliagm005@gmail.com' }
+        // Juan David: falta su email, añadir aquí cuando se tenga
+        // { nombre: 'Emilio', email: 'efernandez@olivillatres.com' }
+      ],
+      facturas_almacen: [
+        { nombre: 'Cynthia', email: 'cynthiagomez@olivillatres.com' },
+        { nombre: 'Emilio', email: 'efernandez@olivillatres.com' }
+      ]
+    };
+
+    async function notificarRevisoresFactura(tabla, factura) {
+      const revisores = REVISORES[tabla] || [];
+      if (!revisores.length) return;
+      const tipo = tabla === 'facturas_obra' ? 'revision_obra' : 'revision_almacen';
+
+      for (const rev of revisores) {
+        try {
+          await fetch(
+            'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/clever-worker',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+              body: JSON.stringify({
+                tipo,
+                email: rev.email,
+                nombre: rev.nombre,
+                factura: {
+                  proveedor: factura.proveedor,
+                  numero_factura: factura.numero_factura,
+                  fecha: factura.fecha,
+                  total: factura.total,
+                  nombre_obra: factura.nombre_obra || null
+                }
+              })
+            }
+          );
+        } catch (e) {
+          console.error('Error notificando a', rev.nombre, e);
+        }
+      }
+    }
+
+
+
+
+
 
     async function enviarEmailPuntos(email, nombre, puntos, tipo) {
       if (!email) return;
