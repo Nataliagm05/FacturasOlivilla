@@ -3231,7 +3231,11 @@
       for (const f of registros) {
         if (!f.fecha_vencimiento) continue;
         if (f.aviso_vencimiento_enviado) continue;
-        if (new Date(f.fecha_vencimiento) > hoyD) continue;
+
+        const diasRestantes = Math.ceil((new Date(f.fecha_vencimiento) - hoyD) / 86400000);
+
+        // Avisar cuando falten 3 días o menos (incluye si ya está vencida)
+        if (diasRestantes > 3) continue;
 
         const pendientes = revisores.filter(r => !f[r.campo]);
         if (!pendientes.length) continue;
@@ -3254,6 +3258,7 @@
                     numero_factura: f.numero_factura,
                     fecha: f.fecha,
                     fecha_vencimiento: f.fecha_vencimiento,
+                    dias_restantes: diasRestantes,
                     total: f.total,
                     nombre_obra: f.nombre_obra || null
                   }
