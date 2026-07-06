@@ -2474,6 +2474,11 @@
           setupProveedorAC('f_prov', 'f_nif');
           addLineaFactAlm();
           _aplicarPrellenado();
+          if (window._prellenado && window._prellenado.archivo_url) {
+            mostrarPdfModal(window._prellenado.archivo_url, window._prellenado.proveedor || 'Factura');
+          } else {
+            ocultarPdfModal();
+          }
         }, 50);
 
         // ── FACTURA OBRA ──
@@ -2521,6 +2526,11 @@
           setupProveedorAC('f_prov', 'f_nif');
           addLineaFactAlm();
           _aplicarPrellenado();
+          if (window._prellenado && window._prellenado.archivo_url) {
+            mostrarPdfModal(window._prellenado.archivo_url, window._prellenado.proveedor || 'Factura');
+          } else {
+            ocultarPdfModal();
+          }
         }, 50);
 
         // ── ALBARÁN ──
