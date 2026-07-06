@@ -758,6 +758,70 @@
       margin: auto;
     }
 
+    .modal-nueva-wrap {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      max-width: 1320px;
+      margin: auto;
+      align-items: flex-start;
+    }
+
+    .modal-nueva-wrap .modal-box {
+      flex: 1;
+      max-width: 900px;
+      margin: 0;
+    }
+
+    .modal-pdf-panel {
+      flex: 0 0 380px;
+      max-width: 380px;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
+      display: none;
+      flex-direction: column;
+      height: 85vh;
+      position: sticky;
+      top: 1rem;
+    }
+
+    .modal-pdf-panel.visible {
+      display: flex;
+    }
+
+    .modal-pdf-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #faf7fc;
+      border-bottom: 1.5px solid #ede5f5;
+      font-weight: 600;
+      color: #444;
+      font-size: .85rem;
+    }
+
+    .modal-pdf-panel iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      .modal-nueva-wrap {
+        flex-direction: column;
+      }
+
+      .modal-pdf-panel {
+        max-width: 100%;
+        flex: 1 1 auto;
+        height: 60vh;
+        position: static;
+      }
+    }
+
     .modal-box h3,
     .modal-box-sm h3 {
       font-size: 1.1rem;
@@ -1150,13 +1214,25 @@
 
   <!-- MODAL NUEVO REGISTRO -->
   <div class="modal-overlay" id="modalNueva">
-    <div class="modal-box">
-      <h3><i class="fa-solid fa-plus-circle" style="color:#b53987"></i><span id="modalTitulo">Nuevo Registro</span></h3>
-      <div id="modalFormContenido"></div>
-      <div class="modal-btns">
-        <button class="btn-cancelar" onclick="cerrarModal('modalNueva')">Cancelar</button>
-        <button class="btn-guardar" id="btnGuardar" onclick="guardarRegistro()"><i
-            class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+    <div class="modal-nueva-wrap">
+      <div class="modal-box">
+        <h3><i class="fa-solid fa-plus-circle" style="color:#b53987"></i><span id="modalTitulo">Nuevo Registro</span>
+        </h3>
+        <div id="modalFormContenido"></div>
+        <div class="modal-btns">
+          <button class="btn-cancelar" onclick="cerrarModal('modalNueva')">Cancelar</button>
+          <button class="btn-guardar" id="btnGuardar" onclick="guardarRegistro()"><i
+              class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+        </div>
+      </div>
+      <div class="modal-pdf-panel" id="modalPdfPanel">
+        <div class="modal-pdf-panel-header">
+          <span id="modalPdfPanelTitulo">Factura</span>
+          <button onclick="ocultarPdfModal()" style="background:transparent;border:none;color:#b53987;cursor:pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <iframe id="modalPdfPanelIframe" src="about:blank"></iframe>
       </div>
     </div>
   </div>
@@ -2318,6 +2394,11 @@
         set('f_exento', f.exento); set('f_descuento', f.descuento);
         set('f_base_ret', f.base_retencion); set('f_pct_ret', f.pct_retencion); set('f_total_ret', f.total_retencion);
       }, 60);
+      if (f.archivo_url) {
+        mostrarPdfModal(f.archivo_url, f.proveedor || f.numero_factura || 'Factura');
+      } else {
+        ocultarPdfModal();
+      }
     }
 
     // ── MODAL NUEVO REGISTRO ──────────────────────────────────
@@ -2409,9 +2490,14 @@
         <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
 
         <div class="form-group span2 ac-wrap">
-          <label>Proveedor *</label>
-          <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
-        </div>
+  <label>Proveedor *</label>
+  <div style="display:flex;gap:6px;align-items:center">
+    <input type="text" id="f_prov" placeholder="Escribe el nombre para buscar...">
+    <button type="button" class="btn-add-linea" style="padding:6px 10px;font-size:.8rem" onclick="crearProveedorRapido()">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+  </div>
+</div>
         <div class="form-group ac-wrap">
           <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
           <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
@@ -2481,6 +2567,17 @@
       }
     }
 
+    function mostrarPdfModal(url, titulo) {
+      document.getElementById('modalPdfPanelTitulo').textContent = titulo || 'Factura';
+      document.getElementById('modalPdfPanelIframe').src = url;
+      document.getElementById('modalPdfPanel').classList.add('visible');
+    }
+
+    function ocultarPdfModal() {
+      document.getElementById('modalPdfPanel').classList.remove('visible');
+      document.getElementById('modalPdfPanelIframe').src = 'about:blank';
+    }
+
     // Rellena el formulario cuando el modal se abre desde "Clasificar" una factura pendiente
     function _aplicarPrellenado() {
       if (!window._prellenado) return;
@@ -2532,6 +2629,22 @@
     }
 
 
+    async function asegurarProveedor(nombre, nif) {
+      if (!nombre) return;
+      const existente = proveedoresDB.find(p =>
+        (nif && p.nif && p.nif.toLowerCase() === nif.toLowerCase()) ||
+        (p.nombre && p.nombre.toLowerCase() === nombre.toLowerCase())
+      );
+      if (existente) return;
+      try {
+        await apiPost('proveedores', { nombre, nif: nif || null });
+        proveedoresDB = await apiGet('proveedores', 'order=nombre');
+      } catch (e) {
+        console.error('No se pudo crear el proveedor automáticamente:', e);
+      }
+    }
+
+
 
     async function guardarDesdeIA(tabla, datos) {
       try {
@@ -2562,6 +2675,10 @@
           exento: datos.exento ?? null, descuento: datos.descuento ?? null,
           base_retencion: datos.base_retencion ?? null, pct_retencion: datos.pct_retencion ?? null, total_retencion: datos.total_retencion ?? null,
         };
+
+        await asegurarProveedor(payload.proveedor, payload.nif);
+        await apiPost(tabla, payload);
+        notificarRevisoresFactura(tabla, payload);
 
         await apiPost(tabla, payload);
         notificarRevisoresFactura(tabla, payload);
@@ -2672,6 +2789,8 @@
           }
 
           const numFactura = document.getElementById('f_num').value.trim();
+          const nifCampo = document.getElementById('f_nif').value.trim() || null;
+          await asegurarProveedor(prov, nifCampo);
           if (numFactura) {
             const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
             const dupOtro = dup.filter(d => d.id !== modalEditId);
@@ -3011,6 +3130,7 @@
         modalEditId = null;
         window._pendienteOrigenId = null;
         window._prellenado = null;
+        ocultarPdfModal();
       }
     }
 
