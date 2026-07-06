@@ -1853,12 +1853,19 @@
   </button>
 </td>
 
-<td>
+<td style="white-space:nowrap">
   <button
     class="btn-toggle-pago pendiente"
+    style="margin-bottom:4px"
     onclick="moverFactura(${f.id},'facturas_almacen','facturas_obra')">
     <i class="fa-solid fa-helmet-safety"></i>
     Obra
+  </button>
+  <button
+    class="btn-toggle-pago pendiente"
+    onclick="moverFactura(${f.id},'facturas_almacen','facturas_csg')">
+    <i class="fa-solid fa-building"></i>
+    CSG
   </button>
 </td>
 
@@ -1954,6 +1961,12 @@
     onclick="moverFactura(${f.id},'facturas_obra','facturas_almacen')">
     <i class="fa-solid fa-warehouse"></i>
     Almacén
+  </button>
+  <button
+    class="btn-toggle-pago pendiente"
+    onclick="moverFactura(${f.id},'facturas_almacen','facturas_csg')">
+    <i class="fa-solid fa-building"></i>
+    CSG
   </button>
 </td>
 
