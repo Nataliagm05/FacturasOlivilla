@@ -359,6 +359,90 @@
       overflow-x: auto;
     }
 
+    .split-wrap {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .split-wrap .tabla-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .visor-pdf {
+      flex: 0 0 44%;
+      max-width: 44%;
+      height: calc(100vh - 230px);
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid #ede5f5;
+      overflow: hidden;
+      position: sticky;
+      top: 16px;
+    }
+
+    .visor-pdf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #faf7fc;
+      border-bottom: 1.5px solid #ede5f5;
+      font-weight: 600;
+      color: #444;
+    }
+
+    .visor-pdf-header span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .visor-pdf-acciones {
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .visor-pdf-acciones a,
+    .visor-pdf-acciones button {
+      background: transparent;
+      border: none;
+      color: #b53987;
+      cursor: pointer;
+      font-size: .95rem;
+      padding: 4px;
+    }
+
+    .visor-pdf-acciones button:hover,
+    .visor-pdf-acciones a:hover {
+      color: #7a1f61;
+    }
+
+    #visorPdfIframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      .split-wrap {
+        flex-direction: column;
+      }
+
+      .visor-pdf {
+        flex: 1 1 auto;
+        max-width: 100%;
+        width: 100%;
+        position: static;
+        height: 70vh;
+      }
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -1026,22 +1110,39 @@
         <select id="filtroEstado" onchange="renderTabla()">
           <option value="">Todos los estados</option>
         </select>
+        <select id="filtroObra" onchange="renderTabla()" style="display:none">
+          <option value="">Todas las obras</option>
+        </select>
         <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i><span
             id="btnNuevaTxt">Añadir Nuevo</span></button>
         <button class="btn-exportar" id="btnExportar" onclick="abrirModalExportar()" style="display:none"><i
             class="fa-solid fa-file-excel"></i>Exportar Excel</button>
       </div>
-      <div class="tabla-wrap">
-        <table>
-          <thead id="tablaHeader"></thead>
-          <tbody id="tablaBody">
-            <tr>
-              <td colspan="9">
-                <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div id="resumenObra" style="display:none; margin: -8px 0 14px; font-weight:600; color:#333;"></div>
+      <div class="split-wrap" id="splitWrap">
+        <div class="tabla-wrap" id="tablaWrapEl">
+          <table>
+            <thead id="tablaHeader"></thead>
+            <tbody id="tablaBody">
+              <tr>
+                <td colspan="9">
+                  <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="visor-pdf" id="visorPdf" style="display:none">
+          <div class="visor-pdf-header">
+            <span id="visorPdfTitulo" class="td-nombre">Factura</span>
+            <div class="visor-pdf-acciones">
+              <a id="visorPdfNueva" href="#" target="_blank" title="Abrir en pestaña nueva"><i
+                  class="fa-solid fa-up-right-from-square"></i></a>
+              <button onclick="cerrarVisorPdf()" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+          <iframe id="visorPdfIframe" src="about:blank"></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -1434,6 +1535,9 @@
       document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
       document.getElementById('alertasWrap').innerHTML = '';
       document.getElementById('badgePendientes').style.display = 'none';
+      document.getElementById('filtroObra').style.display = sec === 'facturas_obra' ? '' : 'none';
+      document.getElementById('resumenObra').style.display = 'none';
+      cerrarVisorPdf();
 
       const esFacturas = sec === 'facturas_almacen' || sec === 'facturas_obra';
       document.getElementById('btnExportar').style.display = (esFacturas || sec === 'materiales_obra') ? 'flex' : 'none';
@@ -1486,6 +1590,14 @@
 
         if (tablaActual === 'facturas_almacen' || tablaActual === 'facturas_obra') {
           actualizarStats(); renderAlertas();
+        }
+        if (tablaActual === 'facturas_obra') {
+          const obras = [...new Set(registros.map(r => r.nombre_obra).filter(Boolean))].sort();
+          const selObra = document.getElementById('filtroObra');
+          const actual = selObra.value;
+          selObra.innerHTML = `<option value="">Todas las obras</option>` +
+            obras.map(o => `<option value="${o}">${o}</option>`).join('');
+          selObra.value = obras.includes(actual) ? actual : '';
         }
         if (tablaActual === 'clasificacion' && registros.length) {
           const bd = document.getElementById('badgePendientes');
@@ -1546,6 +1658,18 @@
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
 
+    function verArchivoPanel(url, titulo) {
+      document.getElementById('visorPdf').style.display = 'flex';
+      document.getElementById('visorPdfIframe').src = url;
+      document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
+      document.getElementById('visorPdfNueva').href = url;
+    }
+
+    function cerrarVisorPdf() {
+      document.getElementById('visorPdf').style.display = 'none';
+      document.getElementById('visorPdfIframe').src = 'about:blank';
+    }
+
     function chipRevisado(f, campo, tabla, etiqueta) {
       const activo = !!f[campo];
       return `<button class="btn-toggle-facturado ${activo ? 'si' : 'no'}" style="padding:4px 8px;font-size:.72rem"
@@ -1571,7 +1695,7 @@
         <td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
         <td class="td-nombre">${f.remitente || '—'}</td>
         <td class="td-concepto" title="${f.asunto || ''}">${f.asunto || '—'}</td>
-        <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-file-pdf"></i>Ver archivo</a>` : '<span style="color:#ccc;font-size:.78rem">Sin archivo</span>'}</td>
+        <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.asunto || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-pdf"></i>Ver archivo</span>` : '<span style="color:#ccc;font-size:.78rem">Sin archivo</span>'}</td>
         <td class="td-acciones">
           <button class="btn-toggle-pago pagado" onclick="clasificarPendiente(${f.id},'facturas_almacen')"><i class="fa-solid fa-warehouse me-1"></i>Almacén</button>
           <button class="btn-toggle-pago vencido" onclick="clasificarPendiente(${f.id},'facturas_obra')"><i class="fa-solid fa-helmet-safety me-1"></i>Obra</button>
@@ -1630,7 +1754,7 @@
         <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
+        <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
 <td>
   <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_almacen')" title="Editar factura">
@@ -1676,12 +1800,22 @@
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
       <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Capturado</th><th>Editar</th><th>Acción</th><th></th>
     </tr>`;
+        const fObra = document.getElementById('filtroObra').value;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto, f.nombre_obra].some(v => (v || '').toLowerCase().includes(q));
+          const mObra = !fObra || f.nombre_obra === fObra;
           const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
-          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
+          return mQ && mObra && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
+        const resumenEl = document.getElementById('resumenObra');
+        if (fObra) {
+          const suma = lista.reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
+          resumenEl.style.display = 'block';
+          resumenEl.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> ${fObra} — ${lista.length} factura(s) — Total: ${fmt(suma)}`;
+        } else {
+          resumenEl.style.display = 'none';
+        }
         if (!lista.length) { bdy.innerHTML = emptyRow(33, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
@@ -1714,7 +1848,7 @@
         <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td>${f.archivo_url ? `<a href="${f.archivo_url}" target="_blank" class="link-badge factura"><i class="fa-solid fa-paperclip"></i></a>` : '—'}</td>
+        <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
         <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
 <td>
