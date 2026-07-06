@@ -2393,12 +2393,13 @@
         set('f_base3', f.base3); set('f_pct_iva3', f.pct_iva3); set('f_total_iva3', f.total_iva3);
         set('f_exento', f.exento); set('f_descuento', f.descuento);
         set('f_base_ret', f.base_retencion); set('f_pct_ret', f.pct_retencion); set('f_total_ret', f.total_retencion);
+
+        if (f.archivo_url) {
+          mostrarPdfModal(f.archivo_url, f.proveedor || f.numero_factura || 'Factura');
+        } else {
+          ocultarPdfModal();
+        }
       }, 60);
-      if (f.archivo_url) {
-        mostrarPdfModal(f.archivo_url, f.proveedor || f.numero_factura || 'Factura');
-      } else {
-        ocultarPdfModal();
-      }
     }
 
     // ── MODAL NUEVO REGISTRO ──────────────────────────────────
