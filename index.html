@@ -2112,11 +2112,11 @@
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
               <td>${(f.numeros_albaran && f.numeros_albaran.length)
-            ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
+              ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
       <option value="">${f.numeros_albaran.length} albarán${f.numeros_albaran.length > 1 ? 'es' : ''}</option>
       ${f.numeros_albaran.map(n => `<option value="${n}">${n}</option>`).join('')}
     </select>`
-            : '—'}</td>
+              : '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
@@ -2228,11 +2228,11 @@
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
               <td>${(f.numeros_albaran && f.numeros_albaran.length)
-            ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
+              ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
       <option value="">${f.numeros_albaran.length} albarán${f.numeros_albaran.length > 1 ? 'es' : ''}</option>
       ${f.numeros_albaran.map(n => `<option value="${n}">${n}</option>`).join('')}
     </select>`
-            : '—'}</td>
+              : '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
@@ -2334,11 +2334,11 @@
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td>${(f.numeros_albaran && f.numeros_albaran.length)
-            ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
+              ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
       <option value="">${f.numeros_albaran.length} albarán${f.numeros_albaran.length > 1 ? 'es' : ''}</option>
       ${f.numeros_albaran.map(n => `<option value="${n}">${n}</option>`).join('')}
     </select>`
-            : '—'}</td>
+              : '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
@@ -2458,12 +2458,28 @@
         <td style="font-size:.8rem;color:#888">${uc ? uc.toLocaleDateString('es-ES') : '—'}
           ${alerta ? `<br><span style="color:#c47a00;font-size:.72rem">¡${meses} meses sin compra!</span>` : ''}
         </td>
-        <td><div class="td-acciones">
-          <button class="btn-puntos" onclick="abrirModalCompra(${f.id})">
-            <i class="fa-solid fa-cart-shopping me-1"></i>Registrar compra
-          </button>
-          ${f.nif ? `<span class="link-badge" onclick="verAlbaranesNif('${f.nif}','${(f.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-signature"></i>Albaranes</span>` : ''}
-        </div></td>
+        <td>
+<div class="td-acciones">
+
+  <button class="btn-toggle-pago pendiente"
+          onclick="abrirModalEditar(${f.id},'clientes')">
+      <i class="fa-solid fa-pen"></i>
+  </button>
+
+  <button class="btn-puntos" onclick="abrirModalCompra(${f.id})">
+      <i class="fa-solid fa-cart-shopping me-1"></i>
+      Registrar compra
+  </button>
+
+  ${f.nif ? `
+  <span class="link-badge"
+        onclick="verAlbaranesNif('${f.nif}','${(f.nombre || '').replace(/'/g, "\\'")}')">
+      <i class="fa-solid fa-file-signature"></i>
+      Albaranes
+  </span>` : ''}
+
+</div>
+</td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
         }).join('');
@@ -2482,7 +2498,29 @@
           ${agotado ? '<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>' : ''}
         </td>
         <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${p.puntos_por_unidad || 0} pts</span></td>
-        <td><button class="btn-eliminar" onclick="eliminar(${p.id})"><i class="fa-solid fa-trash"></i></button></td>
+        <td>
+
+<button class="btn-toggle-pago pagado"
+        onclick="sumarStock(${p.id})">
+    <i class="fa-solid fa-plus"></i>
+</button>
+
+<button class="btn-toggle-pago vencido"
+        onclick="restarStock(${p.id})">
+    <i class="fa-solid fa-minus"></i>
+</button>
+
+<button class="btn-toggle-pago pendiente"
+        onclick="abrirModalEditar(${p.id},'inventario')">
+    <i class="fa-solid fa-pen"></i>
+</button>
+
+<button class="btn-eliminar"
+        onclick="eliminar(${p.id})">
+    <i class="fa-solid fa-trash"></i>
+</button>
+
+</td>
       </tr>`;
         }).join('');
         // MATERIALES OBRA
@@ -2501,13 +2539,57 @@
         <td>${fmtF(f.fecha)}</td>
         <td class="td-concepto" title="${resumen}">${resumen}</td>
         <td><span class="link-badge" onclick="verDetalleMaterial(${f.id})"><i class="fa-solid fa-list"></i>Ver detalle</span></td>
-        <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+        <td>
+
+<button class="btn-toggle-pago pendiente"
+        onclick="abrirModalEditar(${f.id},'materiales_obra')">
+    <i class="fa-solid fa-pen"></i>
+</button>
+
+<button class="btn-eliminar"
+        onclick="eliminar(${f.id})">
+    <i class="fa-solid fa-trash"></i>
+</button>
+
+</td>
       </tr>`;
         }).join('');
 
       }
     }
+    async function sumarStock(id) {
 
+      const cantidad = parseFloat(prompt("Cantidad a añadir"));
+
+      if (!cantidad || cantidad <= 0) return;
+
+      const p = inventarioDB.find(x => x.id == id);
+
+      await apiPatch("inventario", id, {
+        stock: (parseFloat(p.stock) || 0) + cantidad
+      });
+
+      cargarDatos();
+    }
+
+    async function restarStock(id) {
+
+      const cantidad = parseFloat(prompt("Cantidad a descontar"));
+
+      if (!cantidad || cantidad <= 0) return;
+
+      const p = inventarioDB.find(x => x.id == id);
+
+      let stock = (parseFloat(p.stock) || 0) - cantidad;
+
+      if (stock < 0) stock = 0;
+
+      await apiPatch("inventario", id, {
+        stock: stock
+      });
+
+      cargarDatos();
+    }
     // ── CLASIFICAR UNA FACTURA PENDIENTE ──────────────────────
     async function clasificarPendiente(id, tablaDestino) {
       const p = registros.find(r => r.id === id);
@@ -2822,16 +2904,15 @@
       div.className = 'linea-prod';
       div.innerHTML = `
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Producto</label>
+      <label style="font-size:.75rem">Material</label>
       <select id="lm_prod_${idx}">
-        <option value="">— Elige producto —</option>${opts}
+        <option value="">— Elige material —</option>${opts}
       </select>
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad</label>
       <input type="number" id="lm_cant_${idx}" value="1" min="1" style="text-align:center">
     </div>
-    <div style="width:70px"></div>
     <button type="button" onclick="document.getElementById('lm_${idx}').remove()"
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
@@ -2927,8 +3008,85 @@
 
     // ── MODAL EDITAR REGISTRO (facturas almacén / obra) ────────
     function abrirModalEditar(id, tabla) {
-      const f = registros.find(r => r.id === id);
-      if (!f) { toast('No se ha encontrado el registro', 'err'); return; }
+
+      const f = registros.find(r => r.id == id);
+
+      if (!f) {
+        toast("No se ha encontrado el registro", "err");
+        return;
+      }
+
+      modalEditId = id;
+
+      /* ===========================
+         CLIENTES
+      =========================== */
+
+      if (tabla == "clientes") {
+        abrirModalNuevo("clientes");
+        setTimeout(() => {
+          document.getElementById("modalTitulo").textContent = "Editar cliente";
+          document.getElementById("btnGuardar").innerHTML =
+            '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios';
+          document.getElementById("f_nombre").value = f.nombre || "";
+          document.getElementById("f_nif").value = f.nif || "";
+          document.getElementById("f_tel").value = f.telefono || "";
+          document.getElementById("f_email").value = f.email || "";
+          document.getElementById("f_puntos").value = f.puntos || 0;
+        }, 100);
+        return;
+      }
+
+      /* ===========================
+         INVENTARIO
+      =========================== */
+
+      if (tabla == "inventario") {
+
+        abrirModalNuevo("inventario");
+
+        setTimeout(() => {
+
+          document.getElementById("modalTitulo").textContent = "Editar producto";
+
+          document.getElementById("btnGuardar").innerHTML =
+            '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios';
+
+          document.getElementById("f_nombre").value = f.nombre || "";
+          document.getElementById("f_stock").value = f.stock || 0;
+          document.getElementById("f_pts").value = f.puntos_por_unidad || 0;
+
+        }, 100);
+
+        return;
+      }
+
+      /* ===========================
+         MATERIALES OBRA
+      =========================== */
+
+      if (tabla == "materiales_obra") {
+        abrirModalNuevo("materiales_obra"); // abre el modal y ya añade una línea vacía
+        document.getElementById('lineasMaterial').innerHTML = '';
+        lineasMaterialCount = 0;
+
+        document.getElementById("modalTitulo").textContent = "Editar salida de material";
+        document.getElementById("mo_nombre_obra").value = f.nombre_obra || "";
+        document.getElementById("mo_nombre_empleado").value = f.nombre_empleado || "";
+        document.getElementById("mo_fecha").value = f.fecha || "";
+
+        const items = f.materiales_obra_items || [];
+        if (items.length) {
+          items.forEach(item => {
+            addLineaMaterial();
+            document.getElementById(`lm_prod_${lineasMaterialCount}`).value = item.producto_id;
+            document.getElementById(`lm_cant_${lineasMaterialCount}`).value = item.cantidad;
+          });
+        } else {
+          addLineaMaterial();
+        }
+        return;
+      }
       modalEditId = id;
       abrirModalNuevo(tabla);
       setTimeout(() => {
@@ -2965,6 +3123,7 @@
         } else {
           ocultarPdfModal();
         }
+
       }, 60);
     }
 
@@ -3576,23 +3735,35 @@
         } else if (tabla === 'clientes') {
           const nombre = document.getElementById('f_nombre').value.trim();
           if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
-          await apiPost('clientes', {
+          const payload = {
             nombre,
             nif: document.getElementById('f_nif').value.trim() || null,
             telefono: document.getElementById('f_tel').value.trim() || null,
             email: document.getElementById('f_email').value.trim() || null,
-            puntos: parseInt(document.getElementById('f_puntos').value || 0),
-            ultima_compra: new Date().toISOString()
-          });
+            puntos: parseInt(document.getElementById('f_puntos').value || 0)
+          };
+
+          if (modalEditId) {
+            await apiPatch('clientes', modalEditId, payload);
+          } else {
+            payload.ultima_compra = new Date().toISOString();
+            await apiPost('clientes', payload);
+          }
 
         } else if (tabla === 'inventario') {
           const nombre = document.getElementById('f_nombre').value.trim();
           if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
-          await apiPost('inventario', {
+          const payload = {
             nombre,
             stock: parseFloat(document.getElementById('f_stock').value || 0),
             puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0)
-          });
+          };
+
+          if (modalEditId) {
+            await apiPatch('inventario', modalEditId, payload);
+          } else {
+            await apiPost('inventario', payload);
+          }
         }
 
         toast('Guardado correctamente');
@@ -3631,18 +3802,78 @@
       if (!lineas.length) { toast('Añade al menos un material', 'err'); return; }
 
       try {
-        const [header] = await apiPost('materiales_obra', { nombre_obra, nombre_empleado, fecha });
+        let headerId;
+
+        if (modalEditId) {
+
+          // Actualizar cabecera
+          await apiPatch('materiales_obra', modalEditId, {
+            nombre_obra,
+            nombre_empleado,
+            fecha
+          });
+
+          headerId = modalEditId;
+
+          // Borrar líneas anteriores
+          const antiguas = await apiGet(
+            'materiales_obra_items',
+            `materiales_obra_id=eq.${headerId}`
+          );
+
+          // Devolver el stock
+          for (const a of antiguas) {
+
+            const prod = inventarioDB.find(p => p.id == a.producto_id);
+
+            if (prod) {
+
+              await apiPatch('inventario', a.producto_id, {
+                stock: Number(prod.stock) + Number(a.cantidad)
+              });
+
+            }
+
+            await apiDelete('materiales_obra_items', a.id);
+
+          }
+
+        } else {
+
+          const [header] = await apiPost('materiales_obra', {
+            nombre_obra,
+            nombre_empleado,
+            fecha
+          });
+
+          headerId = header.id;
+
+        }
+
         const items = lineas.map(l => ({
-          materiales_obra_id: header.id,
+          materiales_obra_id: headerId,
           producto_id: l.producto_id,
           producto_nombre: l.producto_nombre,
           cantidad: l.cantidad
         }));
+
         await apiPost('materiales_obra_items', items);
+
+        // Descontar stock otra vez
         for (const l of lineas) {
-          await apiPatch('inventario', l.producto_id, { stock: l.stock - l.cantidad });
+
+          const prod = inventarioDB.find(p => p.id == l.producto_id);
+
+          await apiPatch('inventario', l.producto_id, {
+            stock: Number(prod.stock) - Number(l.cantidad)
+          });
+
         }
-        toast('Material de obra registrado correctamente');
+        toast(modalEditId
+          ? 'Material de obra actualizado correctamente'
+          : 'Material de obra registrado correctamente');
+
+        modalEditId = null;
         cerrarModal('modalMaterialObra');
         cargarDatos();
       } catch (e) {
