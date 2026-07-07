@@ -1935,6 +1935,10 @@
 
     // ── CARGAR DATOS ──────────────────────────────────────────
     async function cargarDatos() {
+      if (tablaActual === 'calendario_pagos') {
+        cargarCalendarioPagos();
+        return;
+      }
       document.getElementById('tablaBody').innerHTML =
         `<tr><td colspan="23"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
       try {
