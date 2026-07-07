@@ -1274,8 +1274,8 @@
             class="fa-solid fa-warehouse"></i>Facturas Almacén</button>
         <button class="btn-nav" onclick="cambiarSeccion('facturas_obra')"><i
             class="fa-solid fa-helmet-safety"></i>Facturas Obra</button>
-        <button class="btn-nav" onclick="cambiarSeccion('facturas_csg')"><i
-            class="fa-solid fa-building"></i>Facturas CSG</button>
+        <button class="btn-nav" onclick="cambiarSeccion('facturas_csg')"><i class="fa-solid fa-building"></i>Facturas
+          CSG</button>
         <button class="btn-nav" onclick="cambiarSeccion('calendario_pagos')"><i
             class="fa-solid fa-calendar-days"></i>Calendario de Pagos</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
@@ -2081,6 +2081,7 @@
         hdr.innerHTML = `<tr>
       <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th>
       <th>Nº Factura</th><th>Concepto</th>
+<th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
@@ -2096,7 +2097,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(30, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(31, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -2108,6 +2109,12 @@
         <td class="td-nombre">${f.proveedor || '—'}</td>
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
+              <td>${(f.numeros_albaran && f.numeros_albaran.length)
+            ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
+      <option value="">${f.numeros_albaran.length} albarán${f.numeros_albaran.length > 1 ? 'es' : ''}</option>
+      ${f.numeros_albaran.map(n => `<option value="${n}">${n}</option>`).join('')}
+    </select>`
+            : '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
@@ -2171,6 +2178,7 @@
         hdr.innerHTML = `<tr>
       <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
       <th>Nº Factura</th><th>Concepto</th>
+<th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
@@ -2196,7 +2204,7 @@
         } else {
           resumenEl.style.display = 'none';
         }
-        if (!lista.length) { bdy.innerHTML = emptyRow(33, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(34, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -2209,6 +2217,12 @@
         <td class="td-nombre">${f.nombre_obra || '—'}</td>
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
+              <td>${(f.numeros_albaran && f.numeros_albaran.length)
+            ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
+      <option value="">${f.numeros_albaran.length} albarán${f.numeros_albaran.length > 1 ? 'es' : ''}</option>
+      ${f.numeros_albaran.map(n => `<option value="${n}">${n}</option>`).join('')}
+    </select>`
+            : '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
@@ -2272,6 +2286,7 @@
         hdr.innerHTML = `<tr>
       <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th>
       <th>Nº Factura</th><th>Concepto</th>
+      <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
@@ -2287,7 +2302,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(30, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(31, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -2299,6 +2314,12 @@
         <td class="td-nombre">${f.proveedor || '—'}</td>
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
+        <td>${(f.numeros_albaran && f.numeros_albaran.length)
+            ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
+      <option value="">${f.numeros_albaran.length} albarán${f.numeros_albaran.length > 1 ? 'es' : ''}</option>
+      ${f.numeros_albaran.map(n => `<option value="${n}">${n}</option>`).join('')}
+    </select>`
+            : '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
@@ -2359,13 +2380,13 @@
 
         // ALBARANES
       } else if (tablaActual === 'albaranes') {
-        hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Facturas por NIF</th><th>Acción</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Archivo</th><th>Facturas por NIF</th><th>Acción</th><th>Editar</th><th></th></tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_albaran, f.empresa, f.nif].some(v => (v || '').toLowerCase().includes(q));
           const mE = !fEst || (fEst === 'si' ? f.facturado : !f.facturado);
           return mQ && mE;
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(9, 'No se encontraron albaranes'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(11, 'No se encontraron albaranes'); return; }
         bdy.innerHTML = lista.map(f => {
           const fact = !!f.facturado;
           return `<tr>
@@ -2375,12 +2396,16 @@
         <td>${fmtF(f.fecha)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado ${fact ? 'badge-pagado' : 'badge-vencido'}">${fact ? 'SÍ' : 'NO'}</span></td>
+        <td>${f.archivo_url
+              ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.empresa || f.numero_albaran || 'Albarán').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>`
+              : '—'}</td>
         <td>${f.nif
               ? `<span class="link-badge factura" onclick="verFacturasNif('${f.nif}','${(f.empresa || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
               : '<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
         <td><button class="btn-toggle-facturado ${fact ? 'si' : 'no'}" onclick="toggleFacturado(${f.id},${fact})">
           ${fact ? '<i class="fa-solid fa-rotate-left me-1"></i>Sin facturar' : '<i class="fa-solid fa-file-circle-check me-1"></i>Marcar facturado'}
         </button></td>
+        <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditarAlbaran(${f.id})"><i class="fa-solid fa-pen"></i></button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
         }).join('');
@@ -2559,6 +2584,33 @@
         document.getElementById('modalDetalle').classList.add('visible');
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
+
+
+    async function verAlbaranPorNumero(numero, nif) {
+      try {
+        let url = `numero_albaran=eq.${encodeURIComponent(numero)}`;
+        if (nif) url += `&nif=eq.${encodeURIComponent(nif)}`;
+        let albs = await apiGet('albaranes', url);
+        if (!albs.length) albs = await apiGet('albaranes', `numero_albaran=eq.${encodeURIComponent(numero)}`);
+        if (!albs.length) { toast(`Albarán ${numero} no encontrado en la tabla`, 'err'); return; }
+        const a = albs[0];
+        document.getElementById('modalDetalleTitulo').innerHTML =
+          `<i class="fa-solid fa-file-signature" style="color:#b53987"></i>Albarán ${a.numero_albaran || numero}`;
+        document.getElementById('modalDetalleContenido').innerHTML = `
+      <table class="mini-table"><tbody>
+        <tr><td>Proveedor</td><td><strong>${a.empresa || '—'}</strong></td></tr>
+        <tr><td>Fecha</td><td>${fmtF(a.fecha)}</td></tr>
+        <tr><td>Total</td><td><strong>${fmt(a.total)}</strong></td></tr>
+        <tr><td>Facturado</td><td><span class="badge-estado ${a.facturado ? 'badge-pagado' : 'badge-vencido'}">${a.facturado ? 'SÍ' : 'NO'}</span></td></tr>
+        ${a.archivo_url ? `<tr><td>Archivo</td><td><span class="link-badge factura" onclick="verArchivoPanel('${a.archivo_url}','Albarán')"><i class="fa-solid fa-paperclip"></i> Ver</span></td></tr>` : ''}
+      </tbody></table>`;
+        document.getElementById('modalDetalle').classList.add('visible');
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+
+
+
+
     function verDetalleMaterial(id) {
       const reg = registros.find(r => r.id === id);
       if (!reg) return;
@@ -2837,6 +2889,7 @@
         set('f_base3', f.base3); set('f_pct_iva3', f.pct_iva3); set('f_total_iva3', f.total_iva3);
         set('f_exento', f.exento); set('f_descuento', f.descuento);
         set('f_base_ret', f.base_retencion); set('f_pct_ret', f.pct_retencion); set('f_total_ret', f.total_retencion);
+        set('f_num_albaranes', (f.numeros_albaran || []).join(', '));
 
         if (f.archivo_url) {
           mostrarPdfModal(f.archivo_url, f.proveedor || f.numero_factura || 'Factura');
@@ -2906,7 +2959,7 @@
         </div>
 
         <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
-
+<div class="form-group span2"><label>Números de albarán <span style="font-size:.72rem;color:#888">(separados por coma)</span></label><input type="text" id="f_num_albaranes" placeholder="ALB-001, ALB-002, ALB-003"></div>
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
@@ -2959,7 +3012,7 @@
 
         <div class="form-group span3"><label>Nombre de la obra *</label><input type="text" id="f_obra" placeholder="Ej: Reforma Calle Mayor 12"></div>
         <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
-
+<div class="form-group span2"><label>Números de albarán <span style="font-size:.72rem;color:#888">(separados por coma)</span></label><input type="text" id="f_num_albaranes" placeholder="ALB-001, ALB-002, ALB-003"></div>
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
@@ -3011,7 +3064,7 @@
         </div>
 
         <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
-
+<div class="form-group span2"><label>Números de albarán <span style="font-size:.72rem;color:#888">(separados por coma)</span></label><input type="text" id="f_num_albaranes" placeholder="ALB-001, ALB-002, ALB-003"></div>
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
@@ -3039,18 +3092,19 @@
       } else if (tabla === 'albaranes') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Albarán';
         cont.innerHTML = `<div class="form-grid-2">
-      <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_num" placeholder="ALB-2026-001"></div>
-      <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
-      <div class="form-group span2 ac-wrap">
-        <label>Proveedor / Empresa *</label>
-        <input type="text" id="f_empresa" placeholder="Escribe el nombre para buscar...">
-      </div>
-      <div class="form-group span2 ac-wrap">
-        <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
-        <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
-      </div>
-      <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
-    </div>`;
+  <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_num" placeholder="ALB-2026-001"></div>
+  <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+  <div class="form-group span2 ac-wrap">
+    <label>Proveedor / Empresa *</label>
+    <input type="text" id="f_empresa" placeholder="Escribe el nombre para buscar...">
+  </div>
+  <div class="form-group span2 ac-wrap">
+    <label>NIF <span style="font-size:.72rem;color:#b53987">(se rellena automáticamente)</span></label>
+    <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
+  </div>
+  <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+  <div class="form-group span2"><label>Archivo (PDF o imagen)</label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*"></div>
+</div>`;
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => setupProveedorAC('f_empresa', 'f_nif'), 50);
 
@@ -3182,7 +3236,23 @@
       return null;
     }
 
-
+    function abrirModalEditarAlbaran(id) {
+      const f = registros.find(r => r.id === id);
+      if (!f) { toast('No se ha encontrado el registro', 'err'); return; }
+      modalEditId = id;
+      abrirModalNuevo('albaranes');
+      setTimeout(() => {
+        document.getElementById('modalTitulo').textContent = 'Editar Albarán';
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v ?? ''); };
+        set('f_num', f.numero_albaran);
+        set('f_fecha', f.fecha);
+        set('f_empresa', f.empresa);
+        set('f_nif', f.nif);
+        set('f_total', f.total);
+        if (f.archivo_url) mostrarPdfModal(f.archivo_url, f.empresa || f.numero_albaran || 'Albarán');
+        else ocultarPdfModal();
+      }, 60);
+    }
 
     async function guardarDesdeIA(tabla, datos) {
       try {
@@ -3347,7 +3417,8 @@
             total: parseFloat(document.getElementById('f_total').value || 0),
             estado: document.getElementById('f_est').value,
             fecha_vencimiento: document.getElementById('f_venc').value || null,
-            archivo_url,
+            archivo_url, numeros_albaran: document.getElementById('f_num_albaranes').value
+              .split(',').map(s => s.trim()).filter(Boolean),
             ...recogerCamposExcel()
           };
           if (tabla === 'facturas_obra') payload.nombre_obra = document.getElementById('f_obra').value.trim();
@@ -3394,14 +3465,29 @@
           const empresa = document.getElementById('f_empresa').value.trim();
           const fecha = document.getElementById('f_fecha').value;
           if (!empresa || !fecha) { toast('Empresa y fecha son obligatorios', 'err'); return; }
-          await apiPost('albaranes', {
+
+          const fileInputAlb = document.getElementById('f_archivo_albaran');
+          let archivo_url = null;
+          if (fileInputAlb && fileInputAlb.files.length) {
+            archivo_url = await subirArchivoStorage(fileInputAlb.files[0]);
+          }
+
+          const payload = {
             numero_albaran: document.getElementById('f_num').value.trim() || null,
             fecha,
             empresa,
             nif: document.getElementById('f_nif').value.trim() || null,
-            total: parseFloat(document.getElementById('f_total').value || 0),
-            facturado: false
-          });
+            total: parseFloat(document.getElementById('f_total').value || 0)
+          };
+          if (archivo_url) payload.archivo_url = archivo_url;
+
+          if (modalEditId) {
+            await apiPatch('albaranes', modalEditId, payload);
+          } else {
+            payload.facturado = false;
+            await apiPost('albaranes', payload);
+          }
+          modalEditId = null;
 
         } else if (tabla === 'clientes') {
           const nombre = document.getElementById('f_nombre').value.trim();
