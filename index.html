@@ -1584,6 +1584,7 @@
     // Datos que se llevan de una factura pendiente a su formulario de clasificación
     window._pendienteOrigenId = null;
     window._prellenado = null;
+    window._prellenadoAlbaran = null;
 
     // ── UTILIDADES ────────────────────────────────────────────
     function fmt(v) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
@@ -2072,6 +2073,7 @@
           <button class="btn-toggle-pago pagado" onclick="clasificarPendiente(${f.id},'facturas_almacen')"><i class="fa-solid fa-warehouse me-1"></i>Almacén</button>
           <button class="btn-toggle-pago vencido" onclick="clasificarPendiente(${f.id},'facturas_obra')"><i class="fa-solid fa-helmet-safety me-1"></i>Obra</button>
           <button class="btn-toggle-pago pendiente" onclick="clasificarPendiente(${f.id},'facturas_csg')"><i class="fa-solid fa-building me-1"></i>CSG</button>
+          <button class="btn-toggle-pago" style="background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8" onclick="clasificarComoAlbaran(${f.id})"><i class="fa-solid fa-file-signature me-1"></i>Albarán</button>
         </td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`).join('');
@@ -2159,9 +2161,17 @@
   </button>
   <button
     class="btn-toggle-pago pendiente"
+    style="margin-bottom:4px"
     onclick="moverFactura(${f.id},'facturas_almacen','facturas_csg')">
     <i class="fa-solid fa-building"></i>
     CSG
+  </button>
+  <button
+    class="btn-toggle-pago"
+    style="background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8"
+    onclick="moverFacturaAAlbaran(${f.id},'facturas_almacen')">
+    <i class="fa-solid fa-file-signature"></i>
+    Albarán
   </button>
 </td>
 
@@ -2258,18 +2268,27 @@
   </button>
 </td>
 
-<td>
+<td style="white-space:nowrap">
   <button
     class="btn-toggle-pago pendiente"
+    style="margin-bottom:4px"
     onclick="moverFactura(${f.id},'facturas_obra','facturas_almacen')">
     <i class="fa-solid fa-warehouse"></i>
     Almacén
   </button>
   <button
     class="btn-toggle-pago pendiente"
+    style="margin-bottom:4px"
     onclick="moverFactura(${f.id},'facturas_almacen','facturas_csg')">
     <i class="fa-solid fa-building"></i>
     CSG
+  </button>
+  <button
+    class="btn-toggle-pago"
+    style="background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8"
+    onclick="moverFacturaAAlbaran(${f.id},'facturas_obra')">
+    <i class="fa-solid fa-file-signature"></i>
+    Albarán
   </button>
 </td>
 
@@ -2364,9 +2383,17 @@
   </button>
   <button
     class="btn-toggle-pago pendiente"
+    style="margin-bottom:4px"
     onclick="moverFactura(${f.id},'facturas_csg','facturas_obra')">
     <i class="fa-solid fa-helmet-safety"></i>
     Obra
+  </button>
+  <button
+    class="btn-toggle-pago"
+    style="background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8"
+    onclick="moverFacturaAAlbaran(${f.id},'facturas_csg')">
+    <i class="fa-solid fa-file-signature"></i>
+    Albarán
   </button>
 </td>
 
@@ -2516,6 +2543,46 @@
       }
 
       abrirModalNuevo(tablaDestino);
+    }
+
+    // ── CLASIFICAR UNA FACTURA PENDIENTE COMO ALBARÁN ─────────
+    function clasificarComoAlbaran(id) {
+      const p = registros.find(r => r.id === id);
+      if (!p) return;
+      window._pendienteOrigenId = id;
+      window._prellenadoAlbaran = {
+        empresa: p.remitente || '',
+        archivo_url: p.archivo_url || ''
+      };
+      abrirModalNuevo('albaranes');
+    }
+
+    // ── MOVER UNA FACTURA (almacén/obra/CSG) A ALBARANES ──────
+    async function moverFacturaAAlbaran(id, origen) {
+      if (!confirm('¿Mover este registro a Albaranes? Se eliminará de la tabla de facturas.')) return;
+      try {
+        const encontrada = await apiGet(origen, `id=eq.${id}`);
+        if (!encontrada || !encontrada.length) { toast('Registro no encontrado', 'err'); return; }
+        const f = encontrada[0];
+
+        const nuevo = {
+          numero_albaran: f.numero_factura || null,
+          fecha: f.fecha || hoy(),
+          empresa: f.proveedor || null,
+          nif: f.nif || null,
+          total: f.total != null ? f.total : 0,
+          facturado: false,
+          archivo_url: f.archivo_url || null
+        };
+
+        await apiPost('albaranes', nuevo);
+        await apiDelete(origen, id);
+
+        toast('Movido a Albaranes correctamente');
+        cargarDatos();
+      } catch (e) {
+        toast('Error al mover a Albarán: ' + e.message, 'err');
+      }
     }
 
     // ── TOGGLE ESTADO FACTURA ─────────────────────────────────
@@ -3106,7 +3173,18 @@
   <div class="form-group span2"><label>Archivo (PDF o imagen)</label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*"></div>
 </div>`;
         document.getElementById('modalNueva').classList.add('visible');
-        setTimeout(() => setupProveedorAC('f_empresa', 'f_nif'), 50);
+        setTimeout(() => {
+          setupProveedorAC('f_empresa', 'f_nif');
+          if (window._prellenadoAlbaran) {
+            const p = window._prellenadoAlbaran;
+            const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+            set('f_empresa', p.empresa);
+            if (p.archivo_url) mostrarPdfModal(p.archivo_url, p.empresa || 'Albarán');
+            else ocultarPdfModal();
+          } else {
+            ocultarPdfModal();
+          }
+        }, 50);
 
         // ── CLIENTE ──
       } else if (tabla === 'clientes') {
@@ -3467,7 +3545,7 @@
           if (!empresa || !fecha) { toast('Empresa y fecha son obligatorios', 'err'); return; }
 
           const fileInputAlb = document.getElementById('f_archivo_albaran');
-          let archivo_url = null;
+          let archivo_url = (window._prellenadoAlbaran && window._prellenadoAlbaran.archivo_url) || null;
           if (fileInputAlb && fileInputAlb.files.length) {
             archivo_url = await subirArchivoStorage(fileInputAlb.files[0]);
           }
@@ -3488,6 +3566,12 @@
             await apiPost('albaranes', payload);
           }
           modalEditId = null;
+
+          if (window._pendienteOrigenId) {
+            await apiDelete('facturas_pendientes', window._pendienteOrigenId);
+            window._pendienteOrigenId = null;
+          }
+          window._prellenadoAlbaran = null;
 
         } else if (tabla === 'clientes') {
           const nombre = document.getElementById('f_nombre').value.trim();
@@ -3785,6 +3869,7 @@
         modalEditId = null;
         window._pendienteOrigenId = null;
         window._prellenado = null;
+        window._prellenadoAlbaran = null;
         ocultarPdfModal();
       }
     }
