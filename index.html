@@ -1043,6 +1043,149 @@
       color: #bbb;
     }
 
+    .cal-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .cal-header button {
+      background: #faf7fc;
+      border: 1.5px solid #ede5f5;
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      color: #b53987;
+      font-weight: 600;
+    }
+
+    .cal-header button:hover {
+      background: #f3e8f7;
+    }
+
+    .cal-header span#calMesTitulo {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #444;
+      min-width: 170px;
+      text-align: center;
+      text-transform: capitalize;
+    }
+
+    .cal-hoy-btn {
+      margin-left: auto;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .cal-diasemana {
+      text-align: center;
+      font-weight: 700;
+      color: #8a7a99;
+      font-size: .78rem;
+      padding-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .cal-celda {
+      background: #fff;
+      border: 1.5px solid #ede5f5;
+      border-radius: 10px;
+      min-height: 112px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+    }
+
+    .cal-celda.vacia {
+      background: transparent;
+      border: none;
+    }
+
+    .cal-celda.hoy {
+      border-color: #b53987;
+      box-shadow: 0 0 0 1.5px #b53987 inset;
+    }
+
+    .cal-num {
+      font-weight: 700;
+      font-size: .85rem;
+      color: #555;
+    }
+
+    .cal-total-dia {
+      font-size: .72rem;
+      color: #8a7a99;
+      font-weight: 600;
+    }
+
+    .cal-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow-y: auto;
+    }
+
+    .cal-chip {
+      font-size: .68rem;
+      border-radius: 5px;
+      padding: 2px 5px;
+      cursor: pointer;
+      line-height: 1.25;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cal-chip.pendiente {
+      background: #f3e8f7;
+      color: #7a1f61;
+    }
+
+    .cal-chip.vencido {
+      background: #fdeaea;
+      color: #b3261e;
+      font-weight: 600;
+    }
+
+    .cal-chip.pagado {
+      background: #e6f4ea;
+      color: #2d7a4f;
+      text-decoration: line-through;
+      opacity: .7;
+    }
+
+    .cal-chip-prov {
+      font-weight: 700;
+    }
+
+    .cal-chip-metodo {
+      font-style: italic;
+      opacity: .85;
+    }
+
+    @media (max-width: 900px) {
+      .cal-grid {
+        grid-template-columns: repeat(7, minmax(38px, 1fr));
+      }
+
+      .cal-celda {
+        min-height: 74px;
+        font-size: .68rem;
+        padding: 3px;
+      }
+
+      .cal-chip {
+        font-size: .58rem;
+      }
+    }
+
     .empty-state i {
       font-size: 2.5rem;
       margin-bottom: .75rem;
@@ -1133,6 +1276,8 @@
             class="fa-solid fa-helmet-safety"></i>Facturas Obra</button>
         <button class="btn-nav" onclick="cambiarSeccion('facturas_csg')"><i
             class="fa-solid fa-building"></i>Facturas CSG</button>
+        <button class="btn-nav" onclick="cambiarSeccion('calendario_pagos')"><i
+            class="fa-solid fa-calendar-days"></i>Calendario de Pagos</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
             class="fa-solid fa-file-signature"></i>Albaranes</button>
         <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
@@ -1173,7 +1318,7 @@
           <div class="sval" id="sPagar">—</div>
         </div>
       </div>
-      <div class="filtros">
+      <div class="filtros" id="filtrosBar">
         <input type="text" id="searchInput" placeholder="Buscar..." oninput="renderTabla()">
         <select id="filtroEstado" onchange="renderTabla()">
           <option value="">Todos los estados</option>
@@ -1210,6 +1355,17 @@
             </div>
           </div>
           <iframe id="visorPdfIframe" src="about:blank"></iframe>
+        </div>
+      </div>
+      <div id="calendarioPagosWrap" style="display:none">
+        <div class="cal-header">
+          <button onclick="cambiarMesCalendario(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <span id="calMesTitulo">—</span>
+          <button onclick="cambiarMesCalendario(1)"><i class="fa-solid fa-chevron-right"></i></button>
+          <button class="cal-hoy-btn" onclick="irMesActualCalendario()">Hoy</button>
+        </div>
+        <div class="cal-grid" id="calGrid">
+          <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
         </div>
       </div>
     </div>
@@ -1604,6 +1760,7 @@
         facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
         facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
         facturas_csg: ['Facturas CSG', 'fa-building', true],
+        calendario_pagos: ['Calendario de Pagos', 'fa-calendar-days', false],
         albaranes: ['Albaranes', 'fa-file-signature', false],
         clientes: ['Clientes', 'fa-users', false],
         inventario: ['Inventario', 'fa-boxes-stacked', false],
@@ -1619,6 +1776,16 @@
       document.getElementById('filtroObra').style.display = sec === 'facturas_obra' ? '' : 'none';
       document.getElementById('resumenObra').style.display = 'none';
       cerrarVisorPdf();
+
+      const esCalendario = sec === 'calendario_pagos';
+      document.getElementById('filtrosBar').style.display = esCalendario ? 'none' : 'flex';
+      document.getElementById('splitWrap').style.display = esCalendario ? 'none' : 'flex';
+      document.getElementById('calendarioPagosWrap').style.display = esCalendario ? 'block' : 'none';
+
+      if (esCalendario) {
+        cargarCalendarioPagos();
+        return;
+      }
 
       const esFacturas = sec === 'facturas_almacen' || sec === 'facturas_obra' || sec === 'facturas_csg';
       document.getElementById('btnExportar').style.display = (esFacturas || sec === 'materiales_obra') ? 'flex' : 'none';
@@ -1650,6 +1817,120 @@
         sp.placeholder = sec === 'clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
       }
       cargarDatos();
+    }
+
+    // ── CALENDARIO DE PAGOS ───────────────────────────────────
+    let calAnio, calMes;
+    let calFacturas = [];
+
+    async function cargarCalendarioPagos() {
+      const hoy = new Date();
+      if (calAnio === undefined) {
+        calAnio = hoy.getFullYear();
+        calMes = hoy.getMonth();
+      }
+      document.getElementById('calGrid').innerHTML =
+        '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>';
+
+      const [obra, almacen, csg] = await Promise.all([
+        apiGet('facturas_obra', 'select=*'),
+        apiGet('facturas_almacen', 'select=*'),
+        apiGet('facturas_csg', 'select=*')
+      ]);
+
+      calFacturas = [
+        ...(obra || []).map(f => ({ ...f, origen: 'facturas_obra' })),
+        ...(almacen || []).map(f => ({ ...f, origen: 'facturas_almacen' })),
+        ...(csg || []).map(f => ({ ...f, origen: 'facturas_csg' }))
+      ].filter(f => f.fecha_vencimiento);
+
+      renderCalendarioPagos();
+    }
+
+    function cambiarMesCalendario(delta) {
+      calMes += delta;
+      if (calMes < 0) { calMes = 11; calAnio--; }
+      if (calMes > 11) { calMes = 0; calAnio++; }
+      renderCalendarioPagos();
+    }
+
+    function irMesActualCalendario() {
+      const hoy = new Date();
+      calAnio = hoy.getFullYear();
+      calMes = hoy.getMonth();
+      renderCalendarioPagos();
+    }
+
+    function abrirDesdeCalendario(id, origen) {
+      const encontrada = calFacturas.find(f => f.id === id && f.origen === origen);
+      if (!encontrada) { toast('No se ha encontrado la factura', 'err'); return; }
+      if (!registros.some(r => r.id === id)) registros.push(encontrada);
+      abrirModalEditar(id, origen);
+    }
+
+    function renderCalendarioPagos() {
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+        'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      document.getElementById('calMesTitulo').textContent = `${meses[calMes]} ${calAnio}`;
+
+      const primerDia = new Date(calAnio, calMes, 1);
+      const ultimoDia = new Date(calAnio, calMes + 1, 0);
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      // Lunes = 0 ... Domingo = 6
+      const diaSemanaInicio = (primerDia.getDay() + 6) % 7;
+
+      const porDia = {};
+      calFacturas.forEach(f => {
+        const d = f.fecha_vencimiento;
+        if (!d) return;
+        const [y, m] = d.split('-').map(Number);
+        if (y === calAnio && (m - 1) === calMes) {
+          (porDia[d] = porDia[d] || []).push(f);
+        }
+      });
+
+      let html = '';
+      ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].forEach(d => {
+        html += `<div class="cal-diasemana">${d}</div>`;
+      });
+
+      for (let i = 0; i < diaSemanaInicio; i++) html += `<div class="cal-celda vacia"></div>`;
+
+      for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+        const fechaStr = `${calAnio}-${String(calMes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+        const facturasDia = porDia[fechaStr] || [];
+        const fechaObj = new Date(calAnio, calMes, dia);
+        const esHoy = fechaObj.getTime() === hoy.getTime();
+
+        const chips = facturasDia.map(f => {
+          const pagado = f.estado === 'pagado';
+          const vencida = !pagado && fechaObj < hoy;
+          const clase = pagado ? 'pagado' : (vencida ? 'vencido' : 'pendiente');
+          const prov = (f.proveedor || 'Sin proveedor');
+          return `<div class="cal-chip ${clase}" onclick="abrirDesdeCalendario(${f.id},'${f.origen}')"
+            title="${prov} — ${fmt(f.total)} — ${f.metodo_pago || 'Sin método de pago'}">
+            <span class="cal-chip-prov">${prov.length > 16 ? prov.substring(0, 16) + '…' : prov}</span>
+            <span>${fmt(f.total)}</span>
+            ${f.metodo_pago ? `<span class="cal-chip-metodo">${f.metodo_pago}</span>` : ''}
+          </div>`;
+        }).join('');
+
+        const totalDia = facturasDia.reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
+
+        html += `<div class="cal-celda${esHoy ? ' hoy' : ''}">
+          <div class="cal-num">${dia}</div>
+          ${facturasDia.length ? `<div class="cal-total-dia">${fmt(totalDia)}</div>` : ''}
+          <div class="cal-chips">${chips}</div>
+        </div>`;
+      }
+
+      const totalCeldas = diaSemanaInicio + ultimoDia.getDate();
+      const sobran = (7 - (totalCeldas % 7)) % 7;
+      for (let i = 0; i < sobran; i++) html += `<div class="cal-celda vacia"></div>`;
+
+      document.getElementById('calGrid').innerHTML = html;
     }
 
     // ── CARGAR DATOS ──────────────────────────────────────────
@@ -1742,6 +2023,10 @@
     }
 
     function verArchivoPanel(url, titulo) {
+      if (!url || !/^https?:\/\//i.test(url)) {
+        toast('Este archivo no tiene una URL válida (puede ser una factura antigua guardada antes de usar Storage) — súbelo de nuevo desde Editar', 'err');
+        return;
+      }
       document.getElementById('visorPdf').style.display = 'flex';
       document.getElementById('visorPdfIframe').src = url;
       document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
@@ -2452,6 +2737,27 @@
 
     function htmlCamposExcel() {
       return `
+    <div class="form-seccion">Pago</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Método de pago</label>
+        <select id="f_metodo_pago">
+          <option value="">—</option>
+          <option value="Transferencia">Transferencia</option>
+          <option value="Domiciliación">Domiciliación</option>
+          <option value="Giro">Giro</option>
+          <option value="Pagaré">Pagaré</option>
+          <option value="Cheque">Cheque</option>
+          <option value="Tarjeta">Tarjeta</option>
+          <option value="Contado">Contado</option>
+          <option value="Confirming">Confirming</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Número de cuenta (IBAN)</label>
+        <input type="text" id="f_iban" placeholder="ES00 0000 0000 0000 0000 0000">
+      </div>
+    </div>
     <div class="form-seccion">Bases e IVA</div>
     <div class="form-grid">
       <div class="form-group"><label>Base 1</label><input type="number" id="f_base1" step="0.01" placeholder="0.00"></div>
@@ -2485,6 +2791,8 @@
     function recogerCamposExcel() {
       const n = id => { const v = document.getElementById(id)?.value; return (v === '' || v === null || v === undefined) ? null : parseFloat(v); };
       return {
+        metodo_pago: document.getElementById('f_metodo_pago')?.value || null,
+        iban: document.getElementById('f_iban')?.value.trim() || null,
         base1: n('f_base1'), pct_iva1: n('f_pct_iva1'), total_iva1: n('f_total_iva1'),
         pct_re1: n('f_pct_re1'), total_re1: n('f_total_re1'), tasas: n('f_tasas'),
         base2: n('f_base2'), pct_iva2: n('f_pct_iva2'), total_iva2: n('f_total_iva2'),
@@ -2515,6 +2823,8 @@
         set('f_concepto', f.concepto);
         set('f_total', f.total);
         set('f_venc', f.fecha_vencimiento);
+        set('f_metodo_pago', f.metodo_pago || '');
+        set('f_iban', f.iban || '');
         set('f_est', f.estado || 'pendiente');
         if (tabla === 'facturas_obra') set('f_obra', f.nombre_obra);
         set('f_base1', f.base1); set('f_pct_iva1', f.pct_iva1 != null ? f.pct_iva1 : 21); set('f_total_iva1', f.total_iva1);
@@ -2790,6 +3100,8 @@
       set('f_num_interno', p.numero_interno);
       set('f_fecha', p.fecha);
       set('f_venc', p.fecha_vencimiento);
+      set('f_metodo_pago', p.metodo_pago);
+      set('f_iban', p.iban);
       set('f_concepto', p.concepto);
       set('f_total', p.total);
       set('f_base1', p.base1);
