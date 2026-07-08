@@ -1330,6 +1330,9 @@
             id="btnNuevaTxt">Añadir Nuevo</span></button>
         <button class="btn-exportar" id="btnExportar" onclick="abrirModalExportar()" style="display:none"><i
             class="fa-solid fa-file-excel"></i>Exportar Excel</button>
+        <button class="btn-exportar" id="btnDuplicados" onclick="verDuplicados()" style="display:none">
+          <i class="fa-solid fa-clone"></i>Duplicados
+        </button>
       </div>
       <div id="resumenObra" style="display:none; margin: -8px 0 14px; font-weight:600; color:#333;"></div>
       <div class="split-wrap" id="splitWrap">
@@ -1552,7 +1555,7 @@
     </div>
   </div>
   <div class="toast-wrap" id="toastWrap"></div>
-
+  cambiarSeccion
   <script>
     const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
@@ -1790,6 +1793,7 @@
 
       const esFacturas = sec === 'facturas_almacen' || sec === 'facturas_obra' || sec === 'facturas_csg';
       document.getElementById('btnExportar').style.display = (esFacturas || sec === 'materiales_obra') ? 'flex' : 'none';
+      document.getElementById('btnDuplicados').style.display = esFacturas ? 'flex' : 'none';
 
       const btnTxt = document.getElementById('btnNuevaTxt');
       btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : 'Añadir Nuevo';
@@ -2109,7 +2113,7 @@
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td><strong>${f.numero_factura || '—'}</strong></td>
+        <td><strong>${f.numero_factura || '—'}</strong>${f.veces_reenviada ? `<span title="Reenviada ${f.veces_reenviada} vez${f.veces_reenviada > 1 ? 'es' : ''}" style="margin-left:5px;font-size:.68rem;background:#fff3e0;color:#c47a00;padding:1px 6px;border-radius:20px;font-weight:600"><i class="fa-solid fa-clone"></i> ${f.veces_reenviada}</span>` : ''}</td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
               <td>${(f.numeros_albaran && f.numeros_albaran.length)
               ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
@@ -2224,7 +2228,7 @@
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td class="td-nombre">${f.nombre_obra || '—'}</td>
+        <td><strong>${f.numero_factura || '—'}</strong>${f.veces_reenviada ? `<span title="Reenviada ${f.veces_reenviada} vez${f.veces_reenviada > 1 ? 'es' : ''}" style="margin-left:5px;font-size:.68rem;background:#fff3e0;color:#c47a00;padding:1px 6px;border-radius:20px;font-weight:600"><i class="fa-solid fa-clone"></i> ${f.veces_reenviada}</span>` : ''}</td>
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
               <td>${(f.numeros_albaran && f.numeros_albaran.length)
@@ -2331,7 +2335,7 @@
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td><strong>${f.numero_factura || '—'}</strong></td>
+        <td><strong>${f.numero_factura || '—'}</strong>${f.veces_reenviada ? `<span title="Reenviada ${f.veces_reenviada} vez${f.veces_reenviada > 1 ? 'es' : ''}" style="margin-left:5px;font-size:.68rem;background:#fff3e0;color:#c47a00;padding:1px 6px;border-radius:20px;font-weight:600"><i class="fa-solid fa-clone"></i> ${f.veces_reenviada}</span>` : ''}</td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td>${(f.numeros_albaran && f.numeros_albaran.length)
               ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
@@ -2638,7 +2642,25 @@
       };
       abrirModalNuevo('albaranes');
     }
-
+    async function verDuplicados() {
+      try {
+        const dups = await apiGetAll('duplicados_detectados', `tabla_original=eq.${tablaActual}&order=fecha_deteccion.desc`);
+        document.getElementById('modalDetalleTitulo').innerHTML =
+          `<i class="fa-solid fa-clone" style="color:#b53987"></i>Duplicados detectados`;
+        document.getElementById('modalDetalleContenido').innerHTML = !dups.length
+          ? `<p style="text-align:center;color:#aaa;padding:2rem">No se han detectado duplicados</p>`
+          : `<table class="mini-table"><thead><tr><th>Fecha detección</th><th>Proveedor</th><th>Nº Factura</th><th>Total</th><th>Origen</th></tr></thead><tbody>
+        ${dups.map(d => `<tr>
+          <td style="font-size:.78rem">${new Date(d.fecha_deteccion).toLocaleString('es-ES')}</td>
+          <td>${d.proveedor || '—'}</td>
+          <td><strong>${d.numero_factura || '—'}</strong></td>
+          <td>${fmt(d.total)}</td>
+          <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${d.origen === 'ia' ? '#e3f2fd' : '#fff3e0'};color:${d.origen === 'ia' ? '#1565c0' : '#c47a00'}">${d.origen === 'ia' ? 'IA' : 'Manual'}</span></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+        document.getElementById('modalDetalle').classList.add('visible');
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
     // ── MOVER UNA FACTURA (almacén/obra/CSG) A ALBARANES ──────
     async function moverFacturaAAlbaran(id, origen) {
       if (!confirm('¿Mover este registro a Albaranes? Se eliminará de la tabla de facturas.')) return;
@@ -3473,6 +3495,31 @@
       return null;
     }
 
+
+    async function registrarDuplicado(duplicado, datosIntento, origen) {
+      try {
+        await apiPost('duplicados_detectados', {
+          tabla_original: duplicado.tabla,
+          id_original: duplicado.id,
+          numero_factura: datosIntento.numero_factura || null,
+          nif: datosIntento.nif || null,
+          proveedor: datosIntento.proveedor || null,
+          total: datosIntento.total != null ? parseFloat(datosIntento.total) : null,
+          origen,
+          archivo_url: datosIntento.archivo_url || null
+        });
+
+        const original = await apiGet(duplicado.tabla, `id=eq.${duplicado.id}&select=veces_reenviada`);
+        const vecesActual = (original[0]?.veces_reenviada) || 0;
+        await apiPatch(duplicado.tabla, duplicado.id, {
+          veces_reenviada: vecesActual + 1,
+          ultimo_reenvio: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error('No se pudo registrar el duplicado:', e);
+      }
+    }
+
     function abrirModalEditarAlbaran(id) {
       const f = registros.find(r => r.id === id);
       if (!f) { toast('No se ha encontrado el registro', 'err'); return; }
@@ -3497,7 +3544,8 @@
           datos.numero_factura, datos.nif, datos.fecha, parseFloat(datos.total || 0), null
         );
         if (duplicado) {
-          toast(`⚠️ Ya existe una factura igual en ${duplicado.tabla === 'facturas_obra' ? 'Obra' : duplicado.tabla === 'facturas_csg' ? 'CSG' : 'Almacén'} — revísala a mano`, 'err');
+          await registrarDuplicado(duplicado, datos, 'ia');
+          toast(`⚠️ Ya existe una factura igual en ${duplicado.tabla === 'facturas_obra' ? 'Obra' : duplicado.tabla === 'facturas_csg' ? 'CSG' : 'Almacén'} — revísala a mano (duplicado registrado)`, 'err');
           abrirModalNuevo(tabla);
           return;
         }
@@ -3631,7 +3679,14 @@
           const totalCampo = parseFloat(document.getElementById('f_total').value || 0);
           const duplicado = await buscarFacturaDuplicada(numFactura, nifCampo, fecha, totalCampo, modalEditId);
           if (duplicado) {
-            toast(`⚠️ Ya existe una factura igual en ${duplicado.tabla === 'facturas_obra' ? 'Obra' : duplicado.tabla === 'facturas_csg' ? 'CSG' : 'Almacén'}`, 'err');
+            await registrarDuplicado(duplicado, {
+              numero_factura: numFactura,
+              nif: nifCampo,
+              proveedor: prov,
+              total: totalCampo,
+              archivo_url: (window._prellenado && window._prellenado.archivo_url) || null
+            }, 'manual');
+            toast(`⚠️ Ya existe una factura igual en ${duplicado.tabla === 'facturas_obra' ? 'Obra' : duplicado.tabla === 'facturas_csg' ? 'CSG' : 'Almacén'} (duplicado registrado)`, 'err');
             return;
           }
 
