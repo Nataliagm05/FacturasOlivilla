@@ -182,8 +182,8 @@
 
     .main-wrap {
       flex: 1;
-      max-width: 1400px;
-      margin: 0 auto;
+      max-width: 1950px;
+      margin: 0;
       width: 100%;
       padding: 24px 16px 60px;
     }
@@ -1734,11 +1734,40 @@
 
       inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
       inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
-      inpN.addEventListener('blur', () => setTimeout(() => listaN.style.display = 'none', 160));
+      inpN.addEventListener('blur', () => setTimeout(() => {
+        listaN.style.display = 'none';
+        // Si lo que ha escrito coincide exactamente con un proveedor ya
+        // guardado, rellena el NIF aunque no haya hecho clic en la lista.
+        autocompletarNifDesdeDB(inputNombreId, inputNifId, { forzar: false });
+      }, 160));
 
       inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
       inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
       inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));
+    }
+
+    // Busca un proveedor ya existente en la base de datos por nombre exacto
+    // (ignorando mayúsculas/espacios) y devuelve su NIF si lo encuentra.
+    // Se usa para autorellenar el NIF cuando el nombre del proveedor viene
+    // ya sea de la IA o escrito a mano, sin necesidad de hacer clic en el
+    // desplegable de autocompletado.
+    function nifDesdeProveedorDB(nombre) {
+      if (!nombre) return null;
+      const norm = s => (s || '').toLowerCase().trim();
+      const match = proveedoresDB.find(p => norm(p.nombre) === norm(nombre));
+      return (match && match.nif) ? match.nif : null;
+    }
+
+    // Rellena el campo NIF a partir del nombre de proveedor si existe en la
+    // base de datos. Por defecto, el NIF de la base de datos manda sobre
+    // cualquier otro valor (por ejemplo el que haya podido leer la IA),
+    // porque es el dato ya verificado.
+    function autocompletarNifDesdeDB(nombreInputId, nifInputId, { forzar = true } = {}) {
+      const inpN = document.getElementById(nombreInputId);
+      const inpF = document.getElementById(nifInputId);
+      if (!inpN || !inpF) return;
+      const nif = nifDesdeProveedorDB(inpN.value);
+      if (nif && (forzar || !inpF.value)) inpF.value = nif;
     }
 
     function _crearLista(id, parent) {
@@ -2089,13 +2118,13 @@
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th></th><th></th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
       <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
       <th class="num-cell">Base3</th><th class="pct-cell">%IVA3</th><th class="num-cell">IVA3</th>
       <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th></th>
     </tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
@@ -2103,7 +2132,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(31, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(33, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -2124,20 +2153,6 @@
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_re1)}</td>
-        <td class="num-cell">${fmtN(f.tasas)}</td>
-        <td class="num-cell">${fmtN(f.base2)}</td>
-        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva2)}</td>
-        <td class="num-cell">${fmtN(f.base3)}</td>
-        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva3)}</td>
-        <td class="num-cell">${fmtN(f.exento)}</td>
-        <td class="num-cell">${fmtN(f.descuento)}</td>
-        <td class="num-cell">${fmtN(f.base_retencion)}</td>
-        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
@@ -2184,6 +2199,20 @@
     <i class="fa-solid fa-trash"></i>
   </button>
 </td>
+        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_re1)}</td>
+        <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.base2)}</td>
+        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva2)}</td>
+        <td class="num-cell">${fmtN(f.base3)}</td>
+        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva3)}</td>
+        <td class="num-cell">${fmtN(f.exento)}</td>
+        <td class="num-cell">${fmtN(f.descuento)}</td>
+        <td class="num-cell">${fmtN(f.base_retencion)}</td>
+        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_retencion)}</td>
       </tr>`;
         }).join('');
 
@@ -2194,13 +2223,13 @@
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th></th><th>Editar</th><th>Acción</th><th></th><th></th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
       <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
       <th class="num-cell">Base3</th><th class="pct-cell">%IVA3</th><th class="num-cell">IVA3</th>
       <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Capturado</th><th>Editar</th><th>Acción</th><th></th>
     </tr>`;
         const fObra = document.getElementById('filtroObra').value;
         const lista = registros.filter(f => {
@@ -2218,7 +2247,7 @@
         } else {
           resumenEl.style.display = 'none';
         }
-        if (!lista.length) { bdy.innerHTML = emptyRow(34, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(35, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -2228,8 +2257,8 @@
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
+        <td class="td-nombre">${f.nombre_obra || '—'}</td>
         <td><strong>${f.numero_factura || '—'}</strong>${f.veces_reenviada ? `<span title="Reenviada ${f.veces_reenviada} vez${f.veces_reenviada > 1 ? 'es' : ''}" style="margin-left:5px;font-size:.68rem;background:#fff3e0;color:#c47a00;padding:1px 6px;border-radius:20px;font-weight:600"><i class="fa-solid fa-clone"></i> ${f.veces_reenviada}</span>` : ''}</td>
-        <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
               <td>${(f.numeros_albaran && f.numeros_albaran.length)
               ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
@@ -2240,20 +2269,6 @@
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_re1)}</td>
-        <td class="num-cell">${fmtN(f.tasas)}</td>
-        <td class="num-cell">${fmtN(f.base2)}</td>
-        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva2)}</td>
-        <td class="num-cell">${fmtN(f.base3)}</td>
-        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva3)}</td>
-        <td class="num-cell">${fmtN(f.exento)}</td>
-        <td class="num-cell">${fmtN(f.descuento)}</td>
-        <td class="num-cell">${fmtN(f.base_retencion)}</td>
-        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
@@ -2301,6 +2316,20 @@
     <i class="fa-solid fa-trash"></i>
   </button>
 </td>
+        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_re1)}</td>
+        <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.base2)}</td>
+        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva2)}</td>
+        <td class="num-cell">${fmtN(f.base3)}</td>
+        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva3)}</td>
+        <td class="num-cell">${fmtN(f.exento)}</td>
+        <td class="num-cell">${fmtN(f.descuento)}</td>
+        <td class="num-cell">${fmtN(f.base_retencion)}</td>
+        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_retencion)}</td>
       </tr>`;
         }).join('');
 
@@ -2311,13 +2340,13 @@
       <th>Nº Factura</th><th>Concepto</th>
       <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th></th><th></th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
       <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
       <th class="num-cell">Base3</th><th class="pct-cell">%IVA3</th><th class="num-cell">IVA3</th>
       <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th></th>
     </tr>`;
         const lista = registros.filter(f => {
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
@@ -2325,7 +2354,7 @@
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(31, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(33, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -2346,20 +2375,6 @@
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_re1)}</td>
-        <td class="num-cell">${fmtN(f.tasas)}</td>
-        <td class="num-cell">${fmtN(f.base2)}</td>
-        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva2)}</td>
-        <td class="num-cell">${fmtN(f.base3)}</td>
-        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_iva3)}</td>
-        <td class="num-cell">${fmtN(f.exento)}</td>
-        <td class="num-cell">${fmtN(f.descuento)}</td>
-        <td class="num-cell">${fmtN(f.base_retencion)}</td>
-        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
-        <td class="num-cell">${fmtN(f.total_retencion)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
@@ -2406,6 +2421,20 @@
     <i class="fa-solid fa-trash"></i>
   </button>
 </td>
+        <td class="pct-cell">${f.pct_re1 != null ? f.pct_re1 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_re1)}</td>
+        <td class="num-cell">${fmtN(f.tasas)}</td>
+        <td class="num-cell">${fmtN(f.base2)}</td>
+        <td class="pct-cell">${f.pct_iva2 != null ? f.pct_iva2 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva2)}</td>
+        <td class="num-cell">${fmtN(f.base3)}</td>
+        <td class="pct-cell">${f.pct_iva3 != null ? f.pct_iva3 + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_iva3)}</td>
+        <td class="num-cell">${fmtN(f.exento)}</td>
+        <td class="num-cell">${fmtN(f.descuento)}</td>
+        <td class="num-cell">${fmtN(f.base_retencion)}</td>
+        <td class="pct-cell">${f.pct_retencion != null ? f.pct_retencion + '%' : '—'}</td>
+        <td class="num-cell">${fmtN(f.total_retencion)}</td>
       </tr>`;
         }).join('');
 
@@ -2632,7 +2661,7 @@
     }
 
     // ── CLASIFICAR UNA FACTURA PENDIENTE COMO ALBARÁN ─────────
-    function clasificarComoAlbaran(id) {
+    async function clasificarComoAlbaran(id) {
       const p = registros.find(r => r.id === id);
       if (!p) return;
       window._pendienteOrigenId = id;
@@ -2640,6 +2669,30 @@
         empresa: p.remitente || '',
         archivo_url: p.archivo_url || ''
       };
+
+      if (p.archivo_url) {
+        try {
+          const res = await fetch(
+            'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/swift-api',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+              body: JSON.stringify({ archivo_url: p.archivo_url, tipo: 'albaran' })
+            }
+          );
+          const datos = await res.json();
+          if (res.ok && datos && !datos.error) {
+            window._prellenadoAlbaran = { ...window._prellenadoAlbaran, ...datos, archivo_url: p.archivo_url };
+            if (datos.empresa) window._prellenadoAlbaran.empresa = datos.empresa;
+            toast('Albarán leído con IA — revisa los datos antes de guardar');
+          } else {
+            toast('No se pudo leer el albarán con IA, rellénalo a mano', 'err');
+          }
+        } catch (e) {
+          toast('No se pudo leer el albarán con IA, rellénalo a mano', 'err');
+        }
+      }
+
       abrirModalNuevo('albaranes');
     }
     async function verDuplicados() {
@@ -3351,6 +3404,7 @@
     <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
   </div>
   <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+  <div class="form-group"><label>Nº Pedido</label><input type="text" id="f_num_pedido" placeholder="Se usa para cruzar con la factura"></div>
   <div class="form-group span2"><label>Archivo (PDF o imagen)</label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*"></div>
 </div>`;
         document.getElementById('modalNueva').classList.add('visible');
@@ -3358,8 +3412,16 @@
           setupProveedorAC('f_empresa', 'f_nif');
           if (window._prellenadoAlbaran) {
             const p = window._prellenadoAlbaran;
-            const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+            const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null && val !== '') el.value = val; };
+            set('f_num', p.numero_albaran);
             set('f_empresa', p.empresa);
+            set('f_nif', p.nif);
+            set('f_fecha', p.fecha);
+            set('f_num_pedido', p.numero_pedido);
+            if (p.total) set('f_total', p.total);
+            // Si el proveedor ya existe en la base de datos, su NIF
+            // guardado manda sobre el que haya podido leer la IA.
+            autocompletarNifDesdeDB('f_empresa', 'f_nif');
             if (p.archivo_url) mostrarPdfModal(p.archivo_url, p.empresa || 'Albarán');
             else ocultarPdfModal();
           } else {
@@ -3438,6 +3500,10 @@
       set('f_base_ret', p.base_retencion);
       set('f_pct_ret', p.pct_retencion);
       set('f_total_ret', p.total_retencion);
+
+      // Si el proveedor detectado ya existe en la base de datos, su NIF
+      // guardado manda sobre el que haya podido leer la IA.
+      autocompletarNifDesdeDB('f_prov', 'f_nif');
     }
 
     async function crearProveedorRapido() {
@@ -3533,6 +3599,7 @@
         set('f_empresa', f.empresa);
         set('f_nif', f.nif);
         set('f_total', f.total);
+        set('f_num_pedido', f.numero_pedido);
         if (f.archivo_url) mostrarPdfModal(f.archivo_url, f.empresa || f.numero_albaran || 'Albarán');
         else ocultarPdfModal();
       }, 60);
@@ -3769,7 +3836,8 @@
             fecha,
             empresa,
             nif: document.getElementById('f_nif').value.trim() || null,
-            total: parseFloat(document.getElementById('f_total').value || 0)
+            total: parseFloat(document.getElementById('f_total').value || 0),
+            numero_pedido: document.getElementById('f_num_pedido').value.trim() || null
           };
           if (archivo_url) payload.archivo_url = archivo_url;
 
