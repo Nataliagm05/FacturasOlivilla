@@ -1613,11 +1613,22 @@
         canal.on(
           'postgres_changes',
           { event: '*', schema: 'public', table: tabla },
-          () => solicitarRefresco(tabla)
+          (payload) => {
+            console.log('[realtime] cambio recibido en', tabla, payload);
+            solicitarRefresco(tabla);
+          }
         );
       });
 
-      canal.subscribe();
+      canal.subscribe((status, err) => {
+        console.log('[realtime] estado de la suscripción:', status, err || '');
+        if (status === 'SUBSCRIBED') {
+          console.log('[realtime] conectado correctamente, escuchando:', TABLAS_REALTIME.join(', '));
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('[realtime] fallo al suscribirse — revisa que las tablas tengan Realtime habilitado en Supabase (Database → Replication)');
+        }
+      });
     }
 
     let tablaActual = 'clasificacion';
