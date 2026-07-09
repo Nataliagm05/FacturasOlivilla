@@ -1277,6 +1277,10 @@
             class="fa-solid fa-helmet-safety"></i>Facturas Obra</button>
         <button class="btn-nav" onclick="cambiarSeccion('facturas_csg')"><i class="fa-solid fa-building"></i>Facturas
           CSG</button>
+        <button class="btn-nav" onclick="cambiarSeccion('revisadas_facturadas')"><i
+            class="fa-solid fa-clipboard-check"></i>Revisadas y Facturadas</button>
+        <button class="btn-nav" onclick="cambiarSeccion('obras')"><i
+            class="fa-solid fa-diagram-project"></i>Obras</button>
         <button class="btn-nav" onclick="cambiarSeccion('calendario_pagos')"><i
             class="fa-solid fa-calendar-days"></i>Calendario de Pagos</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
@@ -1327,7 +1331,7 @@
         <select id="filtroObra" onchange="renderTabla()" style="display:none">
           <option value="">Todas las obras</option>
         </select>
-        <button class="btn-nueva" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i><span
+        <button class="btn-nueva" id="btnNuevo" onclick="abrirModalNuevo()"><i class="fa-solid fa-plus"></i><span
             id="btnNuevaTxt">Añadir Nuevo</span></button>
         <button class="btn-exportar" id="btnExportar" onclick="abrirModalExportar()" style="display:none"><i
             class="fa-solid fa-file-excel"></i>Exportar Excel</button>
@@ -1652,6 +1656,29 @@
     window._prellenado = null;
     window._prellenadoAlbaran = null;
 
+    // Campos de revisión (checks) por cada tabla de facturas, en el mismo orden en que se pintan
+    const CAMPOS_REVISION = {
+      facturas_almacen: [
+        { campo: 'revisado_cynthia', nombre: 'Cynthia' },
+        { campo: 'revisado_emilio', nombre: 'Emilio' }
+      ],
+      facturas_obra: [
+        { campo: 'revisado_angel', nombre: 'Angel' },
+        { campo: 'revisado_juandavid', nombre: 'Juan David' },
+        { campo: 'revisado_emilio', nombre: 'Emilio' },
+        { campo: 'revisado_cynthia', nombre: 'Cynthia' }
+      ],
+      facturas_csg: [
+        { campo: 'revisado_angel', nombre: 'Angel' },
+        { campo: 'revisado_emilio', nombre: 'Emilio' }
+      ]
+    };
+    // Una factura está "revisada" cuando TODOS sus campos de revisión están marcados
+    function estaTotalmenteRevisada(tabla, f) {
+      const campos = CAMPOS_REVISION[tabla];
+      return !!campos && campos.every(c => !!f[c.campo]);
+    }
+
     // ── UTILIDADES ────────────────────────────────────────────
     function fmt(v) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
     function fmtN(v) { if (v === null || v === undefined || v === '' || isNaN(parseFloat(v))) return '—'; return parseFloat(v).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -1857,6 +1884,8 @@
         facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
         facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
         facturas_csg: ['Facturas CSG', 'fa-building', true],
+        revisadas_facturadas: ['Revisadas y Facturadas', 'fa-clipboard-check', false],
+        obras: ['Obras', 'fa-diagram-project', false],
         calendario_pagos: ['Calendario de Pagos', 'fa-calendar-days', false],
         albaranes: ['Albaranes', 'fa-file-signature', false],
         clientes: ['Clientes', 'fa-users', false],
@@ -1885,11 +1914,14 @@
       }
 
       const esFacturas = sec === 'facturas_almacen' || sec === 'facturas_obra' || sec === 'facturas_csg';
-      document.getElementById('btnExportar').style.display = (esFacturas || sec === 'materiales_obra') ? 'flex' : 'none';
-      document.getElementById('btnDuplicados').style.display = esFacturas ? 'flex' : 'none';
+      const esRevisadas = sec === 'revisadas_facturadas';
+      const esObras = sec === 'obras';
+      document.getElementById('btnExportar').style.display = (esFacturas || esRevisadas || sec === 'materiales_obra') ? 'flex' : 'none';
+      document.getElementById('btnDuplicados').style.display = (esFacturas || sec === 'albaranes') ? 'flex' : 'none';
+      document.getElementById('btnNuevo').style.display = esRevisadas ? 'none' : 'flex';
 
       const btnTxt = document.getElementById('btnNuevaTxt');
-      btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : 'Añadir Nuevo';
+      btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : sec === 'obras' ? 'Nueva obra' : 'Añadir Nuevo';
 
       const sel = document.getElementById('filtroEstado');
       const sp = document.getElementById('searchInput');
@@ -1899,6 +1931,17 @@
       <option value="pagado">Pagada</option>
       <option value="vencido">Vencida</option>`;
         sp.placeholder = sec === 'facturas_obra' ? 'Buscar por nº, proveedor, NIF, obra...' : 'Buscar por nº, proveedor, NIF, concepto...';
+      } else if (esRevisadas) {
+        sel.innerHTML = `<option value="">Todos los orígenes</option>
+      <option value="facturas_almacen">Almacén</option>
+      <option value="facturas_obra">Obra</option>
+      <option value="facturas_csg">CSG</option>`;
+        sp.placeholder = 'Buscar por nº, proveedor, NIF, concepto...';
+      } else if (esObras) {
+        sel.innerHTML = `<option value="">Todos los estados</option>
+      <option value="en_curso">En curso</option>
+      <option value="cerrada">Cerrada</option>`;
+        sp.placeholder = 'Buscar obra o cliente...';
       } else if (sec === 'clasificacion') {
         sel.innerHTML = `<option value="">Todas</option>`;
         sp.placeholder = 'Buscar remitente o asunto...';
@@ -1914,7 +1957,7 @@
         sel.innerHTML = `<option value="">Todos</option>`;
         sp.placeholder = sec === 'clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
       }
-      cargarDatos();
+      return cargarDatos();
     }
 
     // ── CALENDARIO DE PAGOS ───────────────────────────────────
@@ -1964,6 +2007,24 @@
       if (!encontrada) { toast('No se ha encontrado la factura', 'err'); return; }
       if (!registros.some(r => r.id === id)) registros.push(encontrada);
       abrirModalEditar(id, origen);
+    }
+
+    // Desde la ficha de una obra, ir a Facturas de Obra ya filtrado por esa obra
+    // (se ven TODAS sus facturas, estén o no revisadas/pagadas)
+    async function verFacturasDeObra(nombreObra) {
+      await cambiarSeccion('facturas_obra');
+      const sel = document.getElementById('filtroObra');
+      if (sel) {
+        if (![...sel.options].some(o => o.value === nombreObra)) {
+          const opt = document.createElement('option');
+          opt.value = nombreObra;
+          opt.textContent = nombreObra;
+          sel.appendChild(opt);
+        }
+        sel.value = nombreObra;
+      }
+      document.getElementById('searchInput').value = '';
+      renderTabla();
     }
 
     function renderCalendarioPagos() {
@@ -2040,18 +2101,50 @@
       document.getElementById('tablaBody').innerHTML =
         `<tr><td colspan="23"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
       try {
+        if (tablaActual === 'revisadas_facturadas') {
+          const [almacen, obra, csg] = await Promise.all([
+            apiGetAll('facturas_almacen', 'order=fecha.desc'),
+            apiGetAll('facturas_obra', 'order=fecha.desc'),
+            apiGetAll('facturas_csg', 'order=fecha.desc')
+          ]);
+          const filtrarRevisadasYPagadas = (lista, origen) => (lista || [])
+            .filter(f => f.estado === 'pagado' && estaTotalmenteRevisada(origen, f))
+            .map(f => ({ ...f, origen }));
+          registros = [
+            ...filtrarRevisadasYPagadas(almacen, 'facturas_almacen'),
+            ...filtrarRevisadasYPagadas(obra, 'facturas_obra'),
+            ...filtrarRevisadasYPagadas(csg, 'facturas_csg')
+          ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+          inventarioDB = await apiGetAll('inventario', 'order=nombre');
+          clientesDB = await apiGetAll('clientes', 'order=nombre');
+          proveedoresDB = await apiGetAll('proveedores', 'order=nombre');
+          await comprobarCaducidadPuntos();
+          renderTabla();
+          return;
+        }
         const orden = {
           clasificacion: 'clasificado=eq.false&order=fecha_recibido.desc',
           facturas_almacen: 'order=fecha.desc',
           facturas_obra: 'order=fecha.desc',
           facturas_csg: 'order=fecha.desc',
           albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre',
-          materiales_obra: 'select=*,materiales_obra_items(*)&order=fecha.desc'
+          materiales_obra: 'select=*,materiales_obra_items(*)&order=fecha.desc',
+          obras: 'order=nombre'
         };
         registros = await apiGetAll(tablaReal(tablaActual), orden[tablaActual] || '');
         inventarioDB = await apiGetAll('inventario', 'order=nombre');
         clientesDB = await apiGetAll('clientes', 'order=nombre');
         proveedoresDB = await apiGetAll('proveedores', 'order=nombre');
+
+        if (tablaActual === 'obras') {
+          const facturasObra = await apiGetAll('facturas_obra', 'order=fecha.desc');
+          const norm = s => (s || '').toLowerCase().trim();
+          registros = registros.map(o => {
+            const facturasDeEstaObra = facturasObra.filter(f => norm(f.nombre_obra) === norm(o.nombre));
+            const total_facturado = facturasDeEstaObra.reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
+            return { ...o, _total_facturado: total_facturado, _num_facturas: facturasDeEstaObra.length };
+          });
+        }
 
         if (tablaActual === 'facturas_almacen' || tablaActual === 'facturas_obra' || tablaActual === 'facturas_csg') {
           actualizarStats(); renderAlertas();
@@ -2118,10 +2211,30 @@
     async function toggleRevisado(id, campo, tabla, actual) {
       try {
         await apiPatch(tabla, id, { [campo]: !actual });
-        const reg = registros.find(r => r.id === id);
+        const reg = registros.find(r => r.id === id && (r.origen ? r.origen === tabla : true));
         if (reg) reg[campo] = !actual;
+        // En la vista "Revisadas y Facturadas" una factura desaparece de la lista
+        // en cuanto deja de estar totalmente revisada o de estar pagada
+        if (tablaActual === 'revisadas_facturadas' && reg && !(reg.estado === 'pagado' && estaTotalmenteRevisada(tabla, reg))) {
+          registros = registros.filter(r => r !== reg);
+        }
         renderTabla();
+        if (modalEditId === id) renderChipsRevisionModal(tabla, reg);
       } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+
+    // Pinta (o repinta) los botones de revisión dentro del modal de edición de facturas
+    function renderChipsRevisionModal(tabla, f) {
+      const wrap = document.getElementById('revisionModalWrap');
+      const cont = document.getElementById('revisionChipsCont');
+      if (!wrap || !cont || !f) return;
+      const campos = CAMPOS_REVISION[tabla];
+      if (!campos) {
+        wrap.style.display = 'none';
+        return;
+      }
+      cont.innerHTML = campos.map(c => chipRevisado(f, c.campo, tabla, c.nombre)).join('');
+      wrap.style.display = '';
     }
 
     function verArchivoPanel(url, titulo) {
@@ -2502,6 +2615,69 @@
       </tr>`;
         }).join('');
 
+        // REVISADAS Y FACTURADAS (agregado de las 3 tablas de facturas)
+      } else if (tablaActual === 'revisadas_facturadas') {
+        hdr.innerHTML = `<tr>
+      <th>Origen</th><th>Nº Int. Emp</th><th>Fecha</th><th>NIF</th><th>Proveedor</th>
+      <th>Nº Factura</th><th>Concepto</th><th class="num-cell">Total</th><th>Revisión</th><th>Archivo</th><th>Editar</th>
+    </tr>`;
+        const origenLabel = { facturas_almacen: 'Almacén', facturas_obra: 'Obra', facturas_csg: 'CSG' };
+        const lista = registros.filter(f => {
+          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
+          return mQ && (!fEst || fEst === f.origen);
+        });
+        if (!lista.length) { bdy.innerHTML = emptyRow(11, 'Todavía no hay facturas revisadas por todos y marcadas como pagadas'); return; }
+        bdy.innerHTML = lista.map(f => `<tr>
+        <td><span class="badge-estado badge-pagado">${origenLabel[f.origen] || f.origen}</span></td>
+        <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
+        <td>${fmtF(f.fecha)}</td>
+        <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
+        <td class="td-nombre">${f.proveedor || '—'}</td>
+        <td><strong>${f.numero_factura || '—'}</strong></td>
+        <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
+        <td class="td-total">${fmt(f.total)}</td>
+        <td class="td-acciones">${(CAMPOS_REVISION[f.origen] || []).map(c => chipRevisado(f, c.campo, f.origen, c.nombre)).join('')}</td>
+        <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
+        <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'${f.origen}')" title="Editar factura"><i class="fa-solid fa-pen"></i></button></td>
+      </tr>`).join('');
+
+        // OBRAS
+      } else if (tablaActual === 'obras') {
+        hdr.innerHTML = `<tr>
+      <th>Obra</th><th>Dirección</th><th>Cliente</th><th>Fecha inicio</th><th>Estado</th>
+      <th class="num-cell">Presupuesto</th><th class="num-cell">Facturado</th><th class="num-cell">Diferencia</th>
+      <th>Rentabilidad</th><th></th><th>Editar</th><th></th>
+    </tr>`;
+        const lista = registros.filter(o => {
+          const mQ = [o.nombre, o.cliente, o.direccion].some(v => (v || '').toLowerCase().includes(q));
+          return mQ && (!fEst || fEst === (o.estado || 'en_curso'));
+        });
+        if (!lista.length) { bdy.innerHTML = emptyRow(12, 'No hay obras dadas de alta todavía'); return; }
+        bdy.innerHTML = lista.map(o => {
+          const est = o.estado || 'en_curso';
+          const presupuesto = o.presupuesto != null ? parseFloat(o.presupuesto) : null;
+          const facturado = o._total_facturado || 0;
+          const tienePresupuesto = presupuesto != null && !isNaN(presupuesto);
+          const diferencia = tienePresupuesto ? (presupuesto - facturado) : null;
+          const rentable = tienePresupuesto ? diferencia >= 0 : null;
+          return `<tr>
+        <td class="td-nombre">${o.nombre || '—'}</td>
+        <td>${o.direccion || '—'}</td>
+        <td>${o.cliente || '—'}</td>
+        <td>${fmtF(o.fecha_inicio)}</td>
+        <td><span class="badge-estado ${est === 'cerrada' ? 'badge-pagado' : 'badge-pendiente'}">${est === 'cerrada' ? 'CERRADA' : 'EN CURSO'}</span></td>
+        <td class="num-cell">${tienePresupuesto ? fmt(presupuesto) : '—'}</td>
+        <td class="num-cell">${fmt(facturado)}</td>
+        <td class="num-cell">${tienePresupuesto ? fmt(diferencia) : '—'}</td>
+        <td>${tienePresupuesto
+              ? `<span class="badge-estado ${rentable ? 'badge-pagado' : 'badge-vencido'}">${rentable ? 'RENTABLE' : 'NO RENTABLE'}</span>`
+              : '<span style="color:#ccc;font-size:.78rem">Sin presupuesto</span>'}</td>
+        <td><span class="link-badge factura" onclick="verFacturasDeObra('${(o.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-folder-open"></i>Ver facturas${o._num_facturas ? ` (${o._num_facturas})` : ''}</span></td>
+        <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${o.id},'obras')" title="Editar obra"><i class="fa-solid fa-pen"></i></button></td>
+        <td><button class="btn-eliminar" onclick="eliminar(${o.id})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+        }).join('');
+
         // ALBARANES
       } else if (tablaActual === 'albaranes') {
         hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Archivo</th><th>Facturas por NIF</th><th>Acción</th><th>Editar</th><th></th></tr>`;
@@ -2524,7 +2700,7 @@
               ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.empresa || f.numero_albaran || 'Albarán').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>`
               : '—'}</td>
         <td>${f.nif
-              ? `<span class="link-badge factura" onclick="verFacturasNif('${f.nif}','${(f.empresa || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
+              ? `<span class="link-badge factura" onclick="verFacturasAlbaran('${(f.numero_albaran || '').replace(/'/g, "\\'")}','${f.nif}','${(f.empresa || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
               : '<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
         <td><button class="btn-toggle-facturado ${fact ? 'si' : 'no'}" onclick="toggleFacturado(${f.id},${fact})">
           ${fact ? '<i class="fa-solid fa-rotate-left me-1"></i>Sin facturar' : '<i class="fa-solid fa-file-circle-check me-1"></i>Marcar facturado'}
@@ -2828,6 +3004,38 @@
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
 
+    // ── VER FACTURAS DE UN ALBARÁN CONCRETO ───────────────────
+    async function verFacturasAlbaran(numeroAlbaran, nif, empresa) {
+      try {
+        const partes = [];
+        if (numeroAlbaran) partes.push(`numeros_albaran=cs.${encodeURIComponent(`{${numeroAlbaran}}`)}`);
+        if (nif) partes.push(`nif=eq.${encodeURIComponent(nif)}`);
+        partes.push('order=fecha.desc');
+        const filtro = partes.join('&');
+
+        const [fa, fo, fc] = await Promise.all([
+          apiGet('facturas_almacen', filtro),
+          apiGet('facturas_obra', filtro),
+          apiGet('facturas_csg', filtro)
+        ]);
+        const todas = [...fa.map(f => ({ ...f, _o: 'Almacén' })), ...fo.map(f => ({ ...f, _o: 'Obra' })), ...fc.map(f => ({ ...f, _o: 'CSG' }))];
+        document.getElementById('modalDetalleTitulo').innerHTML =
+          `<i class="fa-solid fa-file-invoice" style="color:#b53987"></i>Facturas del albarán ${numeroAlbaran || ''} (${empresa})`;
+        document.getElementById('modalDetalleContenido').innerHTML = !todas.length
+          ? `<p style="text-align:center;color:#aaa;padding:2rem">No hay facturas con este número de albarán</p>`
+          : `<table class="mini-table"><thead><tr><th>Origen</th><th>Nº Factura</th><th>Fecha</th><th>Total</th><th>Estado</th></tr></thead><tbody>
+          ${todas.map(f => `<tr>
+            <td><span style="font-size:.72rem;padding:2px 7px;border-radius:20px;background:${f._o === 'Almacén' ? '#e3f2fd' : f._o === 'CSG' ? '#fff3e0' : '#f3e5f5'};color:${f._o === 'Almacén' ? '#1565c0' : f._o === 'CSG' ? '#c47a00' : '#6a1b9a'}">${f._o}</span></td>
+            <td><strong>${f.numero_factura || '—'}</strong></td>
+            <td>${fmtF(f.fecha)}</td>
+            <td><strong>${fmt(f.total)}</strong></td>
+            <td><span class="badge-estado badge-${f.estado || 'pendiente'}">${(f.estado || 'pendiente').toUpperCase()}</span></td>
+          </tr>`).join('')}
+        </tbody></table>`;
+        document.getElementById('modalDetalle').classList.add('visible');
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+
     // ── VER FACTURAS POR NIF ──────────────────────────────────
     async function verFacturasNif(nif, empresa) {
       try {
@@ -3076,6 +3284,56 @@
         const hint = document.getElementById('f_archivo_hint');
         if (hint) hint.textContent = '— se subirá al guardar y sustituirá al actual si lo hubiera';
       }
+      _leerArchivoConIA(input, 'factura');
+    }
+
+    // ── LEER ARCHIVO CON IA AL AÑADIRLO MANUALMENTE ───────────
+    // Sube el archivo elegido en el modal (factura o albarán) y llama al
+    // mismo Edge Function de IA que usa la bandeja de clasificación, para
+    // rellenar los campos automáticamente. Guarda la URL ya subida en el
+    // propio input (dataset) para no volver a subirla al pulsar Guardar.
+    async function _leerArchivoConIA(input, tipo) {
+      if (!input.files || !input.files.length) return;
+      const file = input.files[0];
+      const hint = document.getElementById('f_archivo_hint');
+
+      try {
+        if (hint) hint.textContent = '— leyendo con IA...';
+        toast('Leyendo archivo con IA...', 'ok');
+
+        const url = await subirArchivoStorage(file);
+        input.dataset.uploadedUrl = url;
+        input.dataset.uploadedKey = `${file.name}_${file.size}_${file.lastModified}`;
+
+        const res = await fetch(
+          'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/swift-api',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+            body: JSON.stringify(tipo === 'albaran' ? { archivo_url: url, tipo: 'albaran' } : { archivo_url: url })
+          }
+        );
+        const datos = await res.json();
+
+        if (res.ok && datos && !datos.error) {
+          if (tipo === 'albaran') {
+            window._prellenadoAlbaran = { ...(window._prellenadoAlbaran || {}), ...datos, archivo_url: url };
+            _aplicarPrellenadoAlbaran();
+          } else {
+            window._prellenado = { ...(window._prellenado || {}), ...datos, archivo_url: url };
+            _aplicarPrellenado();
+            mostrarPdfModal(url, datos.proveedor || file.name);
+          }
+          if (hint) hint.textContent = '— leído con IA, revisa los datos antes de guardar';
+          toast('Datos leídos con IA — revisa los campos antes de guardar', 'ok');
+        } else {
+          if (hint) hint.textContent = '— no se pudo leer con IA, rellena a mano';
+          toast('No se pudo leer el archivo con IA, rellénalo a mano', 'err');
+        }
+      } catch (e) {
+        if (hint) hint.textContent = '— no se pudo leer con IA, rellena a mano';
+        toast('No se pudo leer el archivo con IA: ' + e.message, 'err');
+      }
     }
 
     function htmlCamposExcel() {
@@ -3148,7 +3406,7 @@
     // ── MODAL EDITAR REGISTRO (facturas almacén / obra) ────────
     function abrirModalEditar(id, tabla) {
 
-      const f = registros.find(r => r.id == id);
+      const f = registros.find(r => r.id == id && (r.origen ? r.origen === tabla : true));
 
       if (!f) {
         toast("No se ha encontrado el registro", "err");
@@ -3194,6 +3452,34 @@
           document.getElementById("f_nombre").value = f.nombre || "";
           document.getElementById("f_stock").value = f.stock || 0;
           document.getElementById("f_pts").value = f.puntos_por_unidad || 0;
+
+        }, 100);
+
+        return;
+      }
+
+      /* ===========================
+         OBRAS
+      =========================== */
+
+      if (tabla == "obras") {
+
+        abrirModalNuevo("obras");
+
+        setTimeout(() => {
+
+          document.getElementById("modalTitulo").textContent = "Editar obra";
+
+          document.getElementById("btnGuardar").innerHTML =
+            '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios';
+
+          document.getElementById("f_nombre").value = f.nombre || "";
+          document.getElementById("f_obra_direccion").value = f.direccion || "";
+          document.getElementById("f_obra_cliente").value = f.cliente || "";
+          document.getElementById("f_obra_fecha_inicio").value = f.fecha_inicio || "";
+          document.getElementById("f_obra_estado").value = f.estado || "en_curso";
+          document.getElementById("f_obra_presupuesto").value = f.presupuesto != null ? f.presupuesto : "";
+          document.getElementById("f_obra_notas").value = f.notas || "";
 
         }, 100);
 
@@ -3254,6 +3540,8 @@
         set('f_exento', f.exento); set('f_descuento', f.descuento);
         set('f_base_ret', f.base_retencion); set('f_pct_ret', f.pct_retencion); set('f_total_ret', f.total_retencion);
         set('f_num_albaranes', (f.numeros_albaran || []).join(', '));
+
+        renderChipsRevisionModal(tabla, f);
 
         if (f.archivo_url) {
           mostrarPdfModal(f.archivo_url, f.proveedor || f.numero_factura || 'Factura');
@@ -3328,6 +3616,8 @@
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
+      <div class="form-seccion" id="revisionModalWrap" style="display:none">Revisión</div>
+      <div class="td-acciones" id="revisionChipsCont" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
       </div>
       ${htmlCampoArchivo()}
       ${htmlCamposExcel()}
@@ -3381,6 +3671,8 @@
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
+      <div class="form-seccion" id="revisionModalWrap" style="display:none">Revisión</div>
+      <div class="td-acciones" id="revisionChipsCont" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
       </div>
       ${htmlCampoArchivo()}
       ${htmlCamposExcel()}
@@ -3433,6 +3725,8 @@
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
+      <div class="form-seccion" id="revisionModalWrap" style="display:none">Revisión</div>
+      <div class="td-acciones" id="revisionChipsCont" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
       </div>
       ${htmlCampoArchivo()}
       ${htmlCamposExcel()}
@@ -3469,28 +3763,12 @@
   </div>
   <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
   <div class="form-group"><label>Nº Pedido</label><input type="text" id="f_num_pedido" placeholder="Se usa para cruzar con la factura"></div>
-  <div class="form-group span2"><label>Archivo (PDF o imagen)</label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*"></div>
+  <div class="form-group span2"><label>Archivo (PDF o imagen)</label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*" onchange="_leerArchivoConIA(this, 'albaran')"></div>
 </div>`;
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => {
           setupProveedorAC('f_empresa', 'f_nif');
-          if (window._prellenadoAlbaran) {
-            const p = window._prellenadoAlbaran;
-            const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null && val !== '') el.value = val; };
-            set('f_num', p.numero_albaran);
-            set('f_empresa', p.empresa);
-            set('f_nif', p.nif);
-            set('f_fecha', p.fecha);
-            set('f_num_pedido', p.numero_pedido);
-            if (p.total) set('f_total', p.total);
-            // Si el proveedor ya existe en la base de datos, su NIF
-            // guardado manda sobre el que haya podido leer la IA.
-            autocompletarNifDesdeDB('f_empresa', 'f_nif');
-            if (p.archivo_url) mostrarPdfModal(p.archivo_url, p.empresa || 'Albarán');
-            else ocultarPdfModal();
-          } else {
-            ocultarPdfModal();
-          }
+          _aplicarPrellenadoAlbaran();
         }, 50);
 
         // ── CLIENTE ──
@@ -3514,6 +3792,24 @@
       <div class="form-group"><label>Puntos por unidad</label><input type="number" id="f_pts" value="0" min="0"></div>
     </div>
     <p style="font-size:.78rem;color:#888;margin-top:10px"><i class="fa-solid fa-info-circle me-1"></i>Los puntos por unidad se usarán automáticamente al registrar una compra de cliente.</p>`;
+        document.getElementById('modalNueva').classList.add('visible');
+
+        // ── OBRA ──
+      } else if (tabla === 'obras') {
+        document.getElementById('modalTitulo').textContent = 'Nueva Obra';
+        cont.innerHTML = `<div class="form-grid-2">
+      <div class="form-group span2">
+        <label>Nombre de la obra *</label>
+        <input type="text" id="f_nombre" placeholder="Ej: Reforma Calle Mayor 12">
+        <p style="font-size:.72rem;color:#888;margin-top:4px">Debe escribirse igual que en el campo "Nombre de la obra" de Facturas de Obra, para que las facturas se asocien correctamente.</p>
+      </div>
+      <div class="form-group span2"><label>Dirección de la obra</label><input type="text" id="f_obra_direccion" placeholder="Ej: Calle Mayor 12, Toledo"></div>
+      <div class="form-group span2"><label>Cliente</label><input type="text" id="f_obra_cliente" placeholder="Nombre del cliente"></div>
+      <div class="form-group"><label>Fecha de inicio</label><input type="date" id="f_obra_fecha_inicio"></div>
+      <div class="form-group"><label>Estado</label><select id="f_obra_estado"><option value="en_curso">En curso</option><option value="cerrada">Cerrada</option></select></div>
+      <div class="form-group span2"><label>Presupuesto (€) <span style="font-size:.72rem;color:#888">(para calcular si es rentable)</span></label><input type="number" id="f_obra_presupuesto" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="form-group span2"><label>Notas</label><input type="text" id="f_obra_notas" placeholder="Observaciones opcionales"></div>
+    </div>`;
         document.getElementById('modalNueva').classList.add('visible');
       }
     }
@@ -3570,6 +3866,24 @@
       autocompletarNifDesdeDB('f_prov', 'f_nif');
     }
 
+    // Rellena el modal de albarán (creación manual o clasificación desde pendientes)
+    function _aplicarPrellenadoAlbaran() {
+      if (!window._prellenadoAlbaran) { ocultarPdfModal(); return; }
+      const p = window._prellenadoAlbaran;
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null && val !== '') el.value = val; };
+      set('f_num', p.numero_albaran);
+      set('f_empresa', p.empresa);
+      set('f_nif', p.nif);
+      set('f_fecha', p.fecha);
+      set('f_num_pedido', p.numero_pedido);
+      if (p.total) set('f_total', p.total);
+      // Si el proveedor ya existe en la base de datos, su NIF
+      // guardado manda sobre el que haya podido leer la IA.
+      autocompletarNifDesdeDB('f_empresa', 'f_nif');
+      if (p.archivo_url) mostrarPdfModal(p.archivo_url, p.empresa || 'Albarán');
+      else ocultarPdfModal();
+    }
+
     async function crearProveedorRapido() {
       const nombre = document.getElementById('f_prov').value.trim();
       if (!nombre) { toast('Introduce un nombre de proveedor', 'err'); return; }
@@ -3620,6 +3934,23 @@
           const encontrado = dup.find(d => d.id !== idExcluir);
           if (encontrado) return { tabla, id: encontrado.id };
         }
+      }
+
+      return null;
+    }
+
+
+    async function buscarAlbaranDuplicado(numAlbaran, nif, fecha, total, idExcluir) {
+      if (numAlbaran) {
+        const dup = await apiGet('albaranes', `numero_albaran=eq.${encodeURIComponent(numAlbaran)}`);
+        const encontrado = dup.find(d => d.id !== idExcluir);
+        if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
+      }
+
+      if (nif && fecha && total != null) {
+        const dup = await apiGet('albaranes', `nif=eq.${encodeURIComponent(nif)}&fecha=eq.${fecha}&total=eq.${total}`);
+        const encontrado = dup.find(d => d.id !== idExcluir);
+        if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
       }
 
       return null;
@@ -3729,8 +4060,8 @@
         abrirModalExportarMateriales();
         return;
       }
-      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg') {
-        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG y Material de Obra', 'err');
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas') {
+        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG, Revisadas y Facturadas, y Material de Obra', 'err');
         return;
       }
       const sel = document.getElementById('exportYear');
@@ -3821,13 +4152,18 @@
             return;
           }
 
-          // Si se ha elegido un archivo nuevo en el modal, lo subimos a Storage.
-          // Si no, mantenemos el que viniera de la IA (clasificación) o, al
-          // editar, el que ya tenía la factura (no se toca el campo).
+          // Si se ha elegido un archivo nuevo en el modal, lo subimos a Storage
+          // (o reutilizamos la URL si ya se subió al leerlo con IA). Si no hay
+          // archivo nuevo, mantenemos el que viniera de la IA (clasificación) o,
+          // al editar, el que ya tenía la factura (no se toca el campo).
           const fileInputFactura = document.getElementById('f_archivo_factura');
           let archivo_url = (window._prellenado && window._prellenado.archivo_url) || null;
           if (fileInputFactura && fileInputFactura.files.length) {
-            archivo_url = await subirArchivoStorage(fileInputFactura.files[0]);
+            const f = fileInputFactura.files[0];
+            const key = `${f.name}_${f.size}_${f.lastModified}`;
+            archivo_url = (fileInputFactura.dataset.uploadedKey === key && fileInputFactura.dataset.uploadedUrl)
+              ? fileInputFactura.dataset.uploadedUrl
+              : await subirArchivoStorage(f);
           }
 
           const payload = {
@@ -3889,18 +4225,38 @@
           const fecha = document.getElementById('f_fecha').value;
           if (!empresa || !fecha) { toast('Empresa y fecha son obligatorios', 'err'); return; }
 
+          const numAlbaran = document.getElementById('f_num').value.trim() || null;
+          const nifAlb = document.getElementById('f_nif').value.trim() || null;
+          const totalAlb = parseFloat(document.getElementById('f_total').value || 0);
+
+          const duplicadoAlb = await buscarAlbaranDuplicado(numAlbaran, nifAlb, fecha, totalAlb, modalEditId);
+          if (duplicadoAlb) {
+            await registrarDuplicado(duplicadoAlb, {
+              numero_factura: numAlbaran,
+              nif: nifAlb,
+              proveedor: empresa,
+              total: totalAlb
+            }, 'manual');
+            toast('⚠️ Ya existe un albarán igual (duplicado registrado)', 'err');
+            return;
+          }
+
           const fileInputAlb = document.getElementById('f_archivo_albaran');
           let archivo_url = (window._prellenadoAlbaran && window._prellenadoAlbaran.archivo_url) || null;
           if (fileInputAlb && fileInputAlb.files.length) {
-            archivo_url = await subirArchivoStorage(fileInputAlb.files[0]);
+            const f = fileInputAlb.files[0];
+            const key = `${f.name}_${f.size}_${f.lastModified}`;
+            archivo_url = (fileInputAlb.dataset.uploadedKey === key && fileInputAlb.dataset.uploadedUrl)
+              ? fileInputAlb.dataset.uploadedUrl
+              : await subirArchivoStorage(f);
           }
 
           const payload = {
-            numero_albaran: document.getElementById('f_num').value.trim() || null,
+            numero_albaran: numAlbaran,
             fecha,
             empresa,
-            nif: document.getElementById('f_nif').value.trim() || null,
-            total: parseFloat(document.getElementById('f_total').value || 0),
+            nif: nifAlb,
+            total: totalAlb,
             numero_pedido: document.getElementById('f_num_pedido').value.trim() || null
           };
           if (archivo_url) payload.archivo_url = archivo_url;
@@ -3950,6 +4306,26 @@
             await apiPatch('inventario', modalEditId, payload);
           } else {
             await apiPost('inventario', payload);
+          }
+
+        } else if (tabla === 'obras') {
+          const nombre = document.getElementById('f_nombre').value.trim();
+          if (!nombre) { toast('El nombre de la obra es obligatorio', 'err'); return; }
+          const presupuestoVal = document.getElementById('f_obra_presupuesto').value;
+          const payload = {
+            nombre,
+            direccion: document.getElementById('f_obra_direccion').value.trim() || null,
+            cliente: document.getElementById('f_obra_cliente').value.trim() || null,
+            fecha_inicio: document.getElementById('f_obra_fecha_inicio').value || null,
+            estado: document.getElementById('f_obra_estado').value || 'en_curso',
+            presupuesto: presupuestoVal !== '' ? parseFloat(presupuestoVal) : null,
+            notas: document.getElementById('f_obra_notas').value.trim() || null
+          };
+
+          if (modalEditId) {
+            await apiPatch('obras', modalEditId, payload);
+          } else {
+            await apiPost('obras', payload);
           }
         }
 
@@ -4207,8 +4583,8 @@
 
     // ── EXPORTAR EXCEL ────────────────────────────────────────
     function exportarExcel() {
-      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg') {
-        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra y Facturas CSG', 'err');
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas') {
+        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG y Revisadas y Facturadas', 'err');
         return;
       }
       if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
@@ -4228,7 +4604,10 @@
 
       const esObra = tablaActual === 'facturas_obra';
       const esCsg = tablaActual === 'facturas_csg';
+      const esRevisadas = tablaActual === 'revisadas_facturadas';
+      const origenLabel = { facturas_almacen: 'Almacén', facturas_obra: 'Obra', facturas_csg: 'CSG' };
       const cabeceras = [
+        ...(esRevisadas ? ['ORIGEN'] : []),
         'NUMERACION INTERNA EMP', 'Fecha', 'NIF', 'NOMBRE', 'FACTURA', 'CONCEPTO',
         'Base 1', '%IVA1', 'Total IVA1', '%RE1', 'Total RE1', 'TASAS',
         'Base 2', '%IVA2', 'Total IVA2', 'Base3', '%IVA3', 'Total IVA3',
@@ -4236,6 +4615,7 @@
         'Exento', 'DESCUENTO', 'Base Retención', '% Retención', 'Total Retención', 'Total'
       ];
       const filas = filtrados.map(f => ({
+        ...(esRevisadas ? { 'ORIGEN': origenLabel[f.origen] || f.origen } : {}),
         'NUMERACION INTERNA EMP': f.numero_interno || '',
         'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
         'NIF': f.nif || '',
@@ -4270,9 +4650,9 @@
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
-      const anchos = [18, 12, 14, 28, 18, 30, 10, 7, 10, 7, 10, 10, 10, 7, 10, 10, 7, 10, 10, 7, 10, 10, 7, 10, 10, 14, 12, 10, 14, 12];
+      const anchos = [...(esRevisadas ? [12] : []), 18, 12, 14, 28, 18, 30, 10, 7, 10, 7, 10, 10, 10, 7, 10, 10, 7, 10, 10, 7, 10, 10, 7, 10, 10, 14, 12, 10, 14, 12];
       ws['!cols'] = anchos.map(w => ({ wch: w }));
-      XLSX.utils.book_append_sheet(wb, ws, esObra ? 'Facturas Obra' : esCsg ? 'Facturas CSG' : 'Facturas Almacén');
+      XLSX.utils.book_append_sheet(wb, ws, esRevisadas ? 'Revisadas y Facturadas' : esObra ? 'Facturas Obra' : esCsg ? 'Facturas CSG' : 'Facturas Almacén');
       const fecha = new Date().toISOString().split('T')[0];
       const nombre = `${tablaActual}_${fecha}.xlsx`;
       XLSX.writeFile(wb, nombre);
