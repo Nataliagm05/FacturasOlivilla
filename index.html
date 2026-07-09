@@ -3926,6 +3926,11 @@
           const encontrado = dup.find(d => d.id !== idExcluir);
           if (encontrado) return { tabla, id: encontrado.id };
         }
+        // Hay número de factura pero no coincide con ninguna existente:
+        // NO caer al respaldo por NIF+fecha+total, o daría falsos
+        // positivos con dos facturas distintas del mismo proveedor el
+        // mismo día (p.ej. mismo importe recurrente).
+        return null;
       }
 
       if (nif && fecha && total != null) {
@@ -3945,6 +3950,9 @@
         const dup = await apiGet('albaranes', `numero_albaran=eq.${encodeURIComponent(numAlbaran)}`);
         const encontrado = dup.find(d => d.id !== idExcluir);
         if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
+        // Igual que en facturas: si hay numero_albaran y no coincide,
+        // no usamos el respaldo NIF+fecha+total.
+        return null;
       }
 
       if (nif && fecha && total != null) {
