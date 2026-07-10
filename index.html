@@ -1568,6 +1568,7 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
     const PASSWORD = 'olivilla2026';
 
+
     const hdrs = {
       'apikey': SUPABASE_KEY,
       'Authorization': 'Bearer ' + SUPABASE_KEY,
@@ -1658,6 +1659,8 @@
     window._prellenado = null;
     window._prellenadoAlbaran = null;
 
+
+
     // Campos de revisión (checks) por cada tabla de facturas, en el mismo orden en que se pintan
     const CAMPOS_REVISION = {
       facturas_almacen: [
@@ -1680,6 +1683,7 @@
       const campos = CAMPOS_REVISION[tabla];
       return !!campos && campos.every(c => !!f[c.campo]);
     }
+
 
     // ── UTILIDADES ────────────────────────────────────────────
     function fmt(v) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
@@ -2218,17 +2222,36 @@
     // ── TOGGLE REVISIÓN (por persona) ─────────────────────────
     async function toggleRevisado(id, campo, tabla, actual) {
       try {
+
+        const PASSWORDS_REVISION = {
+          revisado_cynthia: "cachopo26",
+          revisado_emilio: "emilio2026",
+          revisado_angel: "angel2026",
+          revisado_juandavid: "juan2026"
+        };
+
+        const pass = prompt("Introduce tu contraseña:");
+
+        if (pass !== PASSWORDS_REVISION[campo]) {
+          alert("Contraseña incorrecta");
+          return;
+        }
+
         await apiPatch(tabla, id, { [campo]: !actual });
+
         const reg = registros.find(r => r.id === id && (r.origen ? r.origen === tabla : true));
         if (reg) reg[campo] = !actual;
-        // En la vista "Revisadas y Facturadas" una factura desaparece de la lista
-        // en cuanto deja de estar totalmente revisada o de estar pagada
+
         if (tablaActual === 'revisadas_facturadas' && reg && !(reg.estado === 'pagado' && estaTotalmenteRevisada(tabla, reg))) {
           registros = registros.filter(r => r !== reg);
         }
+
         renderTabla();
         if (modalEditId === id) renderChipsRevisionModal(tabla, reg);
-      } catch (e) { toast('Error: ' + e.message, 'err'); }
+
+      } catch (e) {
+        toast('Error: ' + e.message, 'err');
+      }
     }
 
     // Pinta (o repinta) los botones de revisión dentro del modal de edición de facturas
