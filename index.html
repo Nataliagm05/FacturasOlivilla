@@ -605,6 +605,47 @@
       color: #fff;
     }
 
+    .archivos-lista {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .archivo-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3e5f5;
+      color: #6a1b9a;
+      border: 1.5px solid #d9b8e8;
+      border-radius: 20px;
+      padding: 4px 6px 4px 12px;
+      font-size: .78rem;
+      max-width: 220px;
+    }
+
+    .archivo-chip span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .archivo-chip .archivo-chip-quitar {
+      cursor: pointer;
+      background: #fff;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: .7rem;
+      color: #b53987;
+    }
+
     .btn-toggle-facturado {
       border: none;
       border-radius: 6px;
@@ -1672,6 +1713,26 @@
     function tablaReal(t) { return t === 'clasificacion' ? 'facturas_pendientes' : t === 'presupuestos' ? 'presupuestos_seguimiento' : t; }
     let modalDestinoTabla = null;   // tabla destino del modal "Nuevo registro" (puede diferir de tablaActual)
     let modalEditId = null;   // id del registro que se está editando (null = modo "nuevo")
+    let archivosAlbaranSeleccionados = []; // [{url, nombre}] — archivos adjuntos al albarán en el modal actual
+
+    // Contraseña individual de cada persona (se pide cada vez que se entra
+    // en una sección restringida, comprobando si esa persona tiene acceso).
+    const PASSWORDS_PERSONAS = {
+      cynthia: "cachopo26",
+      juandavid: "juandavid26",
+      angel: "angel26",
+      emilio: "emilio26"
+    };
+
+    // Qué personas pueden entrar en cada sección restringida.
+    const ACCESO_SECCIONES = {
+      facturas_almacen: ['cynthia', 'emilio'],
+      facturas_obra: ['cynthia', 'angel', 'emilio'],
+      facturas_csg: ['angel', 'emilio'],
+      clientes: ['cynthia', 'juandavid'],
+      inventario: ['cynthia', 'juandavid'],
+      materiales_obra: ['cynthia', 'juandavid']
+    };
     let registros = [];
     let inventarioDB = [];
     let clientesDB = [];
@@ -1909,6 +1970,16 @@
 
     // ── SECCIONES ─────────────────────────────────────────────
     function cambiarSeccion(sec) {
+      if (ACCESO_SECCIONES[sec]) {
+        const pass = prompt("Esta sección requiere contraseña:");
+        if (pass === null) return; // canceló, se queda donde estaba
+        const permitidas = ACCESO_SECCIONES[sec].map(p => PASSWORDS_PERSONAS[p]);
+        if (!permitidas.includes(pass)) {
+          alert("Contraseña incorrecta o no tienes acceso a esta sección");
+          return;
+        }
+      }
+
       tablaActual = sec;
       document.querySelectorAll('.btn-nav').forEach(b =>
         b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
@@ -2300,9 +2371,9 @@
 
         const PASSWORDS_REVISION = {
           revisado_cynthia: "cachopo26",
-          revisado_emilio: "emilio2026",
-          revisado_angel: "angel2026",
-          revisado_juandavid: "juan2026"
+          revisado_emilio: "emilio26",
+          revisado_angel: "angel26",
+          revisado_juandavid: "juan26"
         };
 
         const pass = prompt("Introduce tu contraseña:");
@@ -2817,9 +2888,14 @@
         <td>${fmtF(f.fecha)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado ${fact ? 'badge-pagado' : 'badge-vencido'}">${fact ? 'SÍ' : 'NO'}</span></td>
-        <td>${f.archivo_url
-              ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.empresa || f.numero_albaran || 'Albarán').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>`
-              : '—'}</td>
+        <td>${(f.archivos_urls && f.archivos_urls.length > 1)
+              ? `<select class="select-albaranes" onchange="if(this.value) verArchivoPanel(this.value,'${(f.empresa || f.numero_albaran || 'Albarán').replace(/'/g, "\\'")}')">
+      <option value="">${f.archivos_urls.length} archivos</option>
+      ${f.archivos_urls.map((u, i) => `<option value="${u}">Archivo ${i + 1}</option>`).join('')}
+    </select>`
+              : f.archivo_url
+                ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.empresa || f.numero_albaran || 'Albarán').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>`
+                : '—'}</td>
         <td>${f.nif
               ? `<span class="link-badge factura" onclick="verFacturasAlbaran('${(f.numero_albaran || '').replace(/'/g, "\\'")}','${f.nif}','${(f.empresa || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-invoice"></i>Ver facturas</span>`
               : '<span style="color:#ccc;font-size:.78rem">Sin NIF</span>'}</td>
@@ -3481,6 +3557,69 @@
     // mismo Edge Function de IA que usa la bandeja de clasificación, para
     // rellenar los campos automáticamente. Guarda la URL ya subida en el
     // propio input (dataset) para no volver a subirla al pulsar Guardar.
+    function renderArchivosAlbaranChips() {
+      const cont = document.getElementById('archivosAlbaranLista');
+      if (!cont) return;
+      cont.innerHTML = archivosAlbaranSeleccionados.map((a, i) => `
+    <span class="archivo-chip">
+      <span onclick="verArchivoPanel('${a.url}','${(a.nombre || 'Archivo').replace(/'/g, "\\'")}')" title="Ver archivo"><i class="fa-solid fa-paperclip" style="margin-right:4px"></i>${a.nombre || 'Archivo'}</span>
+      <span class="archivo-chip-quitar" onclick="quitarArchivoAlbaran(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></span>
+    </span>`).join('');
+    }
+
+    function quitarArchivoAlbaran(i) {
+      archivosAlbaranSeleccionados.splice(i, 1);
+      renderArchivosAlbaranChips();
+    }
+
+    async function _leerArchivosAlbaran(input) {
+      if (!input.files || !input.files.length) return;
+      const archivos = Array.from(input.files);
+      const hint = document.getElementById('f_archivo_hint');
+
+      for (const file of archivos) {
+        try {
+          toast(`Subiendo ${file.name}...`, 'ok');
+          const url = await subirArchivoStorage(file);
+          archivosAlbaranSeleccionados.push({ url, nombre: file.name });
+          renderArchivosAlbaranChips();
+
+          // Solo intentamos rellenar automáticamente con IA a partir del
+          // primer archivo que se añade a este albarán (los siguientes
+          // solo se adjuntan, sin volver a rellenar el formulario).
+          if (archivosAlbaranSeleccionados.length === 1) {
+            if (hint) hint.textContent = '— leyendo con IA...';
+            toast('Leyendo archivo con IA...', 'ok');
+
+            const res = await fetch(
+              'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/swift-api',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+                body: JSON.stringify({ archivo_url: url, tipo: 'albaran' })
+              }
+            );
+            const datos = await res.json();
+
+            if (res.ok && datos && !datos.error) {
+              window._prellenadoAlbaran = { ...(window._prellenadoAlbaran || {}), ...datos, archivo_url: url };
+              _aplicarPrellenadoAlbaran();
+              if (hint) hint.textContent = '— leído con IA, revisa los datos antes de guardar';
+              toast('Datos leídos con IA — revisa los campos antes de guardar', 'ok');
+            } else {
+              if (hint) hint.textContent = '— no se pudo leer con IA, rellena a mano';
+            }
+          }
+        } catch (e) {
+          toast(`No se pudo subir ${file.name}: ` + e.message, 'err');
+        }
+      }
+
+      // Vaciamos el input para poder volver a abrir el selector y añadir
+      // más archivos sin que el navegador descarte los ya subidos.
+      input.value = '';
+    }
+
     async function _leerArchivoConIA(input, tipo) {
       if (!input.files || !input.files.length) return;
       const file = input.files[0];
@@ -3972,8 +4111,11 @@
   </div>
   <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
   <div class="form-group"><label>Nº Pedido</label><input type="text" id="f_num_pedido" placeholder="Se usa para cruzar con la factura"></div>
-  <div class="form-group span2"><label>Archivo (PDF o imagen)</label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*" onchange="_leerArchivoConIA(this, 'albaran')"></div>
+  <div class="form-group span2"><label>Archivos (PDF o imagen) <span style="font-size:.72rem;color:#888">(puedes seleccionar varios)</span></label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*" multiple onchange="_leerArchivosAlbaran(this)">
+    <div class="archivos-lista" id="archivosAlbaranLista"></div>
+  </div>
 </div>`;
+        archivosAlbaranSeleccionados = [];
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => {
           setupProveedorAC('f_empresa', 'f_nif');
@@ -4226,6 +4368,12 @@
         set('f_nif', f.nif);
         set('f_total', f.total);
         set('f_num_pedido', f.numero_pedido);
+
+        archivosAlbaranSeleccionados = (f.archivos_urls && f.archivos_urls.length)
+          ? f.archivos_urls.map((url, i) => ({ url, nombre: `Archivo ${i + 1}` }))
+          : (f.archivo_url ? [{ url: f.archivo_url, nombre: 'Archivo' }] : []);
+        renderArchivosAlbaranChips();
+
         if (f.archivo_url) mostrarPdfModal(f.archivo_url, f.empresa || f.numero_albaran || 'Albarán');
         else ocultarPdfModal();
       }, 60);
@@ -4472,16 +4620,8 @@
             return;
           }
 
-          const fileInputAlb = document.getElementById('f_archivo_albaran');
-          let archivo_url = (window._prellenadoAlbaran && window._prellenadoAlbaran.archivo_url) || null;
-          if (fileInputAlb && fileInputAlb.files.length) {
-            const f = fileInputAlb.files[0];
-            const key = `${f.name}_${f.size}_${f.lastModified}`;
-            archivo_url = (fileInputAlb.dataset.uploadedKey === key && fileInputAlb.dataset.uploadedUrl)
-              ? fileInputAlb.dataset.uploadedUrl
-              : await subirArchivoStorage(f);
-          }
-
+          // Los archivos ya se han subido a Storage según se iban seleccionando
+          // (ver _leerArchivosAlbaran); aquí solo guardamos las URLs resultantes.
           const payload = {
             numero_albaran: numAlbaran,
             fecha,
@@ -4490,7 +4630,13 @@
             total: totalAlb,
             numero_pedido: document.getElementById('f_num_pedido').value.trim() || null
           };
-          if (archivo_url) payload.archivo_url = archivo_url;
+          if (archivosAlbaranSeleccionados.length) {
+            payload.archivo_url = archivosAlbaranSeleccionados[0].url;
+            payload.archivos_urls = archivosAlbaranSeleccionados.map(a => a.url);
+          } else {
+            payload.archivo_url = null;
+            payload.archivos_urls = [];
+          }
 
           if (modalEditId) {
             await apiPatch('albaranes', modalEditId, payload);
