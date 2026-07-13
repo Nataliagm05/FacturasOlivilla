@@ -3149,16 +3149,16 @@
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
 
-    const PASSWORD_IMPUTADO_EMILIO = "emilio2026imputa";
+    const PASSWORDS_IMPUTADO = ["emilio2026imputa", "angel2026imputa"];
 
     async function toggleImputado(id, actual, tabla) {
       const pass = prompt(actual
-        ? "Contraseña de Emilio para quitar la imputación:"
-        : "Contraseña de Emilio para marcar esta factura como IMPUTADA (no se pagará):");
+        ? "Contraseña (Angel o Emilio) para quitar la imputación:"
+        : "Contraseña (Angel o Emilio) para marcar esta factura como IMPUTADA (no se pagará):");
 
       if (pass === null) return; // canceló
 
-      if (pass !== PASSWORD_IMPUTADO_EMILIO) {
+      if (!PASSWORDS_IMPUTADO.includes(pass)) {
         alert("Contraseña incorrecta");
         return;
       }
