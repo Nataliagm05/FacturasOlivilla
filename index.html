@@ -96,6 +96,37 @@
       border-color: #b53987;
     }
 
+    .pwd-wrap {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .pwd-wrap input {
+      margin-bottom: 0;
+      padding-right: 40px;
+    }
+
+    .pwd-toggle {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 6px 8px;
+      font-size: .95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color .2s;
+    }
+
+    .pwd-toggle:hover {
+      color: #b53987;
+    }
+
     .btn-login {
       width: 100%;
       background: #b53987;
@@ -1396,8 +1427,13 @@
         <option value="jose">Jose</option>
       </select>
       <label for="pwdF">Contraseña</label>
-      <input type="password" id="pwdF" placeholder="Introduce tu contraseña"
-        onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="pwd-wrap">
+        <input type="password" id="pwdF" placeholder="Introduce tu contraseña"
+          onkeydown="if(event.key==='Enter')doLogin()">
+        <button type="button" class="pwd-toggle" id="pwdToggleBtn" onclick="togglePwd()" aria-label="Mostrar contraseña" tabindex="-1">
+          <i class="fa-solid fa-eye" id="pwdToggleIcon"></i>
+        </button>
+      </div>
       <button class="btn-login" onclick="doLogin()"><i class="fa-solid fa-lock me-2"></i>Entrar</button>
       <p class="login-error" id="loginErr"><i class="fa-solid fa-circle-exclamation me-1"></i>Contraseña incorrecta</p>
     </div>
@@ -1947,6 +1983,17 @@
       Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()])
         .then(() => cambiarSeccion(primeraSeccionPermitida(currentPersona)));
       iniciarRealtime();
+    }
+
+    function togglePwd() {
+      const input = document.getElementById('pwdF');
+      const icon = document.getElementById('pwdToggleIcon');
+      const btn = document.getElementById('pwdToggleBtn');
+      const visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      icon.classList.toggle('fa-eye', visible);
+      icon.classList.toggle('fa-eye-slash', !visible);
+      btn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
     }
 
     async function doLogin() {
