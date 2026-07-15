@@ -487,10 +487,60 @@
       color: #7a1f61;
     }
 
-    #visorPdfIframe {
+    .visor-contenido {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .visor-contenido iframe {
       flex: 1;
       border: none;
       width: 100%;
+    }
+
+    .visor-img-zoom-barra {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      background: #f4f0f7;
+      border-bottom: 1px solid #e7dcef;
+      font-size: .82rem;
+      color: #6a4b7a;
+    }
+
+    .visor-img-zoom-barra button,
+    .visor-img-zoom-barra a {
+      background: transparent;
+      border: none;
+      color: #b53987;
+      cursor: pointer;
+      font-size: .95rem;
+    }
+
+    .visor-img-zoom-barra button:hover,
+    .visor-img-zoom-barra a:hover {
+      color: #7a1f61;
+    }
+
+    .visor-img-zoom-barra span {
+      min-width: 42px;
+      text-align: center;
+    }
+
+    .visor-img-wrap {
+      flex: 1;
+      overflow: auto;
+      background: #2b2b2b;
+    }
+
+    .visor-img-wrap img {
+      display: block;
+      width: 100%;
+      transform-origin: top left;
     }
 
     @media (max-width: 1100px) {
@@ -1425,7 +1475,7 @@
         <option value="angel">Angel</option>
         <option value="emilio">Emilio</option>
         <option value="jose">Jose</option>
-        <option value="nat">Nat</option>
+        <option value="natalia">Natalia</option>
       </select>
       <label for="pwdF">Contraseña</label>
       <div class="pwd-wrap">
@@ -1545,7 +1595,7 @@
               <button onclick="cerrarVisorPdf()" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
-          <iframe id="visorPdfIframe" src="about:blank"></iframe>
+          <div id="visorPdfContenido" class="visor-contenido"></div>
         </div>
       </div>
       <div id="calendarioPagosWrap" style="display:none">
@@ -1582,7 +1632,7 @@
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <iframe id="modalPdfPanelIframe" src="about:blank"></iframe>
+        <div id="modalPdfPanelContenido" class="visor-contenido"></div>
       </div>
     </div>
   </div>
@@ -1764,10 +1814,10 @@
       emilio: 'efernandez@olivillatres.com',
       jose: 'jose@olivillatres.com',
       juandavid: 'juandavid@olivillatres.com', // ⚠️ pendiente de crear en Supabase
-      nat: 'nat@olivillatres.com' // ⚠️ pon aquí el email real que uses al crear tu cuenta en Supabase Auth
+      natalia: 'natalia.gm@olivillatres.com' // ⚠️ pon aquí el email real que uses al crear tu cuenta en Supabase Auth
     };
     function emailDePersona(persona) {
-      return EMAILS_PERSONAS[persona] || (persona + '@olivilla-tres.app');
+      return EMAILS_PERSONAS[persona] || (persona + '@olivillatres.com');
     }
 
     let currentPersona = null; // se rellena tras iniciar sesión, a partir de 'perfiles'
@@ -1902,7 +1952,7 @@
     // siguen atadas al nombre exacto de cada persona en CAMPOS_REVISION, así que
     // aunque tengan acceso total no podrán marcar ninguna casilla de revisión
     // salvo que se cree un campo 'revisado_<persona>' expresamente para ellas.
-    const PERSONAS_ACCESO_TOTAL = ['nat'];
+    const PERSONAS_ACCESO_TOTAL = ['natalia'];
 
     function tieneAccesoSeccion(persona, sec) {
       if (PERSONAS_ACCESO_TOTAL.includes(persona)) return true;
@@ -2598,7 +2648,7 @@
     }
 
     // ── TOGGLE REVISIÓN (por persona) ─────────────────────────
-    const NOMBRES_PERSONAS = { cynthia: 'Cynthia', juandavid: 'Juan David', angel: 'Angel', emilio: 'Emilio', jose: 'Jose', nat: 'Nat' };
+    const NOMBRES_PERSONAS = { cynthia: 'Cynthia', juandavid: 'Juan David', angel: 'Angel', emilio: 'Emilio', jose: 'Jose', natalia: 'Natalia' };
 
     async function toggleRevisado(id, campo, tabla, actual) {
       try {
@@ -2640,13 +2690,60 @@
       wrap.style.display = '';
     }
 
+    // Detecta si el archivo es una imagen (fotos/escaneos con el móvil) en vez de un PDF real.
+    function esImagen(url) {
+      return /\.(png|jpe?g|gif|webp|bmp)(\?|#|$)/i.test((url || '').split('#')[0].split('?')[0]);
+    }
+
+    // Construye el contenido del visor (dentro del div#<contenedorId>) según el tipo de archivo:
+    // - PDF real: iframe con el visor nativo del navegador (con su propia barra si el navegador la da).
+    // - Imagen: <img> con nuestra propia barra de zoom +/- y botón de descarga, porque las imágenes
+    //   sueltas no traen ningún control del navegador y se veían "cortadas" a tamaño real.
+    function renderVisorContenido(contenedorId, url) {
+      const cont = document.getElementById(contenedorId);
+      if (!cont) return;
+
+      if (esImagen(url)) {
+        const imgId = contenedorId + 'Img';
+        const pctId = contenedorId + 'Pct';
+        cont.innerHTML = `
+          <div class="visor-img-zoom-barra">
+            <button type="button" onclick="ajustarZoomImg('${contenedorId}', -0.25)" title="Reducir zoom"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+            <span id="${pctId}">100%</span>
+            <button type="button" onclick="ajustarZoomImg('${contenedorId}', 0.25)" title="Aumentar zoom"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+            <a href="${url}" download title="Descargar"><i class="fa-solid fa-download"></i></a>
+          </div>
+          <div class="visor-img-wrap">
+            <img id="${imgId}" src="${url}" data-zoom="1" alt="Vista previa">
+          </div>`;
+      } else {
+        cont.innerHTML = `<iframe src="${url}#toolbar=1&view=FitH" style="width:100%;height:100%;border:none"></iframe>`;
+      }
+    }
+
+    function ajustarZoomImg(contenedorId, delta) {
+      const img = document.getElementById(contenedorId + 'Img');
+      const pct = document.getElementById(contenedorId + 'Pct');
+      if (!img) return;
+      let actual = parseFloat(img.dataset.zoom || '1');
+      actual = Math.min(4, Math.max(0.25, actual + delta));
+      img.dataset.zoom = actual;
+      img.style.width = (actual * 100) + '%';
+      if (pct) pct.textContent = Math.round(actual * 100) + '%';
+    }
+
+    function limpiarVisorContenido(contenedorId) {
+      const cont = document.getElementById(contenedorId);
+      if (cont) cont.innerHTML = '';
+    }
+
     function verArchivoPanel(url, titulo) {
       if (!url || !/^https?:\/\//i.test(url)) {
         toast('Este archivo no tiene una URL válida (puede ser una factura antigua guardada antes de usar Storage) — súbelo de nuevo desde Editar', 'err');
         return;
       }
 
-      // En pantallas pequeñas, mostramos el PDF justo debajo de la fila pulsada
+      // En pantallas pequeñas, mostramos el archivo justo debajo de la fila pulsada
       // en vez del panel lateral (que en móvil queda al final de toda la tabla).
       if (window.innerWidth <= 1100) {
         mostrarVisorPdfMovil(url, titulo);
@@ -2654,9 +2751,9 @@
       }
 
       document.getElementById('visorPdf').style.display = 'flex';
-      document.getElementById('visorPdfIframe').src = url;
       document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
       document.getElementById('visorPdfNueva').href = url;
+      renderVisorContenido('visorPdfContenido', url);
     }
 
     function mostrarVisorPdfMovil(url, titulo) {
@@ -2668,9 +2765,9 @@
       if (!origen) {
         // Fallback si no encontramos la fila: usamos el panel de siempre y hacemos scroll hasta él.
         document.getElementById('visorPdf').style.display = 'flex';
-        document.getElementById('visorPdfIframe').src = url;
         document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
         document.getElementById('visorPdfNueva').href = url;
+        renderVisorContenido('visorPdfContenido', url);
         document.getElementById('visorPdf').scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
@@ -2688,15 +2785,16 @@
               <button onclick="document.getElementById('visorPdfMovilFila').remove()" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
-          <iframe src="${url}" style="width:100%;height:70vh;border:none;display:block"></iframe>
+          <div id="visorPdfMovilContenido" class="visor-contenido" style="height:70vh"></div>
         </td>`;
       origen.insertAdjacentElement('afterend', fila);
+      renderVisorContenido('visorPdfMovilContenido', url);
       fila.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function cerrarVisorPdf() {
       document.getElementById('visorPdf').style.display = 'none';
-      document.getElementById('visorPdfIframe').src = 'about:blank';
+      limpiarVisorContenido('visorPdfContenido');
       const filaMovil = document.getElementById('visorPdfMovilFila');
       if (filaMovil) filaMovil.remove();
     }
@@ -4447,13 +4545,13 @@
 
     function mostrarPdfModal(url, titulo) {
       document.getElementById('modalPdfPanelTitulo').textContent = titulo || 'Factura';
-      document.getElementById('modalPdfPanelIframe').src = url;
       document.getElementById('modalPdfPanel').classList.add('visible');
+      renderVisorContenido('modalPdfPanelContenido', url);
     }
 
     function ocultarPdfModal() {
       document.getElementById('modalPdfPanel').classList.remove('visible');
-      document.getElementById('modalPdfPanelIframe').src = 'about:blank';
+      limpiarVisorContenido('modalPdfPanelContenido');
     }
 
     // Rellena el formulario cuando el modal se abre desde "Clasificar" una factura pendiente
