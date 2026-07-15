@@ -1425,6 +1425,7 @@
         <option value="angel">Angel</option>
         <option value="emilio">Emilio</option>
         <option value="jose">Jose</option>
+        <option value="nat">Nat</option>
       </select>
       <label for="pwdF">Contraseña</label>
       <div class="pwd-wrap">
@@ -1762,7 +1763,8 @@
       angel: 'angelperez@olivillatres.com',
       emilio: 'efernandez@olivillatres.com',
       jose: 'jose@olivillatres.com',
-      juandavid: 'juandavid@olivillatres.com' // ⚠️ pendiente de crear en Supabase
+      juandavid: 'juandavid@olivillatres.com', // ⚠️ pendiente de crear en Supabase
+      nat: 'nat@olivillatres.com' // ⚠️ pon aquí el email real que uses al crear tu cuenta en Supabase Auth
     };
     function emailDePersona(persona) {
       return EMAILS_PERSONAS[persona] || (persona + '@olivilla-tres.app');
@@ -1895,7 +1897,15 @@
       jose: ['clientes', 'inventario', 'materiales_obra']
     };
 
+    // Personas con acceso TOTAL a todas las secciones (ven todo, sin restricciones
+    // de sección). No confundir con poder "autorizar": las casillas de revisado
+    // siguen atadas al nombre exacto de cada persona en CAMPOS_REVISION, así que
+    // aunque tengan acceso total no podrán marcar ninguna casilla de revisión
+    // salvo que se cree un campo 'revisado_<persona>' expresamente para ellas.
+    const PERSONAS_ACCESO_TOTAL = ['nat'];
+
     function tieneAccesoSeccion(persona, sec) {
+      if (PERSONAS_ACCESO_TOTAL.includes(persona)) return true;
       if (ACCESO_EXCLUSIVO[persona]) return ACCESO_EXCLUSIVO[persona].includes(sec);
       const restringida = ACCESO_SECCIONES[sec];
       return !restringida || restringida.includes(persona);
@@ -2588,7 +2598,7 @@
     }
 
     // ── TOGGLE REVISIÓN (por persona) ─────────────────────────
-    const NOMBRES_PERSONAS = { cynthia: 'Cynthia', juandavid: 'Juan David', angel: 'Angel', emilio: 'Emilio', jose: 'Jose' };
+    const NOMBRES_PERSONAS = { cynthia: 'Cynthia', juandavid: 'Juan David', angel: 'Angel', emilio: 'Emilio', jose: 'Jose', nat: 'Nat' };
 
     async function toggleRevisado(id, campo, tabla, actual) {
       try {
@@ -2635,15 +2645,60 @@
         toast('Este archivo no tiene una URL válida (puede ser una factura antigua guardada antes de usar Storage) — súbelo de nuevo desde Editar', 'err');
         return;
       }
+
+      // En pantallas pequeñas, mostramos el PDF justo debajo de la fila pulsada
+      // en vez del panel lateral (que en móvil queda al final de toda la tabla).
+      if (window.innerWidth <= 1100) {
+        mostrarVisorPdfMovil(url, titulo);
+        return;
+      }
+
       document.getElementById('visorPdf').style.display = 'flex';
       document.getElementById('visorPdfIframe').src = url;
       document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
       document.getElementById('visorPdfNueva').href = url;
     }
 
+    function mostrarVisorPdfMovil(url, titulo) {
+      const anterior = document.getElementById('visorPdfMovilFila');
+      if (anterior) anterior.remove();
+
+      const origen = (window.event && window.event.target) ? window.event.target.closest('tr') : null;
+
+      if (!origen) {
+        // Fallback si no encontramos la fila: usamos el panel de siempre y hacemos scroll hasta él.
+        document.getElementById('visorPdf').style.display = 'flex';
+        document.getElementById('visorPdfIframe').src = url;
+        document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
+        document.getElementById('visorPdfNueva').href = url;
+        document.getElementById('visorPdf').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      const numCols = origen.children.length || 1;
+      const tituloSeguro = (titulo || 'Factura').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const fila = document.createElement('tr');
+      fila.id = 'visorPdfMovilFila';
+      fila.innerHTML = `
+        <td colspan="${numCols}" style="padding:0">
+          <div class="visor-pdf-header">
+            <span class="td-nombre">${tituloSeguro}</span>
+            <div class="visor-pdf-acciones">
+              <a href="${url}" target="_blank" title="Abrir en pestaña nueva"><i class="fa-solid fa-up-right-from-square"></i></a>
+              <button onclick="document.getElementById('visorPdfMovilFila').remove()" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+          <iframe src="${url}" style="width:100%;height:70vh;border:none;display:block"></iframe>
+        </td>`;
+      origen.insertAdjacentElement('afterend', fila);
+      fila.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function cerrarVisorPdf() {
       document.getElementById('visorPdf').style.display = 'none';
       document.getElementById('visorPdfIframe').src = 'about:blank';
+      const filaMovil = document.getElementById('visorPdfMovilFila');
+      if (filaMovil) filaMovil.remove();
     }
 
     function chipRevisado(f, campo, tabla, etiqueta) {
