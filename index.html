@@ -1332,6 +1332,24 @@
       opacity: .7;
     }
 
+    .cal-chip.cita-pendiente {
+      background: #e5eefc;
+      color: #1c5ba0;
+      border-left: 3px solid #1c5ba0;
+    }
+
+    .cal-chip.cita-confirmada {
+      background: #e3f5e8;
+      color: #1f7a3d;
+      border-left: 3px solid #1f7a3d;
+    }
+
+    .cal-chip.cita-reprogramada {
+      background: #fdf1e0;
+      color: #a56a1a;
+      border-left: 3px solid #a56a1a;
+    }
+
     .cal-chip-prov {
       font-weight: 700;
     }
@@ -1481,7 +1499,8 @@
       <div class="pwd-wrap">
         <input type="password" id="pwdF" placeholder="Introduce tu contraseña"
           onkeydown="if(event.key==='Enter')doLogin()">
-        <button type="button" class="pwd-toggle" id="pwdToggleBtn" onclick="togglePwd()" aria-label="Mostrar contraseña" tabindex="-1">
+        <button type="button" class="pwd-toggle" id="pwdToggleBtn" onclick="togglePwd()" aria-label="Mostrar contraseña"
+          tabindex="-1">
           <i class="fa-solid fa-eye" id="pwdToggleIcon"></i>
         </button>
       </div>
@@ -1512,7 +1531,7 @@
         <button class="btn-nav" onclick="cambiarSeccion('obras')"><i
             class="fa-solid fa-diagram-project"></i>Obras</button>
         <button class="btn-nav" onclick="cambiarSeccion('calendario_pagos')"><i
-            class="fa-solid fa-calendar-days"></i>Calendario de Pagos</button>
+            class="fa-solid fa-calendar-days"></i>Calendario</button>
         <button class="btn-nav" onclick="cambiarSeccion('presupuestos')"><i
             class="fa-solid fa-file-invoice-dollar"></i>Presupuestos</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
@@ -1607,6 +1626,17 @@
         </div>
         <div class="cal-grid" id="calGrid">
           <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
+        </div>
+      </div>
+      <div class="modal-overlay" id="modalCita">
+        <div class="modal-box-sm">
+          <h3><i class="fa-solid fa-calendar-check"></i> Cita
+            <button onclick="cerrarModalCita()"
+              style="margin-left:auto;background:transparent;border:none;color:#b53987;cursor:pointer">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </h3>
+          <div id="citaModalBody"></div>
         </div>
       </div>
     </div>
@@ -1797,6 +1827,7 @@
   <script>
     const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
+    const CITAS_PANEL_PASSWORD = 'citas'; // misma que usa reprogramar-cita
     // ── AUTENTICACIÓN (Supabase Auth) ──────────────────────────
     // Cada persona tiene una cuenta real en Supabase Auth. Usamos un
     // email "interno" por persona (no hace falta que reciba correos,
@@ -1857,7 +1888,7 @@
     // Tablas que afectan a lo que se ve en pantalla ahora mismo
     const TABLAS_REALTIME = [
       'facturas_pendientes', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
-      'albaranes', 'clientes', 'inventario', 'proveedores', 'materiales_obra'
+      'albaranes', 'clientes', 'inventario', 'proveedores', 'materiales_obra', 'citas'
     ];
 
     let _refrescoPendiente = null;
@@ -2358,6 +2389,8 @@
     let calAnio, calMes;
     let calFacturas = [];
 
+    let calCitas = [];
+
     async function cargarCalendarioPagos() {
       const hoy = new Date();
       if (calAnio === undefined) {
@@ -2367,10 +2400,11 @@
       document.getElementById('calGrid').innerHTML =
         '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>';
 
-      const [obra, almacen, csg] = await Promise.all([
+      const [obra, almacen, csg, citas] = await Promise.all([
         apiGet('facturas_obra', 'select=*'),
         apiGet('facturas_almacen', 'select=*'),
-        apiGet('facturas_csg', 'select=*')
+        apiGet('facturas_csg', 'select=*'),
+        apiGet('citas', 'select=*&estado=neq.borrador')
       ]);
 
       calFacturas = [
@@ -2378,6 +2412,8 @@
         ...(almacen || []).map(f => ({ ...f, origen: 'facturas_almacen' })),
         ...(csg || []).map(f => ({ ...f, origen: 'facturas_csg' }))
       ].filter(f => f.fecha_vencimiento);
+
+      calCitas = (citas || []).filter(c => c.fecha);
 
       renderCalendarioPagos();
     }
@@ -2405,22 +2441,6 @@
 
     // Desde la ficha de una obra, ir a Facturas de Obra ya filtrado por esa obra
     // (se ven TODAS sus facturas, estén o no revisadas/pagadas)
-    async function verFacturasDeObra(nombreObra) {
-      await cambiarSeccion('facturas_obra');
-      const sel = document.getElementById('filtroObra');
-      if (sel) {
-        if (![...sel.options].some(o => o.value === nombreObra)) {
-          const opt = document.createElement('option');
-          opt.value = nombreObra;
-          opt.textContent = nombreObra;
-          sel.appendChild(opt);
-        }
-        sel.value = nombreObra;
-      }
-      document.getElementById('searchInput').value = '';
-      renderTabla();
-    }
-
     function renderCalendarioPagos() {
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
         'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -2431,7 +2451,6 @@
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
 
-      // Lunes = 0 ... Domingo = 6
       const diaSemanaInicio = (primerDia.getDay() + 6) % 7;
 
       const porDia = {};
@@ -2441,6 +2460,16 @@
         const [y, m] = d.split('-').map(Number);
         if (y === calAnio && (m - 1) === calMes) {
           (porDia[d] = porDia[d] || []).push(f);
+        }
+      });
+
+      const porDiaCitas = {};
+      calCitas.forEach(c => {
+        const d = c.fecha;
+        if (!d) return;
+        const [y, m] = d.split('-').map(Number);
+        if (y === calAnio && (m - 1) === calMes) {
+          (porDiaCitas[d] = porDiaCitas[d] || []).push(c);
         }
       });
 
@@ -2454,29 +2483,42 @@
       for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
         const fechaStr = `${calAnio}-${String(calMes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
         const facturasDia = porDia[fechaStr] || [];
+        const citasDia = porDiaCitas[fechaStr] || [];
         const fechaObj = new Date(calAnio, calMes, dia);
         const esHoy = fechaObj.getTime() === hoy.getTime();
 
-        const chips = facturasDia.map(f => {
+        const chipsFacturas = facturasDia.map(f => {
           const pagado = f.estado === 'pagado';
           const vencida = !pagado && fechaObj < hoy;
           const clase = pagado ? 'pagado' : (vencida ? 'vencido' : 'pendiente');
           const prov = (f.proveedor || 'Sin proveedor');
           return `<div class="cal-chip ${clase}" onclick="abrirDesdeCalendario(${f.id},'${f.origen}')"
-            title="${prov} — ${fmt(f.total)} — ${f.metodo_pago || 'Sin método de pago'}">
-            <span class="cal-chip-prov">${prov.length > 16 ? prov.substring(0, 16) + '…' : prov}</span>
-            <span>${fmt(f.total)}</span>
-            ${f.metodo_pago ? `<span class="cal-chip-metodo">${f.metodo_pago}</span>` : ''}
-          </div>`;
+    title="${prov} — ${fmt(f.total)} — ${f.metodo_pago || 'Sin método de pago'}">
+    <span class="cal-chip-prov">${prov.length > 16 ? prov.substring(0, 16) + '…' : prov}</span>
+    <span>${fmt(f.total)}</span>
+    ${f.metodo_pago ? `<span class="cal-chip-metodo">${f.metodo_pago}</span>` : ''}
+  </div>`;
+        }).join('');
+
+        const chipsCitas = citasDia.map(c => {
+          const clase = c.estado === 'confirmada' ? 'cita-confirmada'
+            : c.estado === 'reprogramada' ? 'cita-reprogramada'
+              : 'cita-pendiente';
+          const nombre = c.nombre || 'Cita';
+          return `<div class="cal-chip ${clase}" onclick="abrirCitaCalendario('${c.id}')"
+    title="Cita — ${nombre} — ${c.hora || ''}">
+    <span class="cal-chip-prov"><i class="fa-solid fa-calendar-check" style="font-size:.6rem"></i> ${nombre.length > 14 ? nombre.substring(0, 14) + '…' : nombre}</span>
+    <span>${c.hora || ''}</span>
+  </div>`;
         }).join('');
 
         const totalDia = facturasDia.reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
 
         html += `<div class="cal-celda${esHoy ? ' hoy' : ''}">
-          <div class="cal-num">${dia}</div>
-          ${facturasDia.length ? `<div class="cal-total-dia">${fmt(totalDia)}</div>` : ''}
-          <div class="cal-chips">${chips}</div>
-        </div>`;
+  <div class="cal-num">${dia}</div>
+  ${facturasDia.length ? `<div class="cal-total-dia">${fmt(totalDia)}</div>` : ''}
+  <div class="cal-chips">${chipsFacturas}${chipsCitas}</div>
+</div>`;
       }
 
       const totalCeldas = diaSemanaInicio + ultimoDia.getDate();
@@ -2484,6 +2526,120 @@
       for (let i = 0; i < sobran; i++) html += `<div class="cal-celda vacia"></div>`;
 
       document.getElementById('calGrid').innerHTML = html;
+    }
+
+    function abrirCitaCalendario(id) {
+      const c = calCitas.find(x => x.id === id);
+      if (!c) { toast('No se ha encontrado la cita', 'err'); return; }
+
+      document.getElementById('citaModalBody').innerHTML = `
+    <p><b>${c.nombre || '-'}</b> · ${c.telefono || '-'}</p>
+    <p>${c.email || 'Sin email'}</p>
+    <p><b>Fecha:</b> ${c.fecha} &nbsp; <b>Hora:</b> ${c.hora || '-'}</p>
+    <p><b>Lugar:</b> ${c.lugar || '-'}</p>
+    <p><b>Estado:</b> ${c.estado}</p>
+    <p><b>Respuesta cliente:</b> ${c.respuesta_cliente === 'confirmado' ? '✅ Confirmada' : '—'}</p>
+    <hr>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn-nav active" style="background:#1f7a3d;border-color:#1f7a3d" onclick="confirmarCitaCalendario('${c.id}')">Confirmar</button>
+      <button class="btn-nav active" style="background:#1c5ba0;border-color:#1c5ba0" onclick="mostrarReprogramarCalendario('${c.id}')">Reprogramar</button>
+      <button class="btn-nav active" style="background:#b3261e;border-color:#b3261e" onclick="cancelarCitaCalendario('${c.id}')">Cancelar</button>
+    </div>
+    <div id="reprogFormCal-${c.id}" style="display:none;gap:8px" >
+      <input type="date" id="reprogFecha-${c.id}" value="${c.fecha || ''}" style="padding:6px;border:1px solid #ddd;border-radius:6px">
+      <input type="time" id="reprogHora-${c.id}" value="${c.hora || ''}" style="padding:6px;border:1px solid #ddd;border-radius:6px;margin-left:6px">
+      <button class="btn-nav active" style="background:#1c5ba0;border-color:#1c5ba0;margin-left:6px" onclick="guardarReprogramacionCalendario('${c.id}')">Guardar</button>
+    </div>
+  `;
+      document.getElementById('modalCita').classList.add('visible');
+    }
+
+    function cerrarModalCita() {
+      document.getElementById('modalCita').classList.remove('visible');
+    }
+
+    function mostrarReprogramarCalendario(id) {
+      document.getElementById(`reprogFormCal-${id}`).style.display = 'flex';
+    }
+
+    async function confirmarCitaCalendario(id) {
+      await apiPatch('citas', id, { estado: 'confirmada', actualizado_en: new Date().toISOString() });
+      toast('Cita confirmada', 'ok');
+      cerrarModalCita();
+      cargarCalendarioPagos();
+    }
+
+    async function cancelarCitaCalendario(id) {
+      await apiPatch('citas', id, { estado: 'cancelada', actualizado_en: new Date().toISOString() });
+      toast('Cita cancelada', 'ok');
+      cerrarModalCita();
+      cargarCalendarioPagos();
+    }
+
+    async function guardarReprogramacionCalendario(id) {
+      const fecha = document.getElementById(`reprogFecha-${id}`).value;
+      const hora = document.getElementById(`reprogHora-${id}`).value;
+
+      const CITAS_ANON_KEY = 'sb_publishable_TDJzbWS4cL3TQoTx1DVAmg_pJ4Ur2M5';
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/reprogramar-cita`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': CITAS_ANON_KEY
+          // sin Authorization
+        },
+        body: JSON.stringify({ id, fecha, hora, password: CITAS_PANEL_PASSWORD })
+      });
+      const data = await res.json();
+
+      if (!res.ok) { toast('Error al reprogramar: ' + (data.error || data.message || 'desconocido'), 'err'); return; }
+      toast(data.email_enviado ? 'Cita reprogramada, email enviado' : 'Cita reprogramada (sin email guardado)', 'ok');
+      cerrarModalCita();
+      cargarCalendarioPagos();
+    }
+
+    function cerrarModalCita() {
+      document.getElementById('modalCita').classList.remove('visible');
+    }
+
+    function mostrarReprogramarCalendario(id) {
+      document.getElementById(`reprogFormCal-${id}`).style.display = 'flex';
+    }
+
+    async function confirmarCitaCalendario(id) {
+      await apiPatch('citas', id, { estado: 'confirmada', actualizado_en: new Date().toISOString() });
+      toast('Cita confirmada', 'ok');
+      cerrarModalCita();
+      cargarCalendarioPagos();
+    }
+
+    async function cancelarCitaCalendario(id) {
+      await apiPatch('citas', id, { estado: 'cancelada', actualizado_en: new Date().toISOString() });
+      toast('Cita cancelada', 'ok');
+      cerrarModalCita();
+      cargarCalendarioPagos();
+    }
+
+    async function guardarReprogramacionCalendario(id) {
+      const fecha = document.getElementById(`reprogFecha-${id}`).value;
+      const hora = document.getElementById(`reprogHora-${id}`).value;
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/reprogramar-cita`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({ id, fecha, hora, password: CITAS_PANEL_PASSWORD })
+      });
+      const data = await res.json();
+
+      if (!res.ok) { toast('Error al reprogramar: ' + (data.error || 'desconocido'), 'err'); return; }
+      toast(data.email_enviado ? 'Cita reprogramada, email enviado' : 'Cita reprogramada (sin email guardado)', 'ok');
+      cerrarModalCita();
+      cargarCalendarioPagos();
     }
 
     // ── CARGAR DATOS ──────────────────────────────────────────
@@ -3024,20 +3180,14 @@
 </td>
 
 <td style="white-space:nowrap">
-  <button
-    class="btn-toggle-pago pendiente"
-    style="margin-bottom:4px"
-    onclick="moverFactura(${f.id},'facturas_obra','facturas_almacen')">
-    <i class="fa-solid fa-warehouse"></i>
-    Almacén
-  </button>
-  <button
-    class="btn-toggle-pago pendiente"
-    style="margin-bottom:4px"
-    onclick="moverFactura(${f.id},'facturas_almacen','facturas_csg')">
-    <i class="fa-solid fa-building"></i>
-    CSG
-  </button>
+  <button class="btn-toggle-pago pendiente" style="margin-bottom:4px"
+  onclick="moverFactura(${f.id},'facturas_obra','facturas_almacen')">
+  Almacén
+</button>
+<button class="btn-toggle-pago pendiente" style="margin-bottom:4px"
+  onclick="moverFactura(${f.id},'facturas_obra','facturas_csg')">   ← AQUÍ
+  CSG
+</button>
   <button
     class="btn-toggle-pago"
     style="background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8"
@@ -5293,8 +5443,8 @@
         // Si pasa de Obra a CSG
         if (origen === 'facturas_obra' && destino === 'facturas_csg') {
           delete nueva.nombre_obra;
-          // facturas_csg no tiene columna de Juan David
           delete nueva.revisado_juandavid;
+          delete nueva.revisado_cynthia; // facturas_csg tampoco tiene esta columna
         }
 
         // Si pasa de CSG a Obra
