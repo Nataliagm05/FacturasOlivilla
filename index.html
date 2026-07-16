@@ -1359,6 +1359,79 @@
       opacity: .85;
     }
 
+    .cal-leyenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #fff;
+      border: 1.5px solid #ede5f5;
+      border-radius: 10px;
+    }
+
+    .cal-leyenda-grupo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .cal-leyenda-titulo {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #8a7a99;
+      margin-right: 4px;
+    }
+
+    .cal-leyenda-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .8rem;
+      color: #4a3b68;
+    }
+
+    .cal-leyenda-punto {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .cal-leyenda-punto.pendiente {
+      background: #f3e8f7;
+      border: 1px solid #7a1f61;
+    }
+
+    .cal-leyenda-punto.vencido {
+      background: #fdeaea;
+      border: 1px solid #b3261e;
+    }
+
+    .cal-leyenda-punto.pagado {
+      background: #e6f4ea;
+      border: 1px solid #2d7a4f;
+    }
+
+    .cal-leyenda-punto.cita-pendiente {
+      background: #e5eefc;
+      border-left: 3px solid #1c5ba0;
+    }
+
+    .cal-leyenda-punto.cita-confirmada {
+      background: #e3f5e8;
+      border-left: 3px solid #1f7a3d;
+    }
+
+    .cal-leyenda-punto.cita-reprogramada {
+      background: #fdf1e0;
+      border-left: 3px solid #a56a1a;
+    }
+
     @media (max-width: 900px) {
       .cal-grid {
         grid-template-columns: repeat(7, minmax(38px, 1fr));
@@ -1627,16 +1700,20 @@
         <div class="cal-grid" id="calGrid">
           <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
         </div>
-      </div>
-      <div class="modal-overlay" id="modalCita">
-        <div class="modal-box-sm">
-          <h3><i class="fa-solid fa-calendar-check"></i> Cita
-            <button onclick="cerrarModalCita()"
-              style="margin-left:auto;background:transparent;border:none;color:#b53987;cursor:pointer">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </h3>
-          <div id="citaModalBody"></div>
+
+        <div class="cal-leyenda">
+          <div class="cal-leyenda-grupo">
+            <span class="cal-leyenda-titulo">Facturas</span>
+            <span class="cal-leyenda-item"><span class="cal-leyenda-punto pendiente"></span>Pendiente</span>
+            <span class="cal-leyenda-item"><span class="cal-leyenda-punto vencido"></span>Vencida</span>
+            <span class="cal-leyenda-item"><span class="cal-leyenda-punto pagado"></span>Pagada</span>
+          </div>
+          <div class="cal-leyenda-grupo">
+            <span class="cal-leyenda-titulo">Citas</span>
+            <span class="cal-leyenda-item"><span class="cal-leyenda-punto cita-pendiente"></span>Pendiente</span>
+            <span class="cal-leyenda-item"><span class="cal-leyenda-punto cita-confirmada"></span>Confirmada</span>
+            <span class="cal-leyenda-item"><span class="cal-leyenda-punto cita-reprogramada"></span>Reprogramada</span>
+          </div>
         </div>
       </div>
     </div>
@@ -2563,17 +2640,41 @@
     }
 
     async function confirmarCitaCalendario(id) {
-      await apiPatch('citas', id, { estado: 'confirmada', actualizado_en: new Date().toISOString() });
-      toast('Cita confirmada', 'ok');
+      const CITAS_ANON_KEY = 'sb_publishable_TDJzbWS4cL3TQoTx1DVAmg_pJ4Ur2M5';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/confirmar-cita`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': CITAS_ANON_KEY
+            // sin Authorization
+          },
+          body: JSON.stringify({ id, password: CITAS_PANEL_PASSWORD })
+        });
+        const data = await res.json();
+
+        if (!res.ok) { toast('Error al confirmar: ' + (data.error || data.message || 'desconocido'), 'err'); return; }
+        toast(data.email_enviado ? 'Cita confirmada, email enviado' : 'Cita confirmada (sin email guardado)', 'ok');
+      } catch (e) {
+        toast('Error al confirmar la cita: ' + e.message, 'err');
+        return;
+      }
       cerrarModalCita();
       cargarCalendarioPagos();
     }
 
     async function cancelarCitaCalendario(id) {
-      await apiPatch('citas', id, { estado: 'cancelada', actualizado_en: new Date().toISOString() });
-      toast('Cita cancelada', 'ok');
-      cerrarModalCita();
-      cargarCalendarioPagos();
+      if (!confirm('¿Seguro que quieres cancelar y eliminar esta cita? No se podrá deshacer.')) return;
+      try {
+        await apiDelete('citas', id);
+        calCitas = calCitas.filter(c => c.id !== id);
+        toast('Cita cancelada y eliminada', 'ok');
+        cerrarModalCita();
+        renderCalendarioPagos();
+      } catch (e) {
+        toast('Error al cancelar la cita: ' + e.message, 'err');
+      }
     }
 
     async function guardarReprogramacionCalendario(id) {
@@ -2599,48 +2700,6 @@
       cargarCalendarioPagos();
     }
 
-    function cerrarModalCita() {
-      document.getElementById('modalCita').classList.remove('visible');
-    }
-
-    function mostrarReprogramarCalendario(id) {
-      document.getElementById(`reprogFormCal-${id}`).style.display = 'flex';
-    }
-
-    async function confirmarCitaCalendario(id) {
-      await apiPatch('citas', id, { estado: 'confirmada', actualizado_en: new Date().toISOString() });
-      toast('Cita confirmada', 'ok');
-      cerrarModalCita();
-      cargarCalendarioPagos();
-    }
-
-    async function cancelarCitaCalendario(id) {
-      await apiPatch('citas', id, { estado: 'cancelada', actualizado_en: new Date().toISOString() });
-      toast('Cita cancelada', 'ok');
-      cerrarModalCita();
-      cargarCalendarioPagos();
-    }
-
-    async function guardarReprogramacionCalendario(id) {
-      const fecha = document.getElementById(`reprogFecha-${id}`).value;
-      const hora = document.getElementById(`reprogHora-${id}`).value;
-
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/reprogramar-cita`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify({ id, fecha, hora, password: CITAS_PANEL_PASSWORD })
-      });
-      const data = await res.json();
-
-      if (!res.ok) { toast('Error al reprogramar: ' + (data.error || 'desconocido'), 'err'); return; }
-      toast(data.email_enviado ? 'Cita reprogramada, email enviado' : 'Cita reprogramada (sin email guardado)', 'ok');
-      cerrarModalCita();
-      cargarCalendarioPagos();
-    }
 
     // ── CARGAR DATOS ──────────────────────────────────────────
     async function cargarDatos() {
