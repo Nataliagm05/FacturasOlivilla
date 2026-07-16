@@ -2119,9 +2119,9 @@
       ]
     };
     // Una factura está "revisada" cuando TODOS sus campos de revisión están marcados
-    function estaTotalmenteRevisada(tabla, f) {
+function estaTotalmenteRevisada(tabla, f) {
       const campos = CAMPOS_REVISION[tabla];
-      return !!campos && campos.every(c => !!f[c.campo]);
+      return !!campos && campos.every(c => !!f[c.campo] || !!f[c.campo.replace('revisado_', 'no_corresponde_')]);
     }
 
 
@@ -2924,7 +2924,8 @@
         wrap.style.display = 'none';
         return;
       }
-      cont.innerHTML = campos.map(c => chipRevisado(f, c.campo, tabla, c.nombre)).join('');
+      cont.innerHTML = campos.map(c => celdaRevision(f, c.campo, tabla, c.nombre)).join('');
+      // cont.innerHTML = campos.map(c => chipRevisado(f, c.campo, tabla, c.nombre)).join('');
       wrap.style.display = '';
     }
 
@@ -3048,6 +3049,62 @@
       </button>`;
     }
 
+    // ── EXENCIÓN DE REVISIÓN (para Angel y Cynthia) ───────────
+    // Marca que a esa persona en concreto no le corresponde revisar
+    // esta factura, para que pueda pasar a "Revisadas y Facturadas"
+    // sin que ella tenga que marcar su casilla.
+    const PERSONAS_CON_EXENCION = ['angel', 'cynthia'];
+
+    function celdaRevision(f, campo, tabla, etiqueta) {
+      const personaCampo = campo.replace('revisado_', '');
+      const campoExento = 'no_corresponde_' + personaCampo;
+      const exento = !!f[campoExento];
+      const esMia = personaCampo === currentPersona;
+      const permiteExencion = PERSONAS_CON_EXENCION.includes(personaCampo);
+
+      if (exento) {
+        const estilo = `padding:4px 8px;font-size:.72rem;background:#ececec;color:#777;border:1.5px dashed #bbb;border-radius:6px;font-weight:600;cursor:${esMia ? 'pointer' : 'not-allowed'}`;
+        const tip = esMia ? `title="Volver a marcar como necesaria la revisión de ${etiqueta}"` : `title="Solo ${etiqueta} puede quitar esta exención"`;
+        return `<button style="${estilo}" ${tip}
+          onclick="${esMia ? `toggleNoCorresponde(${f.id},'${campoExento}','${tabla}',true)` : ''}">
+          <i class="fa-solid fa-ban"></i> ${etiqueta}: no corresponde
+        </button>`;
+      }
+
+      let html = chipRevisado(f, campo, tabla, etiqueta);
+      if (permiteExencion && esMia) {
+        html += `<button style="padding:4px 7px;font-size:.72rem;background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8;border-radius:6px;cursor:pointer;margin-left:4px"
+          title="Marcar que a ${etiqueta} no le corresponde revisar esta factura"
+          onclick="toggleNoCorresponde(${f.id},'${campoExento}','${tabla}',false)">
+          <i class="fa-solid fa-user-slash"></i>
+        </button>`;
+      }
+      return html;
+    }
+
+    async function toggleNoCorresponde(id, campoExento, tabla, actual) {
+      const personaDelCampo = campoExento.replace('no_corresponde_', '');
+      if (currentPersona !== personaDelCampo) {
+        alert("Solo " + (NOMBRES_PERSONAS[personaDelCampo] || personaDelCampo) + " puede marcar esto.");
+        return;
+      }
+      try {
+        await apiPatch(tabla, id, { [campoExento]: !actual });
+
+        const reg = registros.find(r => r.id === id && (r.origen ? r.origen === tabla : true));
+        if (reg) reg[campoExento] = !actual;
+
+        if (tablaActual === 'revisadas_facturadas' && reg && !(reg.estado === 'pagado' && estaTotalmenteRevisada(tabla, reg))) {
+          registros = registros.filter(r => r !== reg);
+        }
+
+        renderTabla();
+        if (modalEditId === id) renderChipsRevisionModal(tabla, reg);
+
+      } catch (e) {
+        toast('Error: ' + e.message, 'err');
+      }
+    }
 
 
 
@@ -3157,7 +3214,7 @@
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${celdaArchivoFactura(f)}</td>
-        <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
+        <td class="td-acciones">${celdaRevision(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
 <td>
   <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_almacen')" title="Editar factura">
     <i class="fa-solid fa-pen"></i>
@@ -3278,8 +3335,8 @@
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${celdaArchivoFactura(f)}</td>
-        <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
-        <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
+        <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${celdaRevision(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
+        <td class="td-acciones">${celdaRevision(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
 <td>
   <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_obra')" title="Editar factura">
     <i class="fa-solid fa-pen"></i>
@@ -3383,7 +3440,7 @@
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${celdaArchivoFactura(f)}</td>
-        <td class="td-acciones">${chipRevisado(f, 'revisado_angel', 'facturas_csg', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'facturas_csg', 'Emilio')}</td>
+        <td class="td-acciones">${celdaRevision(f, 'revisado_angel', 'facturas_csg', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'facturas_csg', 'Emilio')}</td>
 <td>
   <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_csg')" title="Editar factura">
     <i class="fa-solid fa-pen"></i>
@@ -3469,7 +3526,7 @@
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td class="td-total">${fmt(f.total)}</td>
-        <td class="td-acciones">${(CAMPOS_REVISION[f.origen] || []).map(c => chipRevisado(f, c.campo, f.origen, c.nombre)).join('')}</td>
+        <td class="td-acciones">${(CAMPOS_REVISION[f.origen] || []).map(c => celdaRevision(f, c.campo, f.origen, c.nombre)).join('')}</td>
         <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
         <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'${f.origen}')" title="Editar factura"><i class="fa-solid fa-pen"></i></button></td>
       </tr>`).join('');
@@ -5639,6 +5696,7 @@
           // Estas columnas de revisión solo existen en facturas_obra
           delete nueva.revisado_angel;
           delete nueva.revisado_juandavid;
+          delete nueva.no_corresponde_angel;
         }
 
         // Si pasa de Almacén a Obra
@@ -5653,6 +5711,7 @@
           delete nueva.nombre_obra;
           delete nueva.revisado_juandavid;
           delete nueva.revisado_cynthia; // facturas_csg tampoco tiene esta columna
+          delete nueva.no_corresponde_cynthia;
         }
 
         // Si pasa de CSG a Obra
@@ -5666,12 +5725,14 @@
         if (origen === 'facturas_almacen' && destino === 'facturas_csg') {
           // facturas_csg no tiene columna de Cynthia
           delete nueva.revisado_cynthia;
+          delete nueva.no_corresponde_cynthia;
         }
 
         // Si pasa de CSG a Almacén
         if (origen === 'facturas_csg' && destino === 'facturas_almacen') {
           // facturas_almacen no tiene columna de Angel
           delete nueva.revisado_angel;
+          delete nueva.no_corresponde_angel;
         }
 
         // Quitar metadatos que no deben copiarse (los genera la BD)
