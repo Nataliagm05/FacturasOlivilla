@@ -1910,6 +1910,7 @@
     </div>
   </div>
   <div class="toast-wrap" id="toastWrap"></div>
+  <datalist id="dl_productos"></datalist>
 
   <script>
     const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
@@ -2037,6 +2038,7 @@
     let modalDestinoTabla = null;   // tabla destino del modal "Nuevo registro" (puede diferir de tablaActual)
     let modalEditId = null;   // id del registro que se está editando (null = modo "nuevo")
     let archivosAlbaranSeleccionados = []; // [{url, nombre}] — archivos adjuntos al albarán en el modal actual
+    let archivosFacturaSeleccionados = []; // [{url, nombre}] — archivos adjuntos a la factura en el modal actual
 
     // Qué personas pueden entrar en cada sección restringida.
     // (Se comprueba contra 'currentPersona', la identidad real obtenida
@@ -2275,9 +2277,20 @@
       return `${SUPABASE_URL}/storage/v1/object/public/facturas-entrantes/${rutaArchivo}`;
     }
 
-    async function cargarInventarioCache() { inventarioDB = await apiGetAll('inventario', 'order=nombre'); }
+    async function cargarInventarioCache() { inventarioDB = await apiGetAll('inventario', 'order=nombre'); actualizarDatalistProductos(); }
     async function cargarClientesCache() { clientesDB = await apiGetAll('clientes', 'order=nombre'); }
     async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
+
+    function actualizarDatalistProductos() {
+      const dl = document.getElementById('dl_productos');
+      if (!dl) return;
+      dl.innerHTML = inventarioDB.map(p => `<option value="${(p.nombre || '').replace(/"/g, '&quot;')}"></option>`).join('');
+    }
+
+    function buscarProductoPorNombre(nombre) {
+      const norm = s => (s || '').toLowerCase().trim();
+      return inventarioDB.find(p => norm(p.nombre) === norm(nombre)) || null;
+    }
 
     // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
     function setupProveedorAC(inputNombreId, inputNifId) {
@@ -3035,6 +3048,43 @@
       </button>`;
     }
 
+
+
+
+
+
+    // Construye la celda "Archivo" de facturas, soportando 1 o varios archivos adjuntos
+    function celdaArchivoFactura(f) {
+      const titulo = (f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'");
+      if (f.archivos_urls && f.archivos_urls.length > 1) {
+        return `<select class="select-albaranes" onchange="if(this.value) verArchivoPanel(this.value,'${titulo}')">
+      <option value="">${f.archivos_urls.length} archivos</option>
+      ${f.archivos_urls.map((u, i) => `<option value="${u}">Archivo ${i + 1}</option>`).join('')}
+    </select>`;
+      }
+      if (f.archivo_url) {
+        return `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${titulo}')"><i class="fa-solid fa-paperclip"></i></span>`;
+      }
+      return '—';
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // ── RENDER TABLA ──────────────────────────────────────────
     function renderTabla() {
       const q = document.getElementById('searchInput').value.toLowerCase().trim();
@@ -3106,7 +3156,7 @@
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
+        <td>${celdaArchivoFactura(f)}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
 <td>
   <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_almacen')" title="Editar factura">
@@ -3227,7 +3277,7 @@
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
+        <td>${celdaArchivoFactura(f)}</td>
         <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${chipRevisado(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
 <td>
@@ -3254,7 +3304,7 @@
   Almacén
 </button>
 <button class="btn-toggle-pago pendiente" style="margin-bottom:4px"
-  onclick="moverFactura(${f.id},'facturas_obra','facturas_csg')">   ← AQUÍ
+  onclick="moverFactura(${f.id},'facturas_obra','facturas_csg')">
   CSG
 </button>
   <button
@@ -3332,7 +3382,7 @@
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
-        <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
+        <td>${celdaArchivoFactura(f)}</td>
         <td class="td-acciones">${chipRevisado(f, 'revisado_angel', 'facturas_csg', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'facturas_csg', 'Emilio')}</td>
 <td>
   <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_csg')" title="Editar factura">
@@ -4007,20 +4057,13 @@
     function addLineaCompra() {
       lineasCompraCount++;
       const idx = lineasCompraCount;
-      const opts = inventarioDB.map(p =>
-        `<option value="${p.id}" data-pts="${p.puntos_por_unidad || 0}" data-stock="${p.stock || 0}">
-      ${p.nombre} (stock: ${p.stock || 0}) — ${p.puntos_por_unidad || 0} pts/ud
-    </option>`
-      ).join('');
       const div = document.createElement('div');
       div.id = `lc_${idx}`;
       div.className = 'linea-prod';
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
-      <select id="lc_prod_${idx}">
-        <option value="">— Elige producto —</option>${opts}
-      </select>
+      <input type="text" id="lc_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo...">
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad</label>
@@ -4050,16 +4093,31 @@
         toast("Introduce primero un email válido", "err");
         return;
       }
-      document.querySelectorAll('[id^="lc_prod_"]').forEach(sel => {
-        if (!sel.value) return;
-        const idx = sel.id.split('_')[2];
+      for (const inp of document.querySelectorAll('[id^="lc_prod_"]')) {
+        const nombre = inp.value.trim();
+        if (!nombre) continue;
+        const idx = inp.id.split('_')[2];
         const cant = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value || 0);
-        const stock = parseFloat(sel.selectedOptions[0]?.dataset.stock || 0);
-        const nombre = sel.selectedOptions[0]?.text.split('(')[0].trim();
-        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; return; }
-        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; return; }
-        lineas.push({ producto_id: parseInt(sel.value), cantidad: cant, nombre, stock });
-      });
+        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; continue; }
+
+        let prod = buscarProductoPorNombre(nombre);
+        if (!prod) {
+          try {
+            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+            inventarioDB.push(nuevo);
+            actualizarDatalistProductos();
+            prod = nuevo;
+            toast(`Producto "${nombre}" creado en el inventario`, 'ok');
+          } catch (e) {
+            toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
+            ok = false; continue;
+          }
+        }
+
+        const stock = parseFloat(prod.stock || 0);
+        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; continue; }
+        lineas.push({ producto_id: prod.id, cantidad: cant, nombre, stock });
+      }
 
       if (!ok) return;
       if (!lineas.length) { toast('Añade al menos un producto', 'err'); return; }
@@ -4091,18 +4149,13 @@
     function addLineaMaterial() {
       lineasMaterialCount++;
       const idx = lineasMaterialCount;
-      const opts = inventarioDB.map(p =>
-        `<option value="${p.id}" data-stock="${p.stock || 0}">${p.nombre} (stock: ${p.stock || 0})</option>`
-      ).join('');
       const div = document.createElement('div');
       div.id = `lm_${idx}`;
       div.className = 'linea-prod';
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Material</label>
-      <select id="lm_prod_${idx}">
-        <option value="">— Elige material —</option>${opts}
-      </select>
+      <input type="text" id="lm_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo...">
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad</label>
@@ -4120,10 +4173,72 @@
       return `
     <div class="form-grid">
       <div class="form-group span3">
-        <label>Archivo de la factura (PDF o imagen) <span style="font-size:.72rem;color:#888" id="f_archivo_hint">— opcional</span></label>
-        <input type="file" id="f_archivo_factura" accept="application/pdf,image/*" onchange="_previsualizarArchivoFactura(this)">
+        <label>Archivos de la factura (PDF o imagen) <span style="font-size:.72rem;color:#888" id="f_archivo_hint">— opcional, puedes seleccionar varios</span></label>
+        <input type="file" id="f_archivo_factura" accept="application/pdf,image/*" multiple onchange="_leerArchivosFactura(this)">
+        <div class="archivos-lista" id="archivosFacturaLista"></div>
       </div>
     </div>`;
+    }
+
+    function renderArchivosFacturaChips() {
+      const cont = document.getElementById('archivosFacturaLista');
+      if (!cont) return;
+      cont.innerHTML = archivosFacturaSeleccionados.map((a, i) => `
+    <span class="archivo-chip">
+      <span onclick="verArchivoPanel('${a.url}','${(a.nombre || 'Archivo').replace(/'/g, "\\'")}')" title="Ver archivo"><i class="fa-solid fa-paperclip" style="margin-right:4px"></i>${a.nombre || 'Archivo'}</span>
+      <span class="archivo-chip-quitar" onclick="quitarArchivoFactura(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></span>
+    </span>`).join('');
+    }
+
+    function quitarArchivoFactura(i) {
+      archivosFacturaSeleccionados.splice(i, 1);
+      renderArchivosFacturaChips();
+    }
+
+    async function _leerArchivosFactura(input) {
+      if (!input.files || !input.files.length) return;
+      const archivos = Array.from(input.files);
+      const hint = document.getElementById('f_archivo_hint');
+
+      for (const file of archivos) {
+        try {
+          toast(`Subiendo ${file.name}...`, 'ok');
+          const url = await subirArchivoStorage(file);
+          archivosFacturaSeleccionados.push({ url, nombre: file.name });
+          renderArchivosFacturaChips();
+
+          // Solo intentamos rellenar automáticamente con IA a partir del
+          // primer archivo que se añade a esta factura (los siguientes
+          // solo se adjuntan, sin volver a rellenar el formulario).
+          if (archivosFacturaSeleccionados.length === 1) {
+            if (hint) hint.textContent = '— leyendo con IA...';
+            toast('Leyendo archivo con IA...', 'ok');
+
+            const res = await fetch(
+              'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/swift-api',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+                body: JSON.stringify({ archivo_url: url })
+              }
+            );
+            const datos = await res.json();
+
+            if (res.ok && datos && !datos.error) {
+              window._prellenado = { ...(window._prellenado || {}), ...datos, archivo_url: url };
+              _aplicarPrellenado();
+              if (hint) hint.textContent = '— leído con IA, revisa los datos antes de guardar';
+              toast('Datos leídos con IA — revisa los campos antes de guardar', 'ok');
+            } else {
+              if (hint) hint.textContent = '— no se pudo leer con IA, rellena a mano';
+            }
+          }
+        } catch (e) {
+          toast(`No se pudo subir ${file.name}: ` + e.message, 'err');
+        }
+      }
+
+      input.value = '';
     }
 
     function _previsualizarArchivoFactura(input) {
@@ -4435,7 +4550,7 @@
         if (items.length) {
           items.forEach(item => {
             addLineaMaterial();
-            document.getElementById(`lm_prod_${lineasMaterialCount}`).value = item.producto_id;
+            document.getElementById(`lm_prod_${lineasMaterialCount}`).value = item.producto_nombre || '';
             document.getElementById(`lm_cant_${lineasMaterialCount}`).value = item.cantidad;
           });
         } else {
@@ -4474,10 +4589,19 @@
 
         renderChipsRevisionModal(tabla, f);
 
-        if (f.archivo_url) {
-          mostrarPdfModal(f.archivo_url, f.proveedor || f.numero_factura || 'Factura');
+        if (f.archivos_urls && f.archivos_urls.length) {
+          archivosFacturaSeleccionados = f.archivos_urls.map((url, i) => ({ url, nombre: `Archivo ${i + 1}` }));
+        } else if (f.archivo_url) {
+          archivosFacturaSeleccionados = [{ url: f.archivo_url, nombre: 'Archivo' }];
+        } else {
+          archivosFacturaSeleccionados = [];
+        }
+        renderArchivosFacturaChips();
+
+        if (archivosFacturaSeleccionados.length) {
+          mostrarPdfModal(archivosFacturaSeleccionados[0].url, f.proveedor || f.numero_factura || 'Factura');
           const hint = document.getElementById('f_archivo_hint');
-          if (hint) hint.textContent = '— ya tiene un archivo adjunto; sube uno solo si quieres sustituirlo';
+          if (hint) hint.textContent = '— ya tiene archivos adjuntos; añade más o quita los que no quieras';
         } else {
           ocultarPdfModal();
         }
@@ -4557,16 +4681,19 @@
       <div id="lineasFactAlm"></div>
       <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
         window._optsFactAlm = opts;
+        archivosFacturaSeleccionados = [];
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => {
           setupProveedorAC('f_prov', 'f_nif');
           addLineaFactAlm();
           _aplicarPrellenado();
           if (window._prellenado && window._prellenado.archivo_url) {
+            archivosFacturaSeleccionados = [{ url: window._prellenado.archivo_url, nombre: window._prellenado.proveedor || 'Factura' }];
             mostrarPdfModal(window._prellenado.archivo_url, window._prellenado.proveedor || 'Factura');
           } else {
             ocultarPdfModal();
           }
+          renderArchivosFacturaChips();
         }, 50);
 
         // ── FACTURA OBRA ──
@@ -4612,16 +4739,19 @@
       <div id="lineasFactAlm"></div>
       <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
         window._optsFactAlm = opts;
+        archivosFacturaSeleccionados = [];
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => {
           setupProveedorAC('f_prov', 'f_nif');
           addLineaFactAlm();
           _aplicarPrellenado();
           if (window._prellenado && window._prellenado.archivo_url) {
+            archivosFacturaSeleccionados = [{ url: window._prellenado.archivo_url, nombre: window._prellenado.proveedor || 'Factura' }];
             mostrarPdfModal(window._prellenado.archivo_url, window._prellenado.proveedor || 'Factura');
           } else {
             ocultarPdfModal();
           }
+          renderArchivosFacturaChips();
         }, 50);
 
         // ── FACTURA CSG ──
@@ -4666,16 +4796,19 @@
       <div id="lineasFactAlm"></div>
       <button type="button" class="btn-add-linea" onclick="addLineaFactAlm()"><i class="fa-solid fa-plus me-1"></i>Añadir producto recibido</button>`;
         window._optsFactAlm = opts;
+        archivosFacturaSeleccionados = [];
         document.getElementById('modalNueva').classList.add('visible');
         setTimeout(() => {
           setupProveedorAC('f_prov', 'f_nif');
           addLineaFactAlm();
           _aplicarPrellenado();
           if (window._prellenado && window._prellenado.archivo_url) {
+            archivosFacturaSeleccionados = [{ url: window._prellenado.archivo_url, nombre: window._prellenado.proveedor || 'Factura' }];
             mostrarPdfModal(window._prellenado.archivo_url, window._prellenado.proveedor || 'Factura');
           } else {
             ocultarPdfModal();
           }
+          renderArchivosFacturaChips();
         }, 50);
 
         // ── ALBARÁN ──
@@ -5108,24 +5241,10 @@
               nif: nifCampo,
               proveedor: prov,
               total: totalCampo,
-              archivo_url: (window._prellenado && window._prellenado.archivo_url) || null
+              archivo_url: (archivosFacturaSeleccionados[0] && archivosFacturaSeleccionados[0].url) || null
             }, 'manual');
             toast(`⚠️ Ya existe una factura igual en ${duplicado.tabla === 'facturas_obra' ? 'Obra' : duplicado.tabla === 'facturas_csg' ? 'CSG' : 'Almacén'} (duplicado registrado)`, 'err');
             return;
-          }
-
-          // Si se ha elegido un archivo nuevo en el modal, lo subimos a Storage
-          // (o reutilizamos la URL si ya se subió al leerlo con IA). Si no hay
-          // archivo nuevo, mantenemos el que viniera de la IA (clasificación) o,
-          // al editar, el que ya tenía la factura (no se toca el campo).
-          const fileInputFactura = document.getElementById('f_archivo_factura');
-          let archivo_url = (window._prellenado && window._prellenado.archivo_url) || null;
-          if (fileInputFactura && fileInputFactura.files.length) {
-            const f = fileInputFactura.files[0];
-            const key = `${f.name}_${f.size}_${f.lastModified}`;
-            archivo_url = (fileInputFactura.dataset.uploadedKey === key && fileInputFactura.dataset.uploadedUrl)
-              ? fileInputFactura.dataset.uploadedUrl
-              : await subirArchivoStorage(f);
           }
 
           const payload = {
@@ -5138,15 +5257,20 @@
             total: parseFloat(document.getElementById('f_total').value || 0),
             estado: document.getElementById('f_est').value,
             fecha_vencimiento: document.getElementById('f_venc').value || null,
-            archivo_url, numeros_albaran: document.getElementById('f_num_albaranes').value
+            numeros_albaran: document.getElementById('f_num_albaranes').value
               .split(',').map(s => s.trim()).filter(Boolean),
             ...recogerCamposExcel()
           };
+          if (archivosFacturaSeleccionados.length) {
+            payload.archivo_url = archivosFacturaSeleccionados[0].url;
+            payload.archivos_urls = archivosFacturaSeleccionados.map(a => a.url);
+          } else {
+            payload.archivo_url = null;
+            payload.archivos_urls = [];
+          }
           if (tabla === 'facturas_obra') payload.nombre_obra = document.getElementById('f_obra').value.trim();
 
           if (modalEditId) {
-            // Si no se ha elegido un archivo nuevo, no pisar el que ya tenía
-            if (!fileInputFactura || !fileInputFactura.files.length) delete payload.archivo_url;
             await apiPatch(tabla, modalEditId, payload);
           } else {
             await apiPost(tabla, payload);
@@ -5343,16 +5467,31 @@
 
       const lineas = [];
       let ok = true;
-      document.querySelectorAll('[id^="lm_prod_"]').forEach(sel => {
-        if (!sel.value) return;
-        const idx = sel.id.split('_')[2];
+      for (const inp of document.querySelectorAll('[id^="lm_prod_"]')) {
+        const nombre = inp.value.trim();
+        if (!nombre) continue;
+        const idx = inp.id.split('_')[2];
         const cant = parseFloat(document.getElementById(`lm_cant_${idx}`)?.value || 0);
-        const stock = parseFloat(sel.selectedOptions[0]?.dataset.stock || 0);
-        const nombre = sel.selectedOptions[0]?.text.split('(')[0].trim();
-        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; return; }
-        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; return; }
-        lineas.push({ producto_id: parseInt(sel.value), producto_nombre: nombre, cantidad: cant, stock });
-      });
+        if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; continue; }
+
+        let prod = buscarProductoPorNombre(nombre);
+        if (!prod) {
+          try {
+            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+            inventarioDB.push(nuevo);
+            actualizarDatalistProductos();
+            prod = nuevo;
+            toast(`Producto "${nombre}" creado en el inventario`, 'ok');
+          } catch (e) {
+            toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
+            ok = false; continue;
+          }
+        }
+
+        const stock = parseFloat(prod.stock || 0);
+        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; continue; }
+        lineas.push({ producto_id: prod.id, producto_nombre: nombre, cantidad: cant, stock });
+      }
       if (!ok) return;
       if (!lineas.length) { toast('Añade al menos un material', 'err'); return; }
 
