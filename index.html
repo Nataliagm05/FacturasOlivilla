@@ -373,8 +373,6 @@
       border-radius: 12px;
       border: 1.5px solid #ede5f5;
       overflow: hidden;
-      position: sticky;
-      top: 16px;
     }
 
     .visor-pdf-header {
@@ -3149,7 +3147,26 @@
         return;
       }
 
-      mostrarVisorPdfMovil(url, titulo);
+      if (window.innerWidth <= 1100) {
+        mostrarVisorPdfMovil(url, titulo);
+        return;
+      }
+
+      const visor = document.getElementById('visorPdf');
+      const origen = (window.event && window.event.target) ? window.event.target.closest('tr') : null;
+
+      visor.style.display = 'flex';
+      document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
+      document.getElementById('visorPdfNueva').href = url;
+      renderVisorContenido('visorPdfContenido', url);
+
+      if (origen) {
+        const wrap = document.getElementById('splitWrap');
+        const margin = origen.getBoundingClientRect().top - wrap.getBoundingClientRect().top;
+        visor.style.marginTop = Math.max(0, margin) + 'px';
+      } else {
+        visor.style.marginTop = '0px';
+      }
     }
 
     function mostrarVisorPdfMovil(url, titulo) {
