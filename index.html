@@ -34,6 +34,8 @@
       max-width: 100vw;
     }
 
+
+    /* ESTILOS DE LA PAGINA DE LOGIN */
     .login-wrap {
       flex: 1;
       display: flex;
@@ -151,6 +153,8 @@
       display: none;
     }
 
+    /* ESTILOS DE LA BARRA SUPERIOR */
+
     .topbar {
       background: #35284f;
       padding: 10px 24px;
@@ -226,6 +230,8 @@
       color: #f386cc;
     }
 
+
+    /* PAGINA DEBAJO DEL TOPBAR */
     .main-wrap {
       flex: 1;
       max-width: 1900px;
@@ -236,6 +242,8 @@
       overflow-x: hidden;
     }
 
+
+    /* TITULO DE CADA SECCION */
     .page-title {
       font-size: 1.4rem;
       font-weight: 700;
@@ -257,6 +265,8 @@
       margin-left: 4px;
     }
 
+    /* ESTAN EN TODAS LAS PAGINAS PERO SOLO SE UTILIZAN EN FACTURAS */
+    /* ALERTAS DE FACTURAS VENCIDAS Y POR VENCER */
     .alertas-wrap {
       margin-bottom: 1.25rem;
     }
@@ -299,6 +309,15 @@
       margin-bottom: 8px;
     }
 
+
+
+
+    /* SOLO ESTÁ Y FUNCIONA EN FACTURAS*/
+
+
+
+
+    /* CONTENEDORES DE TOTAL DE FACTURAS, PENDIENTES, PAGADAS, TOTAL PAGADO Y POR PAGAR */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -341,99 +360,7 @@
       color: #c47a00;
     }
 
-    .filtros {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .filtros input,
-    .filtros select {
-      padding: 8px 12px;
-      border: 1.5px solid #ddd;
-      border-radius: 8px;
-      font-size: .88rem;
-      color: #4a3b68;
-      background: #fff;
-      transition: border-color .2s;
-    }
-
-    .filtros input:focus,
-    .filtros select:focus {
-      outline: none;
-      border-color: #b53987;
-    }
-
-    .filtros input[type=text] {
-      flex: 1;
-      min-width: 160px;
-    }
-
-    .btn-nueva {
-      background: #b53987;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 16px;
-      font-size: .88rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: background .2s;
-    }
-
-    .btn-nueva:hover {
-      background: #4a3b68;
-    }
-
-    .btn-exportar {
-      background: #2d7a4f;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 16px;
-      font-size: .88rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: background .2s;
-    }
-
-    .btn-exportar:hover {
-      background: #1a4d32;
-    }
-
-    .tabla-wrap {
-      background: #fff;
-      border-radius: 12px;
-      border: 1.5px solid #ede5f5;
-      overflow: hidden;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      max-width: 100%;
-    }
-
-    .split-wrap {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      max-width: 100%;
-      min-width: 0;
-    }
-
-    .split-wrap .tabla-wrap {
-      flex: 1;
-      min-width: 0;
-    }
-
+    /* DATOS FACTURA ENCIMA O AL LADO Y FACTURA ABIERTA DEBAJO O AL LADO Y TODOS LOS COMPLEMENTOS DE MINIMIZAR, MAXIMIZAR, DESCARGAR.... */
     .visor-pdf {
       flex: 0 0 44%;
       max-width: 44%;
@@ -557,6 +484,118 @@
       }
     }
 
+
+
+
+
+    /* TODOS */
+
+
+
+
+
+    /* BUSCADOR, ESTADO, AÑADIR NUEVO, EXPORTAR A EXCEL Y DUPLICADOS */
+    .filtros {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filtros input,
+    .filtros select {
+      padding: 8px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: .88rem;
+      color: #4a3b68;
+      background: #fff;
+      transition: border-color .2s;
+    }
+
+    .filtros input:focus,
+    .filtros select:focus {
+      outline: none;
+      border-color: #b53987;
+    }
+
+    .filtros input[type=text] {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .btn-nueva {
+      background: #b53987;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .btn-nueva:hover {
+      background: #4a3b68;
+    }
+
+    .btn-exportar {
+      background: #2d7a4f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .btn-exportar:hover {
+      background: #1a4d32;
+    }
+
+    /* TABLAS */
+    .split-wrap {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .tabla-wrap {
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid #ede5f5;
+      overflow: hidden;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      max-width: 100%;
+    }
+
+
+
+    .split-wrap .tabla-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+
+
+
+
+    /* TABLAS */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -604,12 +643,38 @@
       white-space: nowrap;
     }
 
+    /* CONCEPTO FACTURAS */
+    .td-concepto {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .78rem;
+      color: #666;
+    }
+
+
+    /* CELDAS NUMÉRICAS */
+    .num-cell {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .pct-cell {
+      text-align: center;
+      font-size: .75rem;
+      color: #888;
+    }
+
+    /* BOTONES PARA CAMBIAR LA FATURA DE SITIO */
     .td-acciones {
       gap: 6px;
       align-items: center;
       flex-wrap: wrap;
     }
 
+
+    /* BADGES DE ESTADO DE FACTURA */
     .badge-estado {
       display: inline-flex;
       align-items: center;
@@ -621,6 +686,7 @@
       white-space: nowrap;
     }
 
+
     .badge-pendiente {
       background: #fff3e0;
       color: #c47a00;
@@ -631,17 +697,23 @@
       color: #2d7a4f;
     }
 
+
+
     .badge-vencido {
       background: #fce4ec;
       color: #b53987;
     }
 
+
+    /* BADGE DE IMPUTADO */
     .badge-imputado {
       background: #ececec;
       color: #555;
       text-decoration: line-through;
     }
 
+
+    /* BADGE DE PUNTOS */
     .badge-puntos {
       background: #ede5f5;
       color: #4a3b68;
@@ -650,6 +722,8 @@
       padding: 4px 10px;
       border-radius: 20px;
     }
+
+    /* BOTONES PARA CAMBIAR EL ESTADO DE PAGO */
 
     .btn-toggle-pago {
       border: none;
@@ -705,6 +779,8 @@
       background: #555;
       color: #fff;
     }
+
+
 
     .archivos-lista {
       display: flex;
@@ -799,6 +875,8 @@
       border-color: #b53987;
     }
 
+
+    /* BOTONES DE ELIMINAR */
     .btn-eliminar {
       background: transparent;
       border: none;
@@ -812,6 +890,8 @@
     .btn-eliminar:hover {
       color: #e53e3e;
     }
+
+    /* LINK PARA VER FACTURAS O ALBARANES */
 
     .link-badge {
       display: inline-flex;
@@ -844,7 +924,7 @@
       color: #fff;
     }
 
-    /* AUTOCOMPLETE */
+    /* AUTOCOMPLETAR */
     .ac-wrap {
       position: relative;
     }
@@ -893,6 +973,13 @@
       color: #999;
     }
 
+
+
+
+
+
+    /* MODAL NUEVO REGISTRO */
+
     /* MODALES */
     .modal-overlay {
       position: fixed;
@@ -910,26 +997,6 @@
       display: flex;
     }
 
-    .modal-box {
-      background: #fff;
-      border-radius: 14px;
-      padding: 2rem;
-      width: 100%;
-      max-width: 900px;
-      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
-      margin: auto;
-    }
-
-    .modal-box-sm {
-      background: #fff;
-      border-radius: 14px;
-      padding: 1.75rem;
-      width: 100%;
-      max-width: 480px;
-      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
-      margin: auto;
-    }
-
     .modal-nueva-wrap {
       display: flex;
       gap: 16px;
@@ -943,6 +1010,16 @@
       flex: 1;
       max-width: 900px;
       margin: 0;
+    }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 14px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
+      margin: auto;
     }
 
     .modal-pdf-panel {
@@ -994,6 +1071,22 @@
       }
     }
 
+
+    /* MODAL CITA, COMPRA CLIENTE, MATERIAL OBRA, EXPORTAR MATERIAL OBRA Y EXPORTAR EXCEL */
+    .modal-box-sm {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 32px rgba(74, 59, 104, .2);
+      margin: auto;
+    }
+
+
+
+
+    /* MODALES*/
     .modal-box h3,
     .modal-box-sm h3 {
       font-size: 1.1rem;
@@ -1005,6 +1098,8 @@
       gap: 8px;
     }
 
+
+    /* CAMPOS PARA EL EXCEL, MODAL NUEVO REGISTRO EN FACTURAS ALMACEN/OBRA/CSG*/
     .form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -1019,6 +1114,8 @@
       grid-column: span 3;
     }
 
+
+    /* MODAL NUEVO REGRISTRO EN CLASIFICACION, ALBARÁN, CLIENTE, PRESUPUESTO, INVENTARIO, NUEVA OBRA*/
     .form-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1029,6 +1126,9 @@
       grid-column: span 2;
     }
 
+
+
+    /* MODAL COMPRA CLIENTE, MATERIAL OBRA, EXPORTAR MATERIAL OBRA Y EXPORTAR EXCEL. AÑADIR MANUALMENTE FACTURA ALMACEN/OBRA/CSG, ALBARÁN, NUEVO CLIENTE, PRESUPUESTOS, INVENTARIO, NUEVA OBRA */
     .form-group {
       margin: 0;
     }
@@ -1065,6 +1165,8 @@
       background: #f7f0f5;
     }
 
+
+    /* MODAL COMPRA CLIENTE TITULO DE PRODUCTOS COMPRADOS, MOOAL MATERIAL OBRA MATERIALES QUE SE LLEVA, CAMPOS EXCEL PAGO-BASES E IVA-RETENCION, DATOS PRINCIPALES, REVISION Y PRODUCTOS RECIBIDOS EN AÑADIR UNA FACTURA*/
     .form-seccion {
       font-size: .72rem;
       font-weight: 700;
@@ -1082,6 +1184,9 @@
       margin-top: 0;
     }
 
+
+    /* TODOS LOS MODALES */
+    /* BOTONES DE CANCELAR Y GUARDAR/EXPORTAR EN LOS MODALES */
     .modal-btns {
       display: flex;
       gap: 10px;
@@ -1121,6 +1226,11 @@
       background: #4a3b68;
     }
 
+
+    /* MODAL MATERIAL COMPRA, MATERIAL OBRA*/
+
+
+    /*NOMBRE PRODUCTO  */
     .linea-prod {
       display: grid;
       grid-template-columns: 1fr 90px 80px auto;
@@ -1129,6 +1239,8 @@
       margin-bottom: 8px;
     }
 
+
+    /* AÑADIR PRODUCTO, PROVEEDOR */
     .btn-add-linea {
       width: 100%;
       margin-top: 6px;
@@ -1145,6 +1257,11 @@
       background: #fff0f8;
     }
 
+
+
+
+
+    /* TABLA DE VER DUPLICADOS/ VER POR NIF LAS FACTURAS7 VER FACTURAS DE UN ALBARÁN EN CONCRETO... MINI TABLITAS*/
     .mini-table {
       width: 100%;
       border-collapse: collapse;
@@ -1179,6 +1296,9 @@
       pointer-events: none;
     }
 
+
+
+    /* CAMBIOS EN LAS TABLAS O ERRORES FUNCIÓN PARA QUE SALTE EL AVISO DE LOS CAMBIOS*/
     .toast {
       background: #4a3b68;
       color: #fff;
@@ -1208,12 +1328,27 @@
       background: #1565c0;
     }
 
+
+
+
+    /* MENSAJE DE CARGANDO */
     .empty-state {
       text-align: center;
       padding: 3rem 1rem;
       color: #bbb;
     }
 
+    .empty-state i {
+      font-size: 2.5rem;
+      margin-bottom: .75rem;
+      display: block;
+    }
+
+
+
+
+
+    /* CALENDARIO */
     .cal-header {
       display: flex;
       align-items: center;
@@ -1221,6 +1356,8 @@
       margin-bottom: 14px;
     }
 
+
+    /* CAMBIAR DE MES */
     .cal-header button {
       background: #faf7fc;
       border: 1.5px solid #ede5f5;
@@ -1244,16 +1381,21 @@
       text-transform: capitalize;
     }
 
+    /* MES ACTUAL Y MARCAR EL DIA DE HOY */
     .cal-hoy-btn {
       margin-left: auto;
     }
 
+
+    /* COLUMNAS Y FILAS DEL CALENDARIO */
     .cal-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 6px;
     }
 
+
+    /* DIAS DE LA SEMANA */
     .cal-diasemana {
       text-align: center;
       font-weight: 700;
@@ -1263,6 +1405,8 @@
       text-transform: uppercase;
     }
 
+
+    /* CELDAS DEL CALENDARIO */
     .cal-celda {
       background: #fff;
       border: 1.5px solid #ede5f5;
@@ -1297,6 +1441,8 @@
       font-weight: 600;
     }
 
+
+    /*  */
     .cal-chips {
       display: flex;
       flex-direction: column;
@@ -1359,6 +1505,9 @@
       opacity: .85;
     }
 
+
+
+    /* LEYENDA DE COLORES */
     .cal-leyenda {
       display: flex;
       flex-wrap: wrap;
@@ -1432,6 +1581,9 @@
       border-left: 3px solid #a56a1a;
     }
 
+
+
+    /* MEDIAQUERIES */
     @media (max-width: 900px) {
       .cal-grid {
         grid-template-columns: repeat(7, minmax(38px, 1fr));
@@ -1448,31 +1600,8 @@
       }
     }
 
-    .empty-state i {
-      font-size: 2.5rem;
-      margin-bottom: .75rem;
-      display: block;
-    }
 
-    .td-concepto {
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: .78rem;
-      color: #666;
-    }
 
-    .num-cell {
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .pct-cell {
-      text-align: center;
-      font-size: .75rem;
-      color: #888;
-    }
 
     @media(max-width:900px) {
       .form-grid {
@@ -1982,11 +2111,23 @@
     let _refrescoPendiente = null;
 
     function hayModalAbierto() {
-      return ['modalNueva', 'modalMaterialObra', 'modalDetalle', 'modalExportar', 'modalExportarMateriales']
+      return ['modalNueva', 'modalMaterialObra', 'modalDetalle', 'modalExportar', 'modalExportarMateriales', 'modalCita', 'modalPuntos']
         .some(id => document.getElementById(id)?.classList.contains('visible'));
     }
 
     let _refrescoTrasModal = false;
+
+    // Comprueba si hay un refresco pendiente (llegó un cambio realtime mientras
+    // había un modal abierto) y lo aplica en cuanto ya no queda ninguno abierto.
+    // La llaman tanto cerrarModal() como cualquier cierre de modal "especial"
+    // (p.ej. cerrarModalCita) que no pasa por cerrarModal().
+    function aplicarRefrescoTrasModalSiToca() {
+      if (_refrescoTrasModal && !hayModalAbierto()) {
+        _refrescoTrasModal = false;
+        cargarDatos();
+        toast('Datos actualizados por un compañero');
+      }
+    }
 
     function solicitarRefresco(origenTabla) {
       // Agrupa varios cambios seguidos (p.ej. una inserción con notificación)
@@ -2119,7 +2260,7 @@
       ]
     };
     // Una factura está "revisada" cuando TODOS sus campos de revisión están marcados
-function estaTotalmenteRevisada(tabla, f) {
+    function estaTotalmenteRevisada(tabla, f) {
       const campos = CAMPOS_REVISION[tabla];
       return !!campos && campos.every(c => !!f[c.campo] || !!f[c.campo.replace('revisado_', 'no_corresponde_')]);
     }
@@ -2656,6 +2797,7 @@ function estaTotalmenteRevisada(tabla, f) {
 
     function cerrarModalCita() {
       document.getElementById('modalCita').classList.remove('visible');
+      aplicarRefrescoTrasModalSiToca();
     }
 
     function mostrarReprogramarCalendario(id) {
@@ -5855,11 +5997,7 @@ function estaTotalmenteRevisada(tabla, f) {
     function cerrarModal(id) {
       document.getElementById(id).classList.remove('visible');
 
-      if (_refrescoTrasModal && !hayModalAbierto()) {
-        _refrescoTrasModal = false;
-        cargarDatos();
-        toast('Datos actualizados por un compañero');
-      }
+      aplicarRefrescoTrasModalSiToca();
 
       if (id === 'modalNueva') {
         modalDestinoTabla = null;
