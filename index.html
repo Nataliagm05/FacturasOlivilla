@@ -201,7 +201,7 @@
       gap: 6px;
     }
 
-    
+
     .btn-nav:hover {
       border-color: #b53987;
       color: #f386cc;
@@ -3319,7 +3319,8 @@
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Imputar</th><th></th><th></th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Imputar</th><th>Impreso</th><th></th><th></th>
+      
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
       <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
@@ -3333,7 +3334,7 @@
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(34, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(35, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -3349,6 +3350,7 @@
               ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
       <option value="">${f.numeros_albaran.length} albarán${f.numeros_albaran.length > 1 ? 'es' : ''}</option>
       ${f.numeros_albaran.map(n => `<option value="${n}">${n}</option>`).join('')}
+      
     </select>`
               : '—'}</td>
         <td class="num-cell">${fmtN(f.base1)}</td>
@@ -3375,7 +3377,7 @@
     ${f.imputado ? '<i class="fa-solid fa-rotate-left me-1"></i>Quitar imputación' : '<i class="fa-solid fa-ban me-1"></i>Imputar'}
   </button>
 </td>
-
+<td>${celdaImpreso(f, 'facturas_almacen')}</td>
 <td style="white-space:nowrap">
   <button
     class="btn-toggle-pago pendiente"
@@ -3429,7 +3431,7 @@
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th></th><th>Editar</th><th>Acción</th><th>Imputar</th><th></th><th></th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th></th><th>Editar</th><th>Acción</th><th>Imputar</th><th>Impreso</th><th></th><th></th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
       <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
@@ -3453,7 +3455,7 @@
         } else {
           resumenEl.style.display = 'none';
         }
-        if (!lista.length) { bdy.innerHTML = emptyRow(36, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(37, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -3497,7 +3499,7 @@
     ${f.imputado ? '<i class="fa-solid fa-rotate-left me-1"></i>Quitar imputación' : '<i class="fa-solid fa-ban me-1"></i>Imputar'}
   </button>
 </td>
-
+<td>${celdaImpreso(f, 'facturas_obra')}</td>
 <td style="white-space:nowrap">
   <button class="btn-toggle-pago pendiente" style="margin-bottom:4px"
   onclick="moverFactura(${f.id},'facturas_obra','facturas_almacen')">
@@ -3545,7 +3547,7 @@
       <th>Nº Factura</th><th>Concepto</th>
       <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
-      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Imputar</th><th></th><th></th>
+      <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Imputar</th><th>Impreso</th><th></th><th></th>
       <th class="pct-cell">%RE1</th><th class="num-cell">RE1</th>
       <th class="num-cell">Tasas</th>
       <th class="num-cell">Base 2</th><th class="pct-cell">%IVA2</th><th class="num-cell">IVA2</th>
@@ -3559,7 +3561,7 @@
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(34, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(35, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -3601,7 +3603,7 @@
     ${f.imputado ? '<i class="fa-solid fa-rotate-left me-1"></i>Quitar imputación' : '<i class="fa-solid fa-ban me-1"></i>Imputar'}
   </button>
 </td>
-
+<td>${celdaImpreso(f, 'facturas_csg')}</td>
 <td style="white-space:nowrap">
   <button
     class="btn-toggle-pago pendiente"
@@ -4079,6 +4081,32 @@
         actualizarStats(); renderAlertas(); renderTabla();
         toast(!actual ? 'Factura marcada como <strong>IMPUTADA</strong>' : 'Se ha quitado la imputación de la factura');
       } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
+
+    async function toggleImpreso(id, actual, tabla) {
+      if (currentPersona !== 'cynthia') {
+        alert("Solo Cynthia puede marcar esta casilla.");
+        return;
+      }
+      try {
+        await apiPatch(tabla, id, { impreso: !actual });
+        const reg = registros.find(r => r.id === id && (r.origen ? r.origen === tabla : true));
+        if (reg) reg.impreso = !actual;
+        renderTabla();
+      } catch (e) {
+        toast('Error: ' + e.message, 'err');
+      }
+    }
+
+    function celdaImpreso(f, tabla) {
+      const activo = !!f.impreso;
+      const esMia = currentPersona === 'cynthia';
+      const estilo = `${esMia ? '' : 'opacity:.5;cursor:not-allowed'}`;
+      const tip = esMia ? '' : `title="Solo Cynthia puede marcar esta casilla"`;
+      return `<button class="btn-toggle-facturado ${activo ? 'si' : 'no'}" style="${estilo}" ${tip}
+    onclick="toggleImpreso(${f.id},${activo},'${tabla}')">
+    <i class="fa-solid fa-print me-1"></i>${activo ? 'Impreso' : 'Sin imprimir'}
+  </button>`;
     }
 
     async function toggleFacturado(id, actual) {
