@@ -1678,6 +1678,27 @@
         padding: 7px 8px;
       }
     }
+
+
+
+
+
+    /* BARRA */
+    .barra-scroll-fija {
+      position: fixed;
+      bottom: 0;
+      height: 14px;
+      overflow-x: scroll;
+      overflow-y: hidden;
+      background: #fff;
+      border-top: 1.5px solid #ede5f5;
+      z-index: 300;
+      display: none;
+    }
+
+    .barra-scroll-fija #barraScrollFijaInner {
+      height: 1px;
+    }
   </style>
 </head>
 
@@ -2041,6 +2062,9 @@
   </div>
   <div class="toast-wrap" id="toastWrap"></div>
   <datalist id="dl_productos"></datalist>
+  <div class="barra-scroll-fija" id="barraScrollFija">
+    <div id="barraScrollFijaInner"></div>
+  </div>
 
   <script>
     const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
@@ -2624,7 +2648,7 @@
         sel.innerHTML = `<option value="">Todos</option>`;
         sp.placeholder = sec === 'clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
       }
-      return cargarDatos();
+      return cargarDatos().then(() => actualizarBarraScrollFija());
     }
 
     // ── CALENDARIO DE PAGOS ───────────────────────────────────
@@ -3272,7 +3296,44 @@
 
 
 
+    function actualizarBarraScrollFija() {
+      const wrap = document.getElementById('tablaWrapEl');
+      const barra = document.getElementById('barraScrollFija');
+      const inner = document.getElementById('barraScrollFijaInner');
+      if (!wrap || !barra || !inner) return;
 
+      // Si no hay overflow horizontal, o estamos en una sección sin tabla (calendario), ocultamos la barra
+      if (tablaActual === 'calendario_pagos' || wrap.scrollWidth <= wrap.clientWidth) {
+        barra.style.display = 'none';
+        return;
+      }
+
+      inner.style.width = wrap.scrollWidth + 'px';
+      barra.style.display = 'block';
+
+      // Alineamos la barra fija con la posición y ancho reales de la tabla en pantalla
+      const rect = wrap.getBoundingClientRect();
+      barra.style.left = rect.left + 'px';
+      barra.style.width = rect.width + 'px';
+    }
+
+    let _sincronizandoScroll = false;
+    document.getElementById('barraScrollFija').addEventListener('scroll', () => {
+      if (_sincronizandoScroll) return;
+      _sincronizandoScroll = true;
+      document.getElementById('tablaWrapEl').scrollLeft = document.getElementById('barraScrollFija').scrollLeft;
+      _sincronizandoScroll = false;
+    });
+
+    document.getElementById('tablaWrapEl').addEventListener('scroll', () => {
+      if (_sincronizandoScroll) return;
+      _sincronizandoScroll = true;
+      document.getElementById('barraScrollFija').scrollLeft = document.getElementById('tablaWrapEl').scrollLeft;
+      _sincronizandoScroll = false;
+    });
+
+    window.addEventListener('resize', actualizarBarraScrollFija);
+    window.addEventListener('scroll', actualizarBarraScrollFija);
 
 
 
@@ -3297,7 +3358,7 @@
       if (tablaActual === 'clasificacion') {
         hdr.innerHTML = `<tr><th>Recibido</th><th>Remitente</th><th>Asunto</th><th>Archivo</th><th>Clasificar como</th><th></th></tr>`;
         const lista = registros.filter(f => [f.remitente, f.asunto].some(v => (v || '').toLowerCase().includes(q)));
-        if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay facturas pendientes de clasificar'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay facturas pendientes de clasificar'); actualizarBarraScrollFija(); return; }
         bdy.innerHTML = lista.map(f => `<tr>
         <td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
         <td class="td-nombre">${f.remitente || '—'}</td>
@@ -3902,7 +3963,8 @@
       </tr>`;
         }).join('');
 
-      }
+     }
+      actualizarBarraScrollFija(); 
     }
     async function sumarStock(id) {
 
