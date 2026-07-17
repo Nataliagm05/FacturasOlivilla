@@ -361,7 +361,7 @@
       color: #c47a00;
     }
 
-    /* DATOS FACTURA ENCIMA O AL LADO Y FACTURA ABIERTA DEBAJO O AL LADO Y TODOS LOS COMPLEMENTOS DE MINIMIZAR, MAXIMIZAR, DESCARGAR.... */
+    /* DATOS FACTURA/ALBARÁN ENCIMA O AL LADO Y FACTURA/ALBARÁN ABIERTA DEBAJO O AL LADO Y TODOS LOS COMPLEMENTOS DE MINIMIZAR, MAXIMIZAR, DESCARGAR.... */
     .visor-pdf {
       flex: 0 0 44%;
       max-width: 44%;
@@ -591,10 +591,6 @@
     }
 
 
-
-
-
-    /* TABLAS */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -779,8 +775,7 @@
       color: #fff;
     }
 
-
-
+    /* VARIOS ARCHIVOS EN LAS FACTURAS */
     .archivos-lista {
       display: flex;
       flex-wrap: wrap;
@@ -923,7 +918,7 @@
       color: #fff;
     }
 
-    /* AUTOCOMPLETAR */
+    /* AUTOCOMPLETAR PROVEEDOR Y NIF TAMBIÉN EN ALBARÁN */
     .ac-wrap {
       position: relative;
     }
@@ -977,9 +972,9 @@
 
 
 
-    /* MODAL NUEVO REGISTRO */
 
-    /* MODALES */
+
+    /* TODOS LOS MODALES */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -1070,6 +1065,60 @@
       }
     }
 
+    .modal-box h3,
+    .modal-box-sm h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #4a3b68;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* BOTONES DE CANCELAR Y GUARDAR/EXPORTAR EN LOS MODALES */
+    .modal-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-cancelar {
+      background: transparent;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: .88rem;
+      color: #888;
+      cursor: pointer;
+    }
+
+    .btn-cancelar:hover {
+      border-color: #b53987;
+      color: #b53987;
+    }
+
+    .btn-guardar {
+      background: #b53987;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 20px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-guardar:hover {
+      background: #4a3b68;
+    }
+
+
+
+
 
     /* MODAL CITA, COMPRA CLIENTE, MATERIAL OBRA, EXPORTAR MATERIAL OBRA Y EXPORTAR EXCEL */
     .modal-box-sm {
@@ -1083,19 +1132,6 @@
     }
 
 
-
-
-    /* MODALES*/
-    .modal-box h3,
-    .modal-box-sm h3 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #4a3b68;
-      margin-bottom: 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
 
 
     /* CAMPOS PARA EL EXCEL, MODAL NUEVO REGISTRO EN FACTURAS ALMACEN/OBRA/CSG*/
@@ -1114,6 +1150,8 @@
     }
 
 
+
+
     /* MODAL NUEVO REGRISTRO EN CLASIFICACION, ALBARÁN, CLIENTE, PRESUPUESTO, INVENTARIO, NUEVA OBRA*/
     .form-grid-2 {
       display: grid;
@@ -1124,6 +1162,8 @@
     .form-grid-2 .span2 {
       grid-column: span 2;
     }
+
+
 
 
 
@@ -1165,6 +1205,9 @@
     }
 
 
+
+
+
     /* MODAL COMPRA CLIENTE TITULO DE PRODUCTOS COMPRADOS, MOOAL MATERIAL OBRA MATERIALES QUE SE LLEVA, CAMPOS EXCEL PAGO-BASES E IVA-RETENCION, DATOS PRINCIPALES, REVISION Y PRODUCTOS RECIBIDOS EN AÑADIR UNA FACTURA*/
     .form-seccion {
       font-size: .72rem;
@@ -1184,46 +1227,7 @@
     }
 
 
-    /* TODOS LOS MODALES */
-    /* BOTONES DE CANCELAR Y GUARDAR/EXPORTAR EN LOS MODALES */
-    .modal-btns {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 1.5rem;
-      flex-wrap: wrap;
-    }
 
-    .btn-cancelar {
-      background: transparent;
-      border: 1.5px solid #ddd;
-      border-radius: 8px;
-      padding: 9px 18px;
-      font-size: .88rem;
-      color: #888;
-      cursor: pointer;
-    }
-
-    .btn-cancelar:hover {
-      border-color: #b53987;
-      color: #b53987;
-    }
-
-    .btn-guardar {
-      background: #b53987;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 20px;
-      font-size: .88rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background .2s;
-    }
-
-    .btn-guardar:hover {
-      background: #4a3b68;
-    }
 
 
     /* MODAL MATERIAL COMPRA, MATERIAL OBRA*/
@@ -1347,7 +1351,14 @@
 
 
 
+
+
+
     /* CALENDARIO */
+
+
+
+
     .cal-header {
       display: flex;
       align-items: center;
@@ -1441,7 +1452,7 @@
     }
 
 
-    /*  */
+    /* AVISOS DENTRO DEL CALENDARIO */
     .cal-chips {
       display: flex;
       flex-direction: column;
@@ -1503,7 +1514,6 @@
       font-style: italic;
       opacity: .85;
     }
-
 
 
     /* LEYENDA DE COLORES */
@@ -1682,6 +1692,8 @@
 
 
     /* BARRA */
+
+    
     .barra-scroll-fija {
       position: fixed;
       bottom: 0;
