@@ -3149,17 +3149,7 @@
         return;
       }
 
-      // En pantallas pequeñas, mostramos el archivo justo debajo de la fila pulsada
-      // en vez del panel lateral (que en móvil queda al final de toda la tabla).
-      if (window.innerWidth <= 1100) {
-        mostrarVisorPdfMovil(url, titulo);
-        return;
-      }
-
-      document.getElementById('visorPdf').style.display = 'flex';
-      document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
-      document.getElementById('visorPdfNueva').href = url;
-      renderVisorContenido('visorPdfContenido', url);
+      mostrarVisorPdfMovil(url, titulo);
     }
 
     function mostrarVisorPdfMovil(url, titulo) {
@@ -3963,8 +3953,8 @@
       </tr>`;
         }).join('');
 
-     }
-      actualizarBarraScrollFija(); 
+      }
+      actualizarBarraScrollFija();
     }
     async function sumarStock(id) {
 
