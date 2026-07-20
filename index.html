@@ -1771,10 +1771,10 @@
 
 
 
- 
+
     /* BARRA */
 
-    
+
     .barra-scroll-fija {
       position: fixed;
       bottom: 0;
@@ -1830,7 +1830,8 @@
       <h2>¿A dónde quieres ir?</h2>
       <p>Elige el panel que quieres abrir</p>
       <div class="selector-grid" id="selectorGrid"></div>
-      <button class="selector-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
+      <button class="selector-salir" onclick="doLogout()"><i
+          class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
     </div>
   </div>
 
@@ -1867,7 +1868,8 @@
             class="fa-solid fa-boxes-stacked"></i>Material Obra</button>
       </div>
       <span id="usuarioConectado" style="color:#fff;opacity:.85;font-size:.85rem;margin-right:10px"></span>
-      <button class="btn-salir" onclick="volverAlPanel()" style="margin-right:8px"><i class="fa-solid fa-grip me-1"></i>Panel</button>
+      <button class="btn-salir" onclick="volverAlPanel()" style="margin-right:8px"><i
+          class="fa-solid fa-grip me-1"></i>Panel</button>
       <button class="btn-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
     </div>
 
@@ -2168,43 +2170,57 @@
   </div>
 
   <script>
+
+
+
+    // CONFIGURACIÓN DE SUPABASE Y AUTENTICACIÓN 
+
+
     const SUPABASE_URL = 'https://ppezngdpumbbqpkalpyx.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZXpuZ2RwdW1iYnFwa2FscHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjcyMjcsImV4cCI6MjA5Njc0MzIyN30.xN184O-BUkawOrwv-U2_kD5nE7kP3kdkfKwFSsl8Jbs';
-    const CITAS_PANEL_PASSWORD = 'citas'; // misma que usa reprogramar-cita
-    // ── AUTENTICACIÓN (Supabase Auth) ──────────────────────────
-    // Cada persona tiene una cuenta real en Supabase Auth. Usamos un
-    // email "interno" por persona (no hace falta que reciba correos,
-    // solo sirve como identificador de login) y su contraseña propia.
-    // La identidad real (currentPersona) se obtiene siempre de la
-    // tabla 'perfiles', nunca de lo que el usuario elige en pantalla,
-    // así no hay forma de suplantar a otra persona aunque se manipule
-    // el HTML.
-    // Email real de cada persona en Supabase Auth (tal y como se crearon
-    // en el Dashboard). Juan David aún no tiene cuenta creada — cuando la
-    // crees, actualiza este email por el real.
+    const CITAS_PANEL_PASSWORD = 'citas';
+
+
+    // AUTENTICACIÓN
+
+
+    // Cada persona tiene una cuenta real en Supabase Auth.
     const EMAILS_PERSONAS = {
       cynthia: 'cynthiagomez@olivillatres.com',
       angel: 'angelperez@olivillatres.com',
       emilio: 'efernandez@olivillatres.com',
       jose: 'jose@olivillatres.com',
       juandavid: 'juandavid@olivillatres.com', // ⚠️ pendiente de crear en Supabase
-      natalia: 'natalia.gm@olivillatres.com' // ⚠️ pon aquí el email real que uses al crear tu cuenta en Supabase Auth
+      natalia: 'natalia.gm@olivillatres.com'
     };
+
+
+    // SEGÚN LA PERSONA QUE SEA EN EL SELECTOR DE LOGIN, MIRA SI ESE NOMBRE ES DE LOS QUE TENEMOS EN SUPABASE O NO 
     function emailDePersona(persona) {
       return EMAILS_PERSONAS[persona] || (persona + '@olivillatres.com');
     }
 
-    let currentPersona = null; // se rellena tras iniciar sesión, a partir de 'perfiles'
+    // INICIA LA PERSONA QUE ESTA USANDO LA PAGINA EN ESE MOMENTO
+    let currentPersona = null;
+
+
 
     async function cargarPerfilActual() {
+      // Va a supabase a ver si hay alguien logueado con ese nombre y contraseña y devuelve su perfil y lo guarda en user
       const { data: { user } } = await supabaseClient.auth.getUser();
+      // Ve si esa persona es la que esta hasta ahora logueada, si no lo es, devuelve null y borra currentPersona
       if (!user) { currentPersona = null; return null; }
+      // Si había un usuario y coinciden, va a supabase y guarda su perfil (de la tabla de perfiles de supabase coge el nombre) y un error por siacaso 
       const { data: perfil, error } = await supabaseClient
         .from('perfiles')
         .select('persona')
+        // Mira que el id del usuario de la tabla de perfiles de supabase coincida con el id del perfil que hay en el paso de autenticación
         .eq('id', user.id)
+        // solo quiere un perfil, no una lista de perfiles
         .single();
+      // si no se encuentra el perfil o hay un error, devuelve null y borra a la persona que había logueado en un principio
       if (error || !perfil) { console.error('[auth] no se pudo cargar el perfil', error); currentPersona = null; return null; }
+      // si no, guarda el perfil de la persona que ha iniciado sesión en currentPersona y lo devuelve para que salga en el panel, etc.
       currentPersona = perfil.persona;
       return currentPersona;
     }
@@ -2214,18 +2230,67 @@
     // incluyen el token de sesión de la persona conectada, para que Supabase
     // sepa quién es auth.uid() y pueda aplicar las restricciones de seguridad
     // por columna (ver trigger proteger_columnas_revisado en el SQL).
+    // Esta función mira si hay una persona que ha iniciado sesión, lo guarda en session y convalida que tenga las claves privadas 
     async function authHeaders() {
+      // ve si una persona ha iniciado sesión y guarda sus datos en session
       const { data: { session } } = await supabaseClient.auth.getSession();
       return {
+        // comprueba primero si se sabe la contraseña publica
         'apikey': SUPABASE_KEY,
+        // aqui se comprueba si hay una sesión activa y si no, ve si usa la clave publica
         'Authorization': 'Bearer ' + (session?.access_token || SUPABASE_KEY),
         'Content-Type': 'application/json',
         'Prefer': 'return=representation'
       };
     }
 
-    // ── REALTIME: mantener el panel al día cuando otro compañero
+    // funcion para ver la contraseña en el login
+    function togglePwd() {
+      const input = document.getElementById('pwdF'); // busca la caja donde se pone la contraseña
+      const icon = document.getElementById('pwdToggleIcon');  // busca el icono del ojito
+      const btn = document.getElementById('pwdToggleBtn'); // busca el boton que tiene el ojito
+      const visible = input.type === 'text'; // revisa si lo de la caja es texto
+      input.type = visible ? 'password' : 'text'; // si era visible la oculta en puntitos, si no, la desoculta y deja ver el texto
+      // añaden o quitan la raya que tacha el ojo si esta o no visible
+      icon.classList.toggle('fa-eye', visible); 
+      icon.classList.toggle('fa-eye-slash', !visible);
+      btn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña'); // por si hay algun problema y no sale el ojo
+    }
+
+    async function doLogin() {
+      document.getElementById('loginErr').style.display = 'none';  // busca en el inicio de sesión y quita el error
+      const persona = document.getElementById('loginPersona').value;  //va al desplegable de incicio de sesion y mira quien es selecionado
+      const password = document.getElementById('pwdF').value;  // coge la contraseña de la caja
+      const { error } = await supabaseClient.auth.signInWithPassword({ // guarda en er
+        email: emailDePersona(persona),
+        password
+      });
+      if (error) {
+        document.getElementById('loginErr').style.display = 'block';
+        return;
+      }
+      await cargarPerfilActual();
+      if (!currentPersona) {
+        document.getElementById('loginErr').style.display = 'block';
+        await supabaseClient.auth.signOut();
+        return;
+      }
+      document.getElementById('pwdF').value = '';
+      entrarEnApp();
+    }
+
+
+
+
+
+    //  REALTIME
+
+
+
+
+
     // añade, edita o borra algo, sin tener que recargar la página ──
+    // Guarda el enlace de la base y la clave de acceso para poder conectarse a Supabase Realtime y escuchar los cambios en las tablas que nos interesan.
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // Tablas que afectan a lo que se ve en pantalla ahora mismo
@@ -2234,61 +2299,63 @@
       'albaranes', 'clientes', 'inventario', 'proveedores', 'materiales_obra', 'citas'
     ];
 
-    let _refrescoPendiente = null;
+    let _refrescoPendiente = null;  // Crea una variable vacia para guardar el temporizador de refresco, para que no se ejecute varias veces seguidas si llegan varios cambios en poco tiempo.
 
+    // Primero mira si hay un modal abierto, y si lo hay, no hace nada (para no romper lo que se está editando en ese momento).
     function hayModalAbierto() {
       return ['modalNueva', 'modalMaterialObra', 'modalDetalle', 'modalExportar', 'modalExportarMateriales', 'modalCita', 'modalPuntos']
-        .some(id => document.getElementById(id)?.classList.contains('visible'));
+        // Mira si hay un modal abierto de la lista annterior y si hay uno o más responde true, si no, responde false
+        .some(id => document.getElementById(id)?.classList.contains('visible')); // para cada id de la lista a revisar (document.getElementById(id) busca en la pagina exactamente el que tenga ese nombre) Mira si existe, si no sigue adelante, y si existe mira si esta visible
     }
 
     let _refrescoTrasModal = false;
 
     // Comprueba si hay un refresco pendiente (llegó un cambio realtime mientras
     // había un modal abierto) y lo aplica en cuanto ya no queda ninguno abierto.
-    // La llaman tanto cerrarModal() como cualquier cierre de modal "especial"
-    // (p.ej. cerrarModalCita) que no pasa por cerrarModal().
+    // La llaman tanto cerrarModal() como por cerrarModalCita().
     function aplicarRefrescoTrasModalSiToca() {
-      if (_refrescoTrasModal && !hayModalAbierto()) {
+      if (_refrescoTrasModal && !hayModalAbierto()) { // si hay un refresco pendiente y no hay modales abiertos, aplica el refresco
         _refrescoTrasModal = false;
         cargarDatos();
-        toast('Datos actualizados por un compañero');
+        toast('Datos actualizados');
       }
     }
 
     function solicitarRefresco(origenTabla) {
-      // Agrupa varios cambios seguidos (p.ej. una inserción con notificación)
+      // Agrupa varios cambios seguidos
       // en un único refresco, y evita tocar los datos si hay un modal abierto
-      // (para no romper lo que se está editando en ese momento).
-      if (hayModalAbierto()) {
+      if (hayModalAbierto()) {  // si hay un modal abierto, no hace nada y guarda que hay un refresco pendiente
         _refrescoTrasModal = true;
-        toast('Hay cambios nuevos de un compañero — se aplicarán al cerrar este formulario', 'ok');
+        toast('Hay cambios nuevos — se aplicarán al cerrar este formulario', 'ok');
         return;
       }
 
-      clearTimeout(_refrescoPendiente);
-      _refrescoPendiente = setTimeout(() => {
+      clearTimeout(_refrescoPendiente); // se prepara para refrescar los datos, pero espera 600ms para ver si llegan más cambios y no refrescar varias veces seguidas
+      _refrescoPendiente = setTimeout(() => { // se inicia un nuevo temporizador de 600ms para refrescar los datos
         cargarDatos();
-        toast('Datos actualizados por un compañero', 'ok');
-      }, 600);
+        toast('Datos actualizados', 'ok');
+      }, 600); //El 600 es el tiempo exacto se queda esperando con el cronómetro. Si en esos 600 milisegundos no entra ningún aviso nuevo, ejecuta la actualización. Si entra un aviso nuevo, la línea de arriba (clearTimeout) reiniciará la espera.
     }
 
 
     function iniciarRealtime() {
-      const canal = supabaseClient.channel('panel-cambios');
+      const canal = supabaseClient.channel('panel-cambios'); // Crea un canal de comunicación en tiempo real
+      //El código le dice a Supabase: "Quiero crear una estación de radio privada o frecuencia exclusiva". A esta frecuencia le pone el nombre de 'panel-cambios'. 
+      //A partir de ahora, cualquier aviso viajará a través de la variable canal
 
-      TABLAS_REALTIME.forEach(tabla => {
-        canal.on(
+      TABLAS_REALTIME.forEach(tabla => { // Va uno por uno recorriendo los nombres de esa lista. Para cada tabla de la lista, hace lo siguiente
+        canal.on( // sincroniza todo
           'postgres_changes',
-          { event: '*', schema: 'public', table: tabla },
-          (payload) => {
-            console.log('[realtime] cambio recibido en', tabla, payload);
+          { event: '*', schema: 'public', table: tabla }, // te avisa por cualquier cambio en la tabla
+          (payload) => { //Esto inicia la acción que se va a ejecutar de forma automática cada vez que la alarma suene. 
+            console.log('[realtime] cambio recibido en', tabla, payload); // los cambios que se producen en la tabla se muestran en la consola del navegador
             solicitarRefresco(tabla);
           }
         );
       });
 
-      canal.subscribe((status, err) => {
-        console.log('[realtime] estado de la suscripción:', status, err || '');
+      canal.subscribe((status, err) => { // enciende el canal y ve el estado y los errores
+        console.log('[realtime] estado de la suscripción:', status, err || ''); // pone en el navegador el estado de la suscripción y los errores que haya
         if (status === 'SUBSCRIBED') {
           console.log('[realtime] conectado correctamente, escuchando:', TABLAS_REALTIME.join(', '));
         }
@@ -2298,14 +2365,12 @@
       });
     }
 
-    let tablaActual = 'clasificacion';
 
-    // 'clasificacion' es la clave interna de la sección; la tabla real es 'facturas_pendientes'
-    function tablaReal(t) { return t === 'clasificacion' ? 'facturas_pendientes' : t === 'presupuestos' ? 'presupuestos_seguimiento' : t; }
-    let modalDestinoTabla = null;   // tabla destino del modal "Nuevo registro" (puede diferir de tablaActual)
-    let modalEditId = null;   // id del registro que se está editando (null = modo "nuevo")
-    let archivosAlbaranSeleccionados = []; // [{url, nombre}] — archivos adjuntos al albarán en el modal actual
-    let archivosFacturaSeleccionados = []; // [{url, nombre}] — archivos adjuntos a la factura en el modal actual
+
+
+
+
+    //  PERSONAS CON ACCESO A CADA SECCIÓN Y ACCESOS
 
     // Qué personas pueden entrar en cada sección restringida.
     // (Se comprueba contra 'currentPersona', la identidad real obtenida
@@ -2321,6 +2386,39 @@
       calendario_pagos: ['cynthia', 'angel', 'emilio', 'juandavid']
     };
 
+    // Personas con acceso EXCLUSIVO a una lista concreta de secciones
+    // (en vez de "todo menos lo restringido", ven solo esto).
+    const ACCESO_EXCLUSIVO = {
+      jose: ['clientes', 'inventario', 'materiales_obra']
+    };
+
+    const PERSONAS_ACCESO_TOTAL = ['natalia'];
+
+    function tieneAccesoSeccion(persona, sec) {
+      if (PERSONAS_ACCESO_TOTAL.includes(persona)) return true; // Mira si la persona que ha entrado, esta en esa lista o no
+      if (ACCESO_EXCLUSIVO[persona]) return ACCESO_EXCLUSIVO[persona].includes(sec); // mira si estas en la lista de exclusivos, si estas, y mira si esa persona puede entrar en esa seccion o no
+      const restringida = ACCESO_SECCIONES[sec]; //guarda en restringido las secciones y las personas correspondientes a esas secciones 
+      return !restringida || restringida.includes(persona); // si la sala no esta restringida, o si lo esta pero eres una de las personas que esta en esa lista, devuelve true, si no estas en la lista o es restringida, devuelve false y no tienes acceso
+    }
+
+
+
+
+
+
+    // CLASIFICACIÓN
+
+    let tablaActual = 'clasificacion';
+
+    // 'clasificacion' es la clave interna de la sección; la tabla real es 'facturas_pendientes'
+    function tablaReal(t) { return t === 'clasificacion' ? 'facturas_pendientes' : t === 'presupuestos' ? 'presupuestos_seguimiento' : t; }
+    let modalDestinoTabla = null;   // tabla destino del modal "Nuevo registro" (puede diferir de tablaActual)
+    let modalEditId = null;   // id del registro que se está editando (null = modo "nuevo")
+    let archivosAlbaranSeleccionados = []; // [{url, nombre}] — archivos adjuntos al albarán en el modal actual
+    let archivosFacturaSeleccionados = []; // [{url, nombre}] — archivos adjuntos a la factura en el modal actual
+
+
+
     // Todas las secciones que existen en el menú.
     const TODAS_LAS_SECCIONES = [
       'clasificacion', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
@@ -2329,7 +2427,6 @@
     ];
 
     // Nombre, icono y si muestra tarjetas de estadísticas, por sección.
-    // (Se usa tanto en cambiarSeccion() como en el selector de panel tras el login.)
     const SECCIONES_INFO = {
       clasificacion: ['Bandeja de Clasificación', 'fa-inbox', false],
       facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
@@ -2345,33 +2442,12 @@
       materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false]
     };
 
-    // Personas con acceso EXCLUSIVO a una lista concreta de secciones
-    // (en vez de "todo menos lo restringido", ven solo esto).
-    const ACCESO_EXCLUSIVO = {
-      jose: ['clientes', 'inventario', 'materiales_obra']
-    };
 
-    // Personas con acceso TOTAL a todas las secciones (ven todo, sin restricciones
-    // de sección). No confundir con poder "autorizar": las casillas de revisado
-    // siguen atadas al nombre exacto de cada persona en CAMPOS_REVISION, así que
-    // aunque tengan acceso total no podrán marcar ninguna casilla de revisión
-    // salvo que se cree un campo 'revisado_<persona>' expresamente para ellas.
-    const PERSONAS_ACCESO_TOTAL = ['natalia'];
 
-    function tieneAccesoSeccion(persona, sec) {
-      if (PERSONAS_ACCESO_TOTAL.includes(persona)) return true;
-      if (ACCESO_EXCLUSIVO[persona]) return ACCESO_EXCLUSIVO[persona].includes(sec);
-      const restringida = ACCESO_SECCIONES[sec];
-      return !restringida || restringida.includes(persona);
-    }
-
-    function primeraSeccionPermitida(persona) {
-      return TODAS_LAS_SECCIONES.find(sec => tieneAccesoSeccion(persona, sec)) || 'clasificacion';
-    }
     let registros = [];
     let inventarioDB = [];
     let clientesDB = [];
-    let proveedoresDB = [];   // ← fuente principal para autocompletado de empresa/proveedor
+    let proveedoresDB = [];
     let clienteSelId = null;
     let clienteSelPuntos = 0;
     let lineasCompraCount = 0;
@@ -2385,7 +2461,15 @@
 
 
 
-    // Campos de revisión (checks) por cada tabla de facturas, en el mismo orden en que se pintan
+
+
+
+
+
+    // REVISIÓN 
+
+
+    // Campos de revisión por cada tabla de facturas, en el mismo orden en que se pintan
     const CAMPOS_REVISION = {
       facturas_almacen: [
         { campo: 'revisado_cynthia', nombre: 'Cynthia' },
@@ -2402,6 +2486,8 @@
         { campo: 'revisado_emilio', nombre: 'Emilio' }
       ]
     };
+
+
     // Una factura está "revisada" cuando TODOS sus campos de revisión están marcados
     function estaTotalmenteRevisada(tabla, f) {
       const campos = CAMPOS_REVISION[tabla];
@@ -2429,53 +2515,65 @@
       return `<tr><td colspan="${cols}"><div class="empty-state"><i class="fa-solid fa-folder-open"></i>${msg}</div></td></tr>`;
     }
 
-    // ── AUTH ──────────────────────────────────────────────────
-    function aplicarPermisosMenu() {
-      document.querySelectorAll('.btn-nav').forEach(btn => {
-        const m = (btn.getAttribute('onclick') || '').match(/cambiarSeccion\('([^']+)'\)/);
-        if (!m) return;
-        btn.style.display = tieneAccesoSeccion(currentPersona, m[1]) ? '' : 'none';
+
+
+
+
+
+
+
+
+
+    // PANEL
+
+
+
+    function aplicarPermisosMenu() { // creo que no es necesaria
+      document.querySelectorAll('.btn-nav').forEach(btn => { // Busca en todo el documento aquello que tenga .btn-nav y para cada uno hace
+        const m = (btn.getAttribute('onclick') || '').match(/cambiarSeccion\('([^']+)'\)/); // coge el onclick del boton es decir, lo que tine que pasar cuando le clicas, coge de esa funcion que dice lo que hacer cuando le das, lo que hay entre comillas y lo guarda en m
+        if (!m) return; // Si no tiene onclick lo ignora y pasa al siguiente
+        btn.style.display = tieneAccesoSeccion(currentPersona, m[1]) ? '' : 'none'; // Mira si tiene acceso a esa seccion a la que quiere cambiar, si lo tiene, se queda vacio, si no desaparece el boton 
       });
-      const badge = document.getElementById('usuarioConectado');
-      if (badge) badge.textContent = currentPersona ? ('Conectado como ' + (NOMBRES_PERSONAS[currentPersona] || currentPersona)) : '';
+      const badge = document.getElementById('usuarioConectado'); // ahora busca en toda la pagina al usuario conectado y lo guarda en badge
+      if (badge) badge.textContent = currentPersona ? ('Conectado como ' + (NOMBRES_PERSONAS[currentPersona] || currentPersona)) : ''; // si existe, mira si hay una persona conectado y pone quien es
     }
 
     let cachesIniciales = null; // Promise compartida para no recargar cachés al volver al selector
     let realtimeIniciado = false;
 
     async function entrarEnApp() {
-      document.getElementById('loginView').style.display = 'none';
-      document.getElementById('appView').style.display = 'none';
-      if (!cachesIniciales) {
-        cachesIniciales = Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()]);
+      document.getElementById('loginView').style.display = 'none';  // oculta la pagina de logi
+      document.getElementById('appView').style.display = 'none';  // y el panel
+      if (!cachesIniciales) { // mira si es la primera vez que entra y no hay datos guardados 
+        cachesIniciales = Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()]); // descarga las tres listas
       }
       await cachesIniciales;
-      mostrarSelectorPanel();
+      mostrarSelectorPanel(); // muestra el panel
     }
 
     // Pinta las tarjetas del panel según las secciones a las que tiene acceso currentPersona
     function mostrarSelectorPanel() {
-      const grid = document.getElementById('selectorGrid');
-      grid.innerHTML = TODAS_LAS_SECCIONES
-        .filter(sec => tieneAccesoSeccion(currentPersona, sec))
-        .map(sec => {
-          const [tit, ico] = SECCIONES_INFO[sec];
+      const grid = document.getElementById('selectorGrid'); // guarda en grid lo que se llame como selectorGrid
+      grid.innerHTML = TODAS_LAS_SECCIONES  // de todas las secciones hace un boton 
+        .filter(sec => tieneAccesoSeccion(currentPersona, sec)) //pasa el filtro de los que tienen acceso o no a la sección
+        .map(sec => {  // ve cada sección y lo convierte en boton
+          const [tit, ico] = SECCIONES_INFO[sec]; // coge el titulo y el icono
           return `<div class="selector-item" onclick="entrarSeccion('${sec}')"><i class="fa-solid ${ico}"></i><span>${tit}</span></div>`;
-        }).join('');
-      document.getElementById('appView').style.display = 'none';
-      document.getElementById('selectorView').style.display = 'flex';
+        }).join('');  // crea el boton con ello
+      document.getElementById('appView').style.display = 'none'; // mantiene la pagina oculta de momento
+      document.getElementById('selectorView').style.display = 'flex'; // pone el panel visual
     }
 
     // El usuario elige una sección desde el panel: entra en la app en esa sección
-    function entrarSeccion(sec) {
-      document.getElementById('selectorView').style.display = 'none';
-      document.getElementById('appView').style.display = 'flex';
+    function entrarSeccion(sec) {   // entra la seccion pulsada
+      document.getElementById('selectorView').style.display = 'none'; // oculta el panel 
+      document.getElementById('appView').style.display = 'flex'; // pone visible la pagina
       aplicarPermisosMenu();
-      if (!realtimeIniciado) {
+      if (!realtimeIniciado) { // mira si esta iniciado el realtime o no y si no lo inicia
         iniciarRealtime();
         realtimeIniciado = true;
       }
-      cambiarSeccion(sec);
+      cambiarSeccion(sec); // cambia a la seccion que ha pinchado el usuario
     }
 
     // Botón "Panel" en la barra superior: vuelve a la pantalla de selección sin cerrar sesión
@@ -2483,39 +2581,7 @@
       mostrarSelectorPanel();
     }
 
-    function togglePwd() {
-      const input = document.getElementById('pwdF');
-      const icon = document.getElementById('pwdToggleIcon');
-      const btn = document.getElementById('pwdToggleBtn');
-      const visible = input.type === 'text';
-      input.type = visible ? 'password' : 'text';
-      icon.classList.toggle('fa-eye', visible);
-      icon.classList.toggle('fa-eye-slash', !visible);
-      btn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
-    }
-
-    async function doLogin() {
-      document.getElementById('loginErr').style.display = 'none';
-      const persona = document.getElementById('loginPersona').value;
-      const password = document.getElementById('pwdF').value;
-      const { error } = await supabaseClient.auth.signInWithPassword({
-        email: emailDePersona(persona),
-        password
-      });
-      if (error) {
-        document.getElementById('loginErr').style.display = 'block';
-        return;
-      }
-      await cargarPerfilActual();
-      if (!currentPersona) {
-        document.getElementById('loginErr').style.display = 'block';
-        await supabaseClient.auth.signOut();
-        return;
-      }
-      document.getElementById('pwdF').value = '';
-      entrarEnApp();
-    }
-
+    // Boton para salir
     async function doLogout() {
       await supabaseClient.auth.signOut();
       currentPersona = null;
