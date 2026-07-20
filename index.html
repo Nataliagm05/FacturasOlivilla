@@ -153,6 +153,90 @@
       display: none;
     }
 
+
+    /* ESTILOS DEL SELECTOR DE PANEL (tras el login) */
+    .selector-wrap {
+      flex: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .selector-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(74, 59, 104, .12);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 780px;
+    }
+
+    .selector-card h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #4a3b68;
+      margin-bottom: .3rem;
+    }
+
+    .selector-card p {
+      font-size: .85rem;
+      color: #999;
+      margin-bottom: 1.5rem;
+    }
+
+    .selector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px;
+    }
+
+    .selector-item {
+      background: #f7f9fa;
+      border: 1.5px solid #ede5f5;
+      border-radius: 10px;
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      color: #4a3b68;
+    }
+
+    .selector-item i {
+      font-size: 1.5rem;
+      color: #b53987;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .selector-item span {
+      font-size: .85rem;
+      font-weight: 500;
+      display: block;
+    }
+
+    .selector-item:hover {
+      border-color: #b53987;
+      background: rgba(181, 57, 135, 0.06);
+      transform: translateY(-2px);
+    }
+
+    .selector-salir {
+      display: block;
+      margin: 1.8rem auto 0;
+      background: transparent;
+      border: none;
+      color: #999;
+      font-size: .82rem;
+      cursor: pointer;
+    }
+
+    .selector-salir:hover {
+      color: #b53987;
+    }
+
+
+
     /* ESTILOS DE LA BARRA SUPERIOR */
 
     .topbar {
@@ -1690,10 +1774,10 @@
 
 
 
- 
+
     /* BARRA */
 
-    
+
     .barra-scroll-fija {
       position: fixed;
       bottom: 0;
@@ -1778,6 +1862,17 @@
       </div>
       <span id="usuarioConectado" style="color:#fff;opacity:.85;font-size:.85rem;margin-right:10px"></span>
       <button class="btn-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
+    </div>
+
+    <!-- SELECTOR DE PANEL (tras el login, antes de entrar a una sección) -->
+    <div class="selector-wrap" id="selectorView">
+      <div class="selector-card">
+        <h2>¿A dónde quieres ir?</h2>
+        <p>Elige el panel que quieres abrir</p>
+        <div class="selector-grid" id="selectorGrid"></div>
+        <button class="selector-salir" onclick="doLogout()"><i
+            class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
+      </div>
     </div>
 
     <div class="main-wrap">
@@ -2237,6 +2332,25 @@
       'albaranes', 'clientes', 'inventario', 'materiales_obra'
     ];
 
+
+    // Nombre, icono y si muestra tarjetas de estadísticas, por sección.
+    // (Se usa tanto en cambiarSeccion() como en el selector de panel tras el login.)
+    const SECCIONES_INFO = {
+      clasificacion: ['Bandeja de Clasificación', 'fa-inbox', false],
+      facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
+      facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
+      facturas_csg: ['Facturas CSG', 'fa-building', true],
+      revisadas_facturadas: ['Revisadas y Facturadas', 'fa-clipboard-check', false],
+      obras: ['Obras', 'fa-diagram-project', false],
+      calendario_pagos: ['Calendario de Pagos', 'fa-calendar-days', false],
+      presupuestos: ['Presupuestos Enviados', 'fa-file-invoice-dollar', false],
+      albaranes: ['Albaranes', 'fa-file-signature', false],
+      clientes: ['Clientes', 'fa-users', false],
+      inventario: ['Inventario', 'fa-boxes-stacked', false],
+      materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false]
+    };
+
+
     // Personas con acceso EXCLUSIVO a una lista concreta de secciones
     // (en vez de "todo menos lo restringido", ven solo esto).
     const ACCESO_EXCLUSIVO = {
@@ -2332,13 +2446,46 @@
       if (badge) badge.textContent = currentPersona ? ('Conectado como ' + (NOMBRES_PERSONAS[currentPersona] || currentPersona)) : '';
     }
 
+    let cachesIniciales = null; // Promise compartida para no recargar cachés al volver al selector
+    let realtimeIniciado = false;
+
     async function entrarEnApp() {
       document.getElementById('loginView').style.display = 'none';
+      document.getElementById('appView').style.display = 'none';
+      if (!cachesIniciales) {
+        cachesIniciales = Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()]);
+      }
+      await cachesIniciales;
+      mostrarSelectorPanel();
+    }
+    // Pinta las tarjetas del panel según las secciones a las que tiene acceso currentPersona
+    function mostrarSelectorPanel() {
+      const grid = document.getElementById('selectorGrid');
+      grid.innerHTML = TODAS_LAS_SECCIONES
+        .filter(sec => tieneAccesoSeccion(currentPersona, sec))
+        .map(sec => {
+          const [tit, ico] = SECCIONES_INFO[sec];
+          return `<div class="selector-item" onclick="entrarSeccion('${sec}')"><i class="fa-solid ${ico}"></i><span>${tit}</span></div>`;
+        }).join('');
+      document.getElementById('appView').style.display = 'none';
+      document.getElementById('selectorView').style.display = 'flex';
+    }
+
+    // El usuario elige una sección desde el panel: entra en la app en esa sección
+    function entrarSeccion(sec) {
+      document.getElementById('selectorView').style.display = 'none';
       document.getElementById('appView').style.display = 'flex';
       aplicarPermisosMenu();
-      Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()])
-        .then(() => cambiarSeccion(primeraSeccionPermitida(currentPersona)));
-      iniciarRealtime();
+      if (!realtimeIniciado) {
+        iniciarRealtime();
+        realtimeIniciado = true;
+      }
+      cambiarSeccion(sec);
+    }
+
+    // Botón "Panel" en la barra superior: vuelve a la pantalla de selección sin cerrar sesión
+    function volverAlPanel() {
+      mostrarSelectorPanel();
     }
 
     function togglePwd() {
@@ -2377,7 +2524,10 @@
     async function doLogout() {
       await supabaseClient.auth.signOut();
       currentPersona = null;
+      cachesIniciales = null;
+      realtimeIniciado = false;
       document.getElementById('loginView').style.display = 'flex';
+      document.getElementById('selectorView').style.display = 'none';
       document.getElementById('appView').style.display = 'none';
       document.getElementById('pwdF').value = '';
     }
@@ -6247,6 +6397,10 @@
     }
 
 
+
+
+
+    // CLIENTES Y PUNTOS
 
     async function enviarEmailPuntos(email, nombre, puntos, tipo) {
       if (!email) return;
