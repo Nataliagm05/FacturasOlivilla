@@ -2261,16 +2261,16 @@
       document.getElementById('loginErr').style.display = 'none';  // busca en el inicio de sesión y quita el error
       const persona = document.getElementById('loginPersona').value;  //va al desplegable de incicio de sesion y mira quien es selecionado
       const password = document.getElementById('pwdF').value;  // coge la contraseña de la caja
-      const { error } = await supabaseClient.auth.signInWithPassword({ // guarda en er
+      const { error } = await supabaseClient.auth.signInWithPassword({ // guarda en error si algo sale mal
         email: emailDePersona(persona),
         password
       });
       if (error) {
-        document.getElementById('loginErr').style.display = 'block';
+        document.getElementById('loginErr').style.display = 'block'; // si da error, bloqueamos
         return;
       }
-      await cargarPerfilActual();
-      if (!currentPersona) {
+      await cargarPerfilActual(); // vemos el perfil en el que estamos
+      if (!currentPersona) { // si no es el mismo que la persona, igual bloqueamos
         document.getElementById('loginErr').style.display = 'block';
         await supabaseClient.auth.signOut();
         return;
@@ -2283,9 +2283,9 @@
 
 
 
+
+
     //  REALTIME
-
-
 
 
 
@@ -2584,9 +2584,9 @@
     // Boton para salir
     async function doLogout() {
       await supabaseClient.auth.signOut();
-      currentPersona = null;
-      cachesIniciales = null;
-      realtimeIniciado = false;
+      currentPersona = null; // dejamos a null la persona
+      cachesIniciales = null; // borramos las caches
+      realtimeIniciado = false; //dejamos a null el realtime
       document.getElementById('loginView').style.display = 'flex';
       document.getElementById('selectorView').style.display = 'none';
       document.getElementById('appView').style.display = 'none';
@@ -2605,12 +2605,23 @@
     }
     restaurarSesion();
 
-    // ── API ───────────────────────────────────────────────────
+
+
+
+
+
+
+
+    //  API 
+
+
     async function apiGet(tabla, params = '') {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, { headers: await authHeaders() });
       if (!r.ok) throw new Error(await r.text());
       return r.json();
     }
+
+
     async function apiGetAll(tabla, params = '') {
       let todos = [];
       let desde = 0;
@@ -2627,6 +2638,8 @@
       }
       return todos;
     }
+
+
     async function apiPost(tabla, body) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {
         method: 'POST', headers: await authHeaders(), body: JSON.stringify(body)
@@ -2634,6 +2647,8 @@
       if (!r.ok) throw new Error(await r.text());
       return r.json();
     }
+
+
     async function apiPatch(tabla, id, body) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
         method: 'PATCH', headers: await authHeaders(), body: JSON.stringify(body)
@@ -2641,6 +2656,8 @@
       if (!r.ok) throw new Error(await r.text());
       return r.json();
     }
+
+    
     async function apiDelete(tabla, id) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
         method: 'DELETE', headers: await authHeaders()
