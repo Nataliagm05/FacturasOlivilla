@@ -6013,7 +6013,23 @@
       }
     }
 
-
+    // Desde la ficha de una obra, ir a Facturas de Obra ya filtrado por esa obra
+    // (se ven TODAS sus facturas, estén o no revisadas/pagadas)
+    async function verFacturasDeObra(nombreObra) {
+      await cambiarSeccion('facturas_obra');
+      const sel = document.getElementById('filtroObra');
+      if (sel) {
+        if (![...sel.options].some(o => o.value === nombreObra)) {
+          const opt = document.createElement('option');
+          opt.value = nombreObra;
+          opt.textContent = nombreObra;
+          sel.appendChild(opt);
+        }
+        sel.value = nombreObra;
+      }
+      document.getElementById('searchInput').value = '';
+      renderTabla();
+    }
 
     // ── ELIMINAR ──────────────────────────────────────────────
     async function eliminar(id) {
