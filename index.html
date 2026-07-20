@@ -153,7 +153,6 @@
       display: none;
     }
 
-
     /* ESTILOS DEL SELECTOR DE PANEL (tras el login) */
     .selector-wrap {
       flex: 1;
@@ -234,8 +233,6 @@
     .selector-salir:hover {
       color: #b53987;
     }
-
-
 
     /* ESTILOS DE LA BARRA SUPERIOR */
 
@@ -1774,10 +1771,10 @@
 
 
 
-
+ 
     /* BARRA */
 
-
+    
     .barra-scroll-fija {
       position: fixed;
       bottom: 0;
@@ -1827,6 +1824,15 @@
     </div>
   </div>
 
+  <!-- SELECTOR DE PANEL (tras el login, antes de entrar a una sección) -->
+  <div class="selector-wrap" id="selectorView">
+    <div class="selector-card">
+      <h2>¿A dónde quieres ir?</h2>
+      <p>Elige el panel que quieres abrir</p>
+      <div class="selector-grid" id="selectorGrid"></div>
+      <button class="selector-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
+    </div>
+  </div>
 
   <!-- APP -->
   <div id="appView" style="display:none;flex-direction:column;flex:1;">
@@ -1861,18 +1867,8 @@
             class="fa-solid fa-boxes-stacked"></i>Material Obra</button>
       </div>
       <span id="usuarioConectado" style="color:#fff;opacity:.85;font-size:.85rem;margin-right:10px"></span>
+      <button class="btn-salir" onclick="volverAlPanel()" style="margin-right:8px"><i class="fa-solid fa-grip me-1"></i>Panel</button>
       <button class="btn-salir" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
-    </div>
-
-    <!-- SELECTOR DE PANEL (tras el login, antes de entrar a una sección) -->
-    <div class="selector-wrap" id="selectorView">
-      <div class="selector-card">
-        <h2>¿A dónde quieres ir?</h2>
-        <p>Elige el panel que quieres abrir</p>
-        <div class="selector-grid" id="selectorGrid"></div>
-        <button class="selector-salir" onclick="doLogout()"><i
-            class="fa-solid fa-right-from-bracket me-1"></i>Salir</button>
-      </div>
     </div>
 
     <div class="main-wrap">
@@ -2332,7 +2328,6 @@
       'albaranes', 'clientes', 'inventario', 'materiales_obra'
     ];
 
-
     // Nombre, icono y si muestra tarjetas de estadísticas, por sección.
     // (Se usa tanto en cambiarSeccion() como en el selector de panel tras el login.)
     const SECCIONES_INFO = {
@@ -2349,7 +2344,6 @@
       inventario: ['Inventario', 'fa-boxes-stacked', false],
       materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false]
     };
-
 
     // Personas con acceso EXCLUSIVO a una lista concreta de secciones
     // (en vez de "todo menos lo restringido", ven solo esto).
@@ -2458,6 +2452,7 @@
       await cachesIniciales;
       mostrarSelectorPanel();
     }
+
     // Pinta las tarjetas del panel según las secciones a las que tiene acceso currentPersona
     function mostrarSelectorPanel() {
       const grid = document.getElementById('selectorGrid');
@@ -2723,22 +2718,7 @@
       document.querySelectorAll('.btn-nav').forEach(b =>
         b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
       );
-      const titulos = {
-        clasificacion: ['Bandeja de Clasificación', 'fa-inbox', false],
-        facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
-        facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
-        facturas_csg: ['Facturas CSG', 'fa-building', true],
-        revisadas_facturadas: ['Revisadas y Facturadas', 'fa-clipboard-check', false],
-        obras: ['Obras', 'fa-diagram-project', false],
-        calendario_pagos: ['Calendario de Pagos', 'fa-calendar-days', false],
-        presupuestos: ['Presupuestos Enviados', 'fa-file-invoice-dollar', false],
-        albaranes: ['Albaranes', 'fa-file-signature', false],
-        clientes: ['Clientes', 'fa-users', false],
-        inventario: ['Inventario', 'fa-boxes-stacked', false],
-        materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false]
-
-      };
-      const [tit, ico, stats] = titulos[sec];
+      const [tit, ico, stats] = SECCIONES_INFO[sec];
       document.getElementById('txtSeccionTitulo').textContent = tit;
       document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;
       document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
@@ -3268,6 +3248,13 @@
     function renderVisorContenido(contenedorId, url) {
       const cont = document.getElementById(contenedorId);
       if (!cont) return;
+
+      // Sin URL válida (http/https) no se pinta ni imagen ni iframe: un iframe con
+      // src vacío o relativo carga el propio index.html dentro de sí mismo.
+      if (!url || !/^https?:\/\//i.test(url)) {
+        cont.innerHTML = `<div class="empty-state"><i class="fa-solid fa-file-circle-xmark"></i>Este archivo no tiene una URL válida</div>`;
+        return;
+      }
 
       if (esImagen(url)) {
         const imgId = contenedorId + 'Img';
@@ -6397,10 +6384,6 @@
     }
 
 
-
-
-
-    // CLIENTES Y PUNTOS
 
     async function enviarEmailPuntos(email, nombre, puntos, tipo) {
       if (!email) return;
