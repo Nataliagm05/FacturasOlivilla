@@ -5444,6 +5444,17 @@
     }
 
 
+    // Detecta si un error de la API es por violar una restricción de unicidad
+    // en la base de datos (código 23505 de Postgres). Esto es la red de
+    // seguridad real contra duplicados: aunque dos facturas iguales lleguen
+    // EXACTAMENTE a la vez y las dos pasen la comprobación previa (que hace
+    // un SELECT antes del INSERT y por tanto puede fallar en carrera),
+    // la base de datos solo dejará que una de las dos se inserte.
+    function esErrorDuplicado(mensajeError) {
+      if (!mensajeError) return false;
+      return mensajeError.includes('23505') || /duplicate key value/i.test(mensajeError);
+    }
+
     async function buscarFacturaDuplicada(numFactura, nif, fecha, total, idExcluir) {
       const tablas = ['facturas_almacen', 'facturas_obra', 'facturas_csg'];
 
@@ -5505,12 +5516,14 @@
           archivo_url: datosIntento.archivo_url || null
         });
 
-        const original = await apiGet(duplicado.tabla, `id=eq.${duplicado.id}&select=veces_reenviada`);
-        const vecesActual = (original[0]?.veces_reenviada) || 0;
-        await apiPatch(duplicado.tabla, duplicado.id, {
-          veces_reenviada: vecesActual + 1,
-          ultimo_reenvio: new Date().toISOString()
-        });
+        if (duplicado.id != null) {
+          const original = await apiGet(duplicado.tabla, `id=eq.${duplicado.id}&select=veces_reenviada`);
+          const vecesActual = (original[0]?.veces_reenviada) || 0;
+          await apiPatch(duplicado.tabla, duplicado.id, {
+            veces_reenviada: vecesActual + 1,
+            ultimo_reenvio: new Date().toISOString()
+          });
+        }
       } catch (e) {
         console.error('No se pudo registrar el duplicado:', e);
       }
@@ -5719,7 +5732,19 @@
           if (modalEditId) {
             await apiPatch(tabla, modalEditId, payload);
           } else {
-            await apiPost(tabla, payload);
+            try {
+              await apiPost(tabla, payload);
+            } catch (e) {
+              if (esErrorDuplicado(e.message)) {
+                await registrarDuplicado({ tabla, id: null }, {
+                  numero_factura: numFactura, nif: nifCampo, proveedor: prov,
+                  total: totalCampo, archivo_url: payload.archivo_url
+                }, 'manual');
+                toast('⚠️ Esta factura se acaba de guardar justo ahora (por otra persona o proceso) — no se ha duplicado', 'err');
+                return;
+              }
+              throw e;
+            }
             notificarRevisoresFactura(tabla, payload); // no bloqueante, no esperamos con await aquí para no ralentizar el guardado
           }
 
@@ -5795,7 +5820,19 @@
             await apiPatch('albaranes', modalEditId, payload);
           } else {
             payload.facturado = false;
-            await apiPost('albaranes', payload);
+            try {
+              await apiPost('albaranes', payload);
+            } catch (e) {
+              if (esErrorDuplicado(e.message)) {
+                await registrarDuplicado({ tabla: 'albaranes', id: null }, {
+                  numero_factura: numAlbaran, nif: nifAlb, proveedor: empresa,
+                  total: totalAlb, archivo_url: payload.archivo_url
+                }, 'manual');
+                toast('⚠️ Este albarán se acaba de guardar justo ahora (por otra persona o proceso) — no se ha duplicado', 'err');
+                return;
+              }
+              throw e;
+            }
           }
           modalEditId = null;
 
