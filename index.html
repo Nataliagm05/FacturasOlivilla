@@ -1961,7 +1961,8 @@
           <span id="calMesTitulo">—</span>
           <button onclick="cambiarMesCalendario(1)"><i class="fa-solid fa-chevron-right"></i></button>
           <button class="cal-hoy-btn" onclick="irMesActualCalendario()">Hoy</button>
-          <button class="cal-hoy-btn" id="btnAnadirEvento" style="display:none;background:#b53987;border-color:#b53987;color:white;"
+          <button class="cal-hoy-btn" id="btnAnadirEvento"
+            style="display:none;background:#b53987;border-color:#b53987;color:white;"
             onclick="abrirModalNuevoEvento()"><i class="fa-solid fa-bell me-1"></i>Añadir evento</button>
         </div>
         <div class="cal-grid" id="calGrid">
@@ -3170,8 +3171,22 @@
 
     async function cancelarCitaCalendario(id) {
       if (!confirm('¿Seguro que quieres cancelar y eliminar esta cita? No se podrá deshacer.')) return;
+
+      const CITAS_ANON_KEY = 'sb_publishable_TDJzbWS4cL3TQoTx1DVAmg_pJ4Ur2M5';
+
       try {
-        await apiDelete('citas', id);
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/cancelar-cita`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': CITAS_ANON_KEY
+          },
+          body: JSON.stringify({ id, password: CITAS_PANEL_PASSWORD })
+        });
+        const data = await res.json();
+
+        if (!res.ok) { toast('Error al cancelar: ' + (data.error || data.message || 'desconocido'), 'err'); return; }
+
         calCitas = calCitas.filter(c => c.id !== id);
         toast('Cita cancelada y eliminada', 'ok');
         cerrarModalCita();
