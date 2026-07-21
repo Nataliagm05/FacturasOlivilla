@@ -2165,6 +2165,7 @@
   </div>
   <div class="toast-wrap" id="toastWrap"></div>
   <datalist id="dl_productos"></datalist>
+  <datalist id="dl_obras"></datalist>
   <div class="barra-scroll-fija" id="barraScrollFija">
     <div id="barraScrollFijaInner"></div>
   </div>
@@ -2434,6 +2435,7 @@
     let inventarioDB = [];
     let clientesDB = [];
     let proveedoresDB = [];
+    let obrasDB = [];
     let clienteSelId = null;
     let clienteSelPuntos = 0;
     let lineasCompraCount = 0;
@@ -2551,7 +2553,7 @@
       document.getElementById('loginView').style.display = 'none';  // oculta la pagina de logi
       document.getElementById('appView').style.display = 'none';  // y el panel
       if (!cachesIniciales) { // mira si es la primera vez que entra y no hay datos guardados 
-        cachesIniciales = Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache()]); // descarga las tres listas
+        cachesIniciales = Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache(), cargarObrasCache()]); // descarga las cuatro listas
       }
       await cachesIniciales;
       mostrarSelectorPanel(); // muestra el panel
@@ -2709,7 +2711,7 @@
       document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';   // borra todo lo demas, alertas, busquedas, si hay algún archivo abierto....
       document.getElementById('alertasWrap').innerHTML = '';
       document.getElementById('badgePendientes').style.display = 'none';
-      document.getElementById('filtroObra').style.display = sec === 'facturas_obra' ? '' : 'none';
+      document.getElementById('filtroObra').style.display = (sec === 'facturas_obra' || sec === 'albaranes') ? '' : 'none';
       document.getElementById('resumenObra').style.display = 'none';
       cerrarVisorPdf();
 
@@ -3069,6 +3071,13 @@
     async function cargarInventarioCache() { inventarioDB = await apiGetAll('inventario', 'order=nombre'); actualizarDatalistProductos(); }
     async function cargarClientesCache() { clientesDB = await apiGetAll('clientes', 'order=nombre'); }
     async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
+    async function cargarObrasCache() { obrasDB = await apiGetAll('obras', 'order=nombre'); actualizarDatalistObras(); }
+
+    function actualizarDatalistObras() {
+      const dl = document.getElementById('dl_obras');
+      if (!dl) return;
+      dl.innerHTML = obrasDB.map(o => `<option value="${(o.nombre || '').replace(/"/g, '&quot;')}"></option>`).join('');
+    }
 
     function actualizarDatalistProductos() {
       const dl = document.getElementById('dl_productos');
@@ -3226,11 +3235,13 @@
 
         if (tablaActual === 'obras') {
           const facturasObra = await apiGetAll('facturas_obra', 'order=fecha.desc');
+          const albaranesObra = await apiGetAll('albaranes', 'order=fecha.desc');
           const norm = s => (s || '').toLowerCase().trim();
           registros = registros.map(o => {
             const facturasDeEstaObra = facturasObra.filter(f => norm(f.nombre_obra) === norm(o.nombre));
+            const albaranesDeEstaObra = albaranesObra.filter(a => norm(a.nombre_obra) === norm(o.nombre));
             const total_facturado = facturasDeEstaObra.reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
-            return { ...o, _total_facturado: total_facturado, _num_facturas: facturasDeEstaObra.length };
+            return { ...o, _total_facturado: total_facturado, _num_facturas: facturasDeEstaObra.length, _num_albaranes: albaranesDeEstaObra.length };
           });
         }
 
@@ -3238,7 +3249,7 @@
           actualizarStats(); renderAlertas();
           comprobarFacturasVencidasSinRevisar();
         }
-        if (tablaActual === 'facturas_obra') {
+        if (tablaActual === 'facturas_obra' || tablaActual === 'albaranes') {
           const obras = [...new Set(registros.map(r => r.nombre_obra).filter(Boolean))].sort();
           const selObra = document.getElementById('filtroObra');
           const actual = selObra.value;
@@ -4048,13 +4059,13 @@
         hdr.innerHTML = `<tr>
       <th>Obra</th><th>Dirección</th><th>Cliente</th><th>Fecha inicio</th><th>Estado</th>
       <th class="num-cell">Presupuesto</th><th class="num-cell">Facturado</th><th class="num-cell">Diferencia</th>
-      <th>Rentabilidad</th><th></th><th>Editar</th><th></th>
+      <th>Rentabilidad</th><th></th><th></th><th>Editar</th><th></th>
     </tr>`;
         const lista = registros.filter(o => {
           const mQ = [o.nombre, o.cliente, o.direccion].some(v => (v || '').toLowerCase().includes(q));
           return mQ && (!fEst || fEst === (o.estado || 'en_curso'));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(12, 'No hay obras dadas de alta todavía'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(13, 'No hay obras dadas de alta todavía'); return; }
         bdy.innerHTML = lista.map(o => {
           const est = o.estado || 'en_curso';
           const presupuesto = o.presupuesto != null ? parseFloat(o.presupuesto) : null;
@@ -4075,6 +4086,7 @@
               ? `<span class="badge-estado ${rentable ? 'badge-pagado' : 'badge-vencido'}">${rentable ? 'RENTABLE' : 'NO RENTABLE'}</span>`
               : '<span style="color:#ccc;font-size:.78rem">Sin presupuesto</span>'}</td>
         <td><span class="link-badge factura" onclick="verFacturasDeObra('${(o.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-folder-open"></i>Ver facturas${o._num_facturas ? ` (${o._num_facturas})` : ''}</span></td>
+        <td><span class="link-badge factura" onclick="verAlbaranesDeObra('${(o.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-signature"></i>Ver albaranes${o._num_albaranes ? ` (${o._num_albaranes})` : ''}</span></td>
         <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${o.id},'obras')" title="Editar obra"><i class="fa-solid fa-pen"></i></button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${o.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
@@ -4082,19 +4094,22 @@
 
         // ALBARANES
       } else if (tablaActual === 'albaranes') {
-        hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Archivo</th><th>Facturas por NIF</th><th>Acción</th><th>Editar</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Obra</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Archivo</th><th>Facturas por NIF</th><th>Acción</th><th>Editar</th><th></th></tr>`;
+        const fObraAlb = document.getElementById('filtroObra').value;
         const lista = registros.filter(f => {
           const mQ = [f.numero_albaran, f.empresa, f.nif].some(v => (v || '').toLowerCase().includes(q));
           const mE = !fEst || (fEst === 'si' ? f.facturado : !f.facturado);
-          return mQ && mE;
+          const mObra = !fObraAlb || f.nombre_obra === fObraAlb;
+          return mQ && mE && mObra;
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(11, 'No se encontraron albaranes'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(12, 'No se encontraron albaranes'); return; }
         bdy.innerHTML = lista.map(f => {
           const fact = !!f.facturado;
           return `<tr>
         <td><strong>${f.numero_albaran || '—'}</strong></td>
         <td class="td-nombre">${f.empresa || '—'}</td>
         <td style="font-size:.8rem;color:#888">${f.nif || '—'}</td>
+        <td>${f.nombre_obra || '—'}</td>
         <td>${fmtF(f.fecha)}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado ${fact ? 'badge-pagado' : 'badge-vencido'}">${fact ? 'SÍ' : 'NO'}</span></td>
@@ -5423,6 +5438,7 @@
   </div>
   <div class="form-group"><label>Total (€)</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
   <div class="form-group"><label>Nº Pedido</label><input type="text" id="f_num_pedido" placeholder="Se usa para cruzar con la factura"></div>
+  <div class="form-group span2"><label>Obra <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="text" id="f_obra_alb" list="dl_obras" placeholder="Ej: Reforma Calle Mayor 12"></div>
   <div class="form-group span2"><label>Archivos (PDF o imagen) <span style="font-size:.72rem;color:#888">(puedes seleccionar varios)</span></label><input type="file" id="f_archivo_albaran" accept="application/pdf,image/*" multiple onchange="_leerArchivosAlbaran(this)">
     <div class="archivos-lista" id="archivosAlbaranLista"></div>
   </div>
@@ -5693,6 +5709,7 @@
         set('f_nif', f.nif);
         set('f_total', f.total);
         set('f_num_pedido', f.numero_pedido);
+        set('f_obra_alb', f.nombre_obra);
 
         archivosAlbaranSeleccionados = (f.archivos_urls && f.archivos_urls.length)
           ? f.archivos_urls.map((url, i) => ({ url, nombre: `Archivo ${i + 1}` }))
@@ -5992,7 +6009,8 @@
             empresa,
             nif: nifAlb,
             total: totalAlb,
-            numero_pedido: document.getElementById('f_num_pedido').value.trim() || null
+            numero_pedido: document.getElementById('f_num_pedido').value.trim() || null,
+            nombre_obra: document.getElementById('f_obra_alb').value.trim() || null
           };
           if (archivosAlbaranSeleccionados.length) {
             payload.archivo_url = archivosAlbaranSeleccionados[0].url;
@@ -6377,6 +6395,22 @@
     // (se ven TODAS sus facturas, estén o no revisadas/pagadas)
     async function verFacturasDeObra(nombreObra) {
       await cambiarSeccion('facturas_obra');
+      const sel = document.getElementById('filtroObra');
+      if (sel) {
+        if (![...sel.options].some(o => o.value === nombreObra)) {
+          const opt = document.createElement('option');
+          opt.value = nombreObra;
+          opt.textContent = nombreObra;
+          sel.appendChild(opt);
+        }
+        sel.value = nombreObra;
+      }
+      document.getElementById('searchInput').value = '';
+      renderTabla();
+    }
+
+    async function verAlbaranesDeObra(nombreObra) {
+      await cambiarSeccion('albaranes');
       const sel = document.getElementById('filtroObra');
       if (sel) {
         if (![...sel.options].some(o => o.value === nombreObra)) {
