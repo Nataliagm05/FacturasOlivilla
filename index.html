@@ -1961,7 +1961,8 @@
           <span id="calMesTitulo">—</span>
           <button onclick="cambiarMesCalendario(1)"><i class="fa-solid fa-chevron-right"></i></button>
           <button class="cal-hoy-btn" onclick="irMesActualCalendario()">Hoy</button>
-          <button class="cal-hoy-btn" id="btnAnadirEvento" style="display:none;background:#b53987;border-color:#b53987" onclick="abrirModalNuevoEvento()"><i class="fa-solid fa-bell me-1"></i>Añadir evento</button>
+          <button class="cal-hoy-btn" id="btnAnadirEvento" style="display:none;background:#b53987;border-color:#b53987"
+            onclick="abrirModalNuevoEvento()"><i class="fa-solid fa-bell me-1"></i>Añadir evento</button>
         </div>
         <div class="cal-grid" id="calGrid">
           <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>
@@ -2043,7 +2044,8 @@
       <div id="eventoModalBody"></div>
       <div class="modal-btns" id="eventoModalBtns">
         <button class="btn-cancelar" onclick="cerrarModal('modalEvento')">Cancelar</button>
-        <button class="btn-guardar" onclick="guardarEventoCalendario()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+        <button class="btn-guardar" onclick="guardarEventoCalendario()"><i
+            class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
       </div>
     </div>
   </div>
@@ -2778,7 +2780,7 @@
       <option value="pagado">Pagada</option>
       <option value="vencido">Vencida</option>
       <option value="imputado">Imputada</option>`;
-      // en el buscador se le pone que aparezca como ejemplo eso
+        // en el buscador se le pone que aparezca como ejemplo eso
         sp.placeholder = sec === 'facturas_obra' ? 'Buscar por nº, proveedor, NIF, obra...' : 'Buscar por nº, proveedor, NIF, concepto...';
       } else if (esRevisadas) {  // si estamos en revisadas, que podamos ver de donde viene cada una 
         sel.innerHTML = `<option value="">Todos los orígenes</option>
@@ -2825,7 +2827,7 @@
 
 
     //  CALENDARIO DE PAGOS 
-    
+
 
 
 
@@ -3349,7 +3351,7 @@
 
 
 
-    
+
 
 
     // ── CARGAR DATOS ──────────────────────────────────────────
@@ -5812,20 +5814,31 @@
     }
 
 
-    async function buscarAlbaranDuplicado(numAlbaran, nif, fecha, total, idExcluir) {
-      if (numAlbaran) {
-        const dup = await apiGet('albaranes', `numero_albaran=eq.${encodeURIComponent(numAlbaran)}`);
-        const encontrado = dup.find(d => d.id !== idExcluir);
-        if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
-        // Igual que en facturas: si hay numero_albaran y no coincide,
-        // no usamos el respaldo NIF+fecha+total.
+    async function buscarFacturaDuplicada(numFactura, nif, proveedor, fecha, total, idExcluir) {
+      const tablas = ['facturas_almacen', 'facturas_obra', 'facturas_csg'];
+      const norm = s => (s || '').toLowerCase().trim();
+
+      // Mismo proveedor: por NIF si ambas facturas lo tienen, si no por nombre
+      const mismoProveedor = (d) => {
+        if (nif && d.nif) return norm(nif) === norm(d.nif);
+        return norm(proveedor) === norm(d.proveedor);
+      };
+
+      if (numFactura) {
+        for (const tabla of tablas) {
+          const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
+          const encontrado = dup.find(d => d.id !== idExcluir && mismoProveedor(d));
+          if (encontrado) return { tabla, id: encontrado.id };
+        }
         return null;
       }
 
       if (nif && fecha && total != null) {
-        const dup = await apiGet('albaranes', `nif=eq.${encodeURIComponent(nif)}&fecha=eq.${fecha}&total=eq.${total}`);
-        const encontrado = dup.find(d => d.id !== idExcluir);
-        if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
+        for (const tabla of tablas) {
+          const dup = await apiGet(tabla, `nif=eq.${encodeURIComponent(nif)}&fecha=eq.${fecha}&total=eq.${total}`);
+          const encontrado = dup.find(d => d.id !== idExcluir);
+          if (encontrado) return { tabla, id: encontrado.id };
+        }
       }
 
       return null;
@@ -5887,7 +5900,7 @@
     async function guardarDesdeIA(tabla, datos) {
       try {
         const duplicado = await buscarFacturaDuplicada(
-          datos.numero_factura, datos.nif, datos.fecha, parseFloat(datos.total || 0), null
+          datos.numero_factura, datos.nif, datos.proveedor, datos.fecha, parseFloat(datos.total || 0), null
         );
         if (duplicado) {
           await registrarDuplicado(duplicado, datos, 'ia');
@@ -6043,7 +6056,7 @@
           await asegurarProveedor(prov, nifCampo);
 
           const totalCampo = parseFloat(document.getElementById('f_total').value || 0);
-          const duplicado = await buscarFacturaDuplicada(numFactura, nifCampo, fecha, totalCampo, modalEditId);
+          const duplicado = await buscarFacturaDuplicada(numFactura, nifCampo, prov, fecha, totalCampo, modalEditId);
           if (duplicado) {
             await registrarDuplicado(duplicado, {
               numero_factura: numFactura,
