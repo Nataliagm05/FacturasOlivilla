@@ -5790,13 +5790,17 @@
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
-      <select id="lfa_prod_${idx}">
-        <option value="">— Selecciona producto —</option>${window._optsFactAlm || ''}
-      </select>
+      <input type="text" id="lfa_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o añadir nuevo...">
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad recibida</label>
-      <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center">
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLinea(${idx})"
+          style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
     </div>
     <div style="width:80px"></div>
     <button type="button" onclick="document.getElementById('lfa_${idx}').remove()"
@@ -5804,6 +5808,22 @@
       <i class="fa-solid fa-xmark"></i>
     </button>`;
       document.getElementById('lineasFactAlm').appendChild(div);
+    }
+
+    async function crearProductoRapidoDesdeLinea(idx) {
+      const inp = document.getElementById(`lfa_prod_${idx}`);
+      if (!inp) return;
+      const nombre = inp.value.trim();
+      if (!nombre) { toast('Escribe primero el nombre del producto', 'err'); return; }
+      if (buscarProductoPorNombre(nombre)) { toast(`"${nombre}" ya existe en el inventario`, 'err'); return; }
+      try {
+        const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+        inventarioDB.push(nuevo);
+        actualizarDatalistProductos();
+        toast(`Producto "${nombre}" añadido al inventario`, 'ok');
+      } catch (e) {
+        toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
+      }
     }
 
     // ── GUARDAR ───────────────────────────────────────────────
@@ -5899,16 +5919,32 @@
           }
 
           const lineas = [];
-          document.querySelectorAll('[id^="lfa_prod_"]').forEach(sel => {
-            if (!sel.value) return;
-            const idx = sel.id.split('_')[2];
+          for (const inp of document.querySelectorAll('[id^="lfa_prod_"]')) {
+            const nombre = inp.value.trim();
+            if (!nombre) continue;
+            const idx = inp.id.split('_')[2];
             const cant = parseFloat(document.getElementById(`lfa_cant_${idx}`)?.value || 0);
-            if (cant > 0) lineas.push({
-              producto_id: parseInt(sel.value),
+            if (cant <= 0) continue;
+
+            let prod = buscarProductoPorNombre(nombre);
+            if (!prod) {
+              try {
+                const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+                inventarioDB.push(nuevo);
+                actualizarDatalistProductos();
+                prod = nuevo;
+                toast(`Producto "${nombre}" creado en el inventario`, 'ok');
+              } catch (e) {
+                toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
+                continue;
+              }
+            }
+            lineas.push({
+              producto_id: prod.id,
               cantidad: cant,
-              stock_actual: parseFloat(sel.selectedOptions[0]?.dataset.stock || 0)
+              stock_actual: parseFloat(prod.stock || 0)
             });
-          });
+          }
           for (const l of lineas) {
             await apiPatch('inventario', l.producto_id, { stock: l.stock_actual + l.cantidad });
           }
