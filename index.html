@@ -2252,7 +2252,7 @@
       const visible = input.type === 'text'; // revisa si lo de la caja es texto
       input.type = visible ? 'password' : 'text'; // si era visible la oculta en puntitos, si no, la desoculta y deja ver el texto
       // añaden o quitan la raya que tacha el ojo si esta o no visible
-      icon.classList.toggle('fa-eye', visible); 
+      icon.classList.toggle('fa-eye', visible);
       icon.classList.toggle('fa-eye-slash', !visible);
       btn.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña'); // por si hay algun problema y no sale el ojo
     }
@@ -2426,21 +2426,7 @@
       'albaranes', 'clientes', 'inventario', 'materiales_obra'
     ];
 
-    // Nombre, icono y si muestra tarjetas de estadísticas, por sección.
-    const SECCIONES_INFO = {
-      clasificacion: ['Bandeja de Clasificación', 'fa-inbox', false],
-      facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
-      facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
-      facturas_csg: ['Facturas CSG', 'fa-building', true],
-      revisadas_facturadas: ['Revisadas y Facturadas', 'fa-clipboard-check', false],
-      obras: ['Obras', 'fa-diagram-project', false],
-      calendario_pagos: ['Calendario de Pagos', 'fa-calendar-days', false],
-      presupuestos: ['Presupuestos Enviados', 'fa-file-invoice-dollar', false],
-      albaranes: ['Albaranes', 'fa-file-signature', false],
-      clientes: ['Clientes', 'fa-users', false],
-      inventario: ['Inventario', 'fa-boxes-stacked', false],
-      materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false]
-    };
+
 
 
 
@@ -2523,11 +2509,30 @@
 
 
 
+    
+
 
 
     // PANEL
 
 
+
+
+    // Nombre, icono y si muestra tarjetas de estadísticas, por sección.
+    const SECCIONES_INFO = {
+      clasificacion: ['Bandeja de Clasificación', 'fa-inbox', false],
+      facturas_almacen: ['Facturas de Almacén', 'fa-warehouse', true],
+      facturas_obra: ['Facturas de Obra', 'fa-helmet-safety', true],
+      facturas_csg: ['Facturas CSG', 'fa-building', true],
+      revisadas_facturadas: ['Revisadas y Facturadas', 'fa-clipboard-check', false],
+      obras: ['Obras', 'fa-diagram-project', false],
+      calendario_pagos: ['Calendario de Pagos', 'fa-calendar-days', false],
+      presupuestos: ['Presupuestos Enviados', 'fa-file-invoice-dollar', false],
+      albaranes: ['Albaranes', 'fa-file-signature', false],
+      clientes: ['Clientes', 'fa-users', false],
+      inventario: ['Inventario', 'fa-boxes-stacked', false],
+      materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false]
+    };
 
     function aplicarPermisosMenu() { // creo que no es necesaria
       document.querySelectorAll('.btn-nav').forEach(btn => { // Busca en todo el documento aquello que tenga .btn-nav y para cada uno hace
@@ -2558,7 +2563,7 @@
       grid.innerHTML = TODAS_LAS_SECCIONES  // de todas las secciones hace un boton 
         .filter(sec => tieneAccesoSeccion(currentPersona, sec)) //pasa el filtro de los que tienen acceso o no a la sección
         .map(sec => {  // ve cada sección y lo convierte en boton
-          const [tit, ico] = SECCIONES_INFO[sec]; // coge el titulo y el icono
+          const [tit, ico] = SECCIONES_INFO[sec]; // coge el titulo y el icono de las secciones
           return `<div class="selector-item" onclick="entrarSeccion('${sec}')"><i class="fa-solid ${ico}"></i><span>${tit}</span></div>`;
         }).join('');  // crea el boton con ello
       document.getElementById('appView').style.display = 'none'; // mantiene la pagina oculta de momento
@@ -2597,14 +2602,20 @@
     // Si ya había una sesión abierta (recargar la página, volver más tarde),
     // entra directamente sin pedir contraseña otra vez.
     async function restaurarSesion() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
+      const { data: { session } } = await supabaseClient.auth.getSession();  // mira si había una sesión una abierta en supabase 
+      if (session) {  // si había una sesión, mira si no ha sido borrada o eliminada
         await cargarPerfilActual();
-        if (currentPersona) { entrarEnApp(); return; }
+        if (currentPersona) { entrarEnApp(); return; } // si era la misma persona entra directamente al panel 
       }
-      document.getElementById('loginView').style.display = 'flex';
+      document.getElementById('loginView').style.display = 'flex';  // pone visible el login si no habia sesion iniciado o no es el usuario correcto
     }
-    restaurarSesion();
+    restaurarSesion();  // restaura la sesión
+
+
+
+
+
+
 
 
 
@@ -2616,246 +2627,143 @@
     //  API 
 
 
-    async function apiGet(tabla, params = '') {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, { headers: await authHeaders() });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
+    async function apiGet(tabla, params = '') {  // le pasamos la tabla a consultar y/o filtros de busqueda
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}`, { headers: await authHeaders() });  // coge la direccion de supabase, la tabla y los parametros y además, coge los tokens de acceso para poder acceder
+      if (!r.ok) throw new Error(await r.text());  //si no es correcto porque la tabla no existe o el usuario no existe o algo así, da error
+      return r.json(); // si  no ocurre nada, se devuelven los datos de esa tabla
     }
 
 
-    async function apiGetAll(tabla, params = '') {
-      let todos = [];
-      let desde = 0;
-      const tam = 1000;
-      const headers = await authHeaders();
-      while (true) {
+    async function apiGetAll(tabla, params = '') {  // pasa un poco lo mismo que en la anterior
+      let todos = []; // crea una variable vacia donde vamos a meter todos los datos que vamos a recoger
+      let desde = 0; // cada recogida va a ir desde 0 a
+      const tam = 1000; // 1000 datos como maximo
+      const headers = await authHeaders();  // va a guardar los tokens del login
+      while (true) { // va a repetir esto hasta que le digamos que pare
         const sep = params ? '&' : '';
-        const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}${sep}limit=${tam}&offset=${desde}`, { headers });
-        if (!r.ok) throw new Error(await r.text());
-        const lote = await r.json();
-        todos = todos.concat(lote);
-        if (lote.length < tam) break;
-        desde += tam;
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?${params}${sep}limit=${tam}&offset=${desde}`, { headers });  // le pide mil filas, empezando desde 0 
+        if (!r.ok) throw new Error(await r.text());  // si no se puede da error
+        const lote = await r.json(); // devuelve las respuestas si todo esta bien
+        todos = todos.concat(lote); // y todo esto lo concatena en todos
+        if (lote.length < tam) break;  // esto lo repite hasta que el tamaño del lote sea menor al de mil filas
+        desde += tam; // mientras que no pase eso, vamos aumentando desde donde comienza el lote
       }
-      return todos;
+      return todos;  // devuelve todos los datos que hemos ido concatenando
     }
 
 
-    async function apiPost(tabla, body) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {
-        method: 'POST', headers: await authHeaders(), body: JSON.stringify(body)
+    async function apiPost(tabla, body) {// esta es para enviar y guardar a la base de datos, la tabla a la que lo vamos a meter y todo lo que vamos a meter
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}`, {  // en esta ocasión, no necesita los datos del login de primeras, porque lo va a hacer con un metodo post
+        method: 'POST', headers: await authHeaders(), body: JSON.stringify(body)  // lo va a guardar despues, no según se va cambiando, una vez que esta todo, se mecesita los tokens de acceso y todo el body, todo loq ue vamos a cambiar, se pone en formato json
       });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
+      if (!r.ok) throw new Error(await r.text());  // si algo esta mal, da error
+      return r.json();  // devuelve la confirmación de introducir los datos 
     }
 
 
-    async function apiPatch(tabla, id, body) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
-        method: 'PATCH', headers: await authHeaders(), body: JSON.stringify(body)
+    async function apiPatch(tabla, id, body) {  // este es para editar o modificar
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {  // busca la tabla, el objeto concreto con el id y lo que se va a editar
+        method: 'PATCH', headers: await authHeaders(), body: JSON.stringify(body)  // Aqui dice q va a modificar, no a crear ni a llevarse
       });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
+      if (!r.ok) throw new Error(await r.text());  // si hay algo que no funciona, da error
+      return r.json(); // si no, devuelve la confirmación
     }
 
 
-    async function apiDelete(tabla, id) {
+    async function apiDelete(tabla, id) {  // este va a eliminar aquello que no queramos
       const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=eq.${id}`, {
         method: 'DELETE', headers: await authHeaders()
       });
       if (!r.ok) throw new Error(await r.text());
     }
 
-    // Sube un fichero (PDF/imagen) al bucket "facturas-entrantes" de Supabase Storage
-    async function subirArchivoStorage(file) {
-      const rutaArchivo = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/facturas-entrantes/${rutaArchivo}`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
-          'Content-Type': file.type || 'application/octet-stream'
-        },
-        body: file
-      });
-      if (!r.ok) throw new Error(await r.text());
-      return `${SUPABASE_URL}/storage/v1/object/public/facturas-entrantes/${rutaArchivo}`;
-    }
 
-    async function cargarInventarioCache() { inventarioDB = await apiGetAll('inventario', 'order=nombre'); actualizarDatalistProductos(); }
-    async function cargarClientesCache() { clientesDB = await apiGetAll('clientes', 'order=nombre'); }
-    async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
 
-    function actualizarDatalistProductos() {
-      const dl = document.getElementById('dl_productos');
-      if (!dl) return;
-      dl.innerHTML = inventarioDB.map(p => `<option value="${(p.nombre || '').replace(/"/g, '&quot;')}"></option>`).join('');
-    }
 
-    function buscarProductoPorNombre(nombre) {
-      const norm = s => (s || '').toLowerCase().trim();
-      return inventarioDB.find(p => norm(p.nombre) === norm(nombre)) || null;
-    }
 
-    // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
-    function setupProveedorAC(inputNombreId, inputNifId) {
-      const inpN = document.getElementById(inputNombreId);
-      const inpF = document.getElementById(inputNifId);
-      if (!inpN || !inpF) return;
 
-      inpN.parentElement.style.position = 'relative';
-      inpF.parentElement.style.position = 'relative';
 
-      const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
-      const listaF = _crearLista('ac_f_' + inputNifId, inpF.parentElement);
 
-      function filtrar(q) {
-        return proveedoresDB.filter(p =>
-          (p.nombre || '').toLowerCase().includes(q) ||
-          (p.nif || '').toLowerCase().includes(q)
-        ).slice(0, 10);
-      }
 
-      function seleccionar(prov) {
-        inpN.value = prov.nombre || '';
-        inpF.value = prov.nif || '';
-        listaN.style.display = 'none';
-        listaF.style.display = 'none';
-      }
 
-      function renderLista(lista, items) {
-        if (!items.length) { lista.style.display = 'none'; return; }
-        lista.innerHTML = items.map(p =>
-          `<div class="ac-item" data-id="${p.id}">
-        <span class="ac-nombre">${p.nombre || '—'}</span>
-        <span class="ac-nif">${p.nif || 'Sin NIF'}</span>
-      </div>`
-        ).join('');
-        lista.style.display = 'block';
-        lista.querySelectorAll('.ac-item').forEach(el => {
-          el.addEventListener('mousedown', e => {
-            e.preventDefault();
-            const prov = proveedoresDB.find(p => p.id == el.dataset.id);
-            if (prov) seleccionar(prov);
-          });
-        });
-      }
 
-      inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
-      inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
-      inpN.addEventListener('blur', () => setTimeout(() => {
-        listaN.style.display = 'none';
-        // Si lo que ha escrito coincide exactamente con un proveedor ya
-        // guardado, rellena el NIF aunque no haya hecho clic en la lista.
-        autocompletarNifDesdeDB(inputNombreId, inputNifId, { forzar: false });
-      }, 160));
 
-      inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
-      inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
-      inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));
-    }
 
-    // Busca un proveedor ya existente en la base de datos por nombre exacto
-    // (ignorando mayúsculas/espacios) y devuelve su NIF si lo encuentra.
-    // Se usa para autorellenar el NIF cuando el nombre del proveedor viene
-    // ya sea de la IA o escrito a mano, sin necesidad de hacer clic en el
-    // desplegable de autocompletado.
-    function nifDesdeProveedorDB(nombre) {
-      if (!nombre) return null;
-      const norm = s => (s || '').toLowerCase().trim();
-      const match = proveedoresDB.find(p => norm(p.nombre) === norm(nombre));
-      return (match && match.nif) ? match.nif : null;
-    }
+    //  CAMBIAR DE SECCION
 
-    // Rellena el campo NIF a partir del nombre de proveedor si existe en la
-    // base de datos. Por defecto, el NIF de la base de datos manda sobre
-    // cualquier otro valor (por ejemplo el que haya podido leer la IA),
-    // porque es el dato ya verificado.
-    function autocompletarNifDesdeDB(nombreInputId, nifInputId, { forzar = true } = {}) {
-      const inpN = document.getElementById(nombreInputId);
-      const inpF = document.getElementById(nifInputId);
-      if (!inpN || !inpF) return;
-      const nif = nifDesdeProveedorDB(inpN.value);
-      if (nif && (forzar || !inpF.value)) inpF.value = nif;
-    }
 
-    function _crearLista(id, parent) {
-      let el = document.getElementById(id);
-      if (!el) {
-        el = document.createElement('div');
-        el.id = id;
-        el.className = 'ac-list';
-        el.style.display = 'none';
-        parent.appendChild(el);
-      }
-      return el;
-    }
 
-    // ── SECCIONES ─────────────────────────────────────────────
-    async function cambiarSeccion(sec) {
-      if (!tieneAccesoSeccion(currentPersona, sec)) {
-        alert("No tienes acceso a esta sección.");
+    async function cambiarSeccion(sec) {  // Entra la seccion a la que queremos cambiar. Estamos en una y cuando pulsamos uno de los botones del panel o del topbar, se produce el onclick del html
+      if (!tieneAccesoSeccion(currentPersona, sec)) {   // primero se mira si la persona que ha entrado y la sección a la que quiere entrar son compatibles, es decir, si tiene acceso
+        alert("No tienes acceso a esta sección.");  // si no tiene acceso se avisa y no deja entrar 
         return;
       }
 
-      tablaActual = sec;
-      document.querySelectorAll('.btn-nav').forEach(b =>
+      tablaActual = sec;  // se le dice en que seccion estamos y esa es la tabla actual
+      document.querySelectorAll('.btn-nav').forEach(b =>  // busca en todo el documento los .btn-nav y a cada uno, se ve cual coindice con la seccion a la que queremos entrar y si coincide lo pone como activo
         b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
       );
-      const [tit, ico, stats] = SECCIONES_INFO[sec];
-      document.getElementById('txtSeccionTitulo').textContent = tit;
-      document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;
-      document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';
+      const [tit, ico, stats] = SECCIONES_INFO[sec];  // mira la sección y coge el titulo, el icono y el estado
+      document.getElementById('txtSeccionTitulo').textContent = tit;   //  pone el titulo en la parte que se llame txtSeccionTitulo
+      document.getElementById('iconoSeccion').className = `fa-solid ${ico}`;  // esto igual pero con el icono
+      document.getElementById('statsContenedor').style.display = stats ? 'grid' : 'none';   // borra todo lo demas, alertas, busquedas, si hay algún archivo abierto....
       document.getElementById('alertasWrap').innerHTML = '';
       document.getElementById('badgePendientes').style.display = 'none';
       document.getElementById('filtroObra').style.display = sec === 'facturas_obra' ? '' : 'none';
       document.getElementById('resumenObra').style.display = 'none';
       cerrarVisorPdf();
 
+      // como el calendario de pagos es distinto, hay que borrar todo si es el calendario a la sección que se pulsa
       const esCalendario = sec === 'calendario_pagos';
       document.getElementById('filtrosBar').style.display = esCalendario ? 'none' : 'flex';
       document.getElementById('splitWrap').style.display = esCalendario ? 'none' : 'flex';
       document.getElementById('calendarioPagosWrap').style.display = esCalendario ? 'block' : 'none';
 
       if (esCalendario) {
-        cargarCalendarioPagos();
+        cargarCalendarioPagos();  // si es el calendario, se carga el calendario y para
         return;
       }
 
+      // dependiendo de la seccion lo guardamos en una variable u otra
       const esFacturas = sec === 'facturas_almacen' || sec === 'facturas_obra' || sec === 'facturas_csg';
       const esRevisadas = sec === 'revisadas_facturadas';
       const esObras = sec === 'obras';
+      // si estamos en facturas, revisadas o materiales, le ponemos el botón de exportar, si no, ese boton se queda oculto
       document.getElementById('btnExportar').style.display = (esFacturas || esRevisadas || sec === 'materiales_obra') ? 'flex' : 'none';
+      // si estamos en facturas o albaranes, saldrá el boton de duplicados
       document.getElementById('btnDuplicados').style.display = (esFacturas || sec === 'albaranes') ? 'flex' : 'none';
+      // si estamos en revisadas no sale el boton de añadir nueva
       document.getElementById('btnNuevo').style.display = esRevisadas ? 'none' : 'flex';
 
       const btnTxt = document.getElementById('btnNuevaTxt');
+      // si estamos en clasificación,obras, presupuestos saldra el boton de añadir manualmente 
       btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : sec === 'obras' ? 'Nueva obra' : sec === 'presupuestos' ? 'Nuevo presupuesto' : 'Añadir Nuevo';
 
-      const sel = document.getElementById('filtroEstado');
+      const sel = document.getElementById('filtroEstado');  // barra de busqueda
       const sp = document.getElementById('searchInput');
-      if (esFacturas) {
+      if (esFacturas) {  // si estamos en facturas, los estados seran, pendiente, pagada, vencida e imputada
         sel.innerHTML = `<option value="">Todos los estados</option>
       <option value="pendiente">Pendiente</option>
       <option value="pagado">Pagada</option>
       <option value="vencido">Vencida</option>
       <option value="imputado">Imputada</option>`;
+      // en el buscador se le pone que aparezca como ejemplo eso
         sp.placeholder = sec === 'facturas_obra' ? 'Buscar por nº, proveedor, NIF, obra...' : 'Buscar por nº, proveedor, NIF, concepto...';
-      } else if (esRevisadas) {
+      } else if (esRevisadas) {  // si estamos en revisadas, que podamos ver de donde viene cada una 
         sel.innerHTML = `<option value="">Todos los orígenes</option>
       <option value="facturas_almacen">Almacén</option>
       <option value="facturas_obra">Obra</option>
       <option value="facturas_csg">CSG</option>`;
         sp.placeholder = 'Buscar por nº, proveedor, NIF, concepto...';
-      } else if (esObras) {
+      } else if (esObras) {  // si es en obras, el estado de la obra
         sel.innerHTML = `<option value="">Todos los estados</option>
       <option value="en_curso">En curso</option>
       <option value="cerrada">Cerrada</option>`;
         sp.placeholder = 'Buscar obra o cliente...';
-      } else if (sec === 'clasificacion') {
+      } else if (sec === 'clasificacion') {  // si estamos en clasificación 
         sel.innerHTML = `<option value="">Todas</option>`;
         sp.placeholder = 'Buscar remitente o asunto...';
-      } else if (sec === 'albaranes') {
+      } else if (sec === 'albaranes') {  // si estamos en albaranes, podemos ver si se ha facturado o no
         sel.innerHTML = `<option value="">Todos</option>
   <option value="si">Facturado</option>
   <option value="no">Sin facturar</option>`;
@@ -2872,32 +2780,49 @@
         sel.innerHTML = `<option value="">Todos</option>`;
         sp.placeholder = sec === 'clientes' ? 'Buscar nombre, NIF o email...' : 'Buscar producto...';
       }
-      return cargarDatos().then(() => actualizarBarraScrollFija());
+      return cargarDatos().then(() => actualizarBarraScrollFija());  // una vez que cargemos datos, que se actualice la barra de abajo
     }
 
-    // ── CALENDARIO DE PAGOS ───────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+    //  CALENDARIO DE PAGOS 
+    
+
+
+
+
+
     let calAnio, calMes;
     let calFacturas = [];
 
     let calCitas = [];
 
-    async function cargarCalendarioPagos() {
-      const hoy = new Date();
-      if (calAnio === undefined) {
+    async function cargarCalendarioPagos() {  // cargamos el calendario
+      const hoy = new Date();  // cogemos como fecha de hoy 
+      if (calAnio === undefined) {  // si no tenemos el año, cogemos el año a partir del día de hoy, y el mes igual
         calAnio = hoy.getFullYear();
         calMes = hoy.getMonth();
       }
-      document.getElementById('calGrid').innerHTML =
+      document.getElementById('calGrid').innerHTML =   /// la cuadricula del calendario, hasta que no carga pues que salga cargando...
         '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>';
 
-      const [obra, almacen, csg, citas] = await Promise.all([
+      const [obra, almacen, csg, citas] = await Promise.all([  // el promise es para que haga varias cosas a la vez
+        // trae todas las columnas de obra, almacen, csg y de citas trae las que su estado no sea igual a borrador
         apiGet('facturas_obra', 'select=*'),
         apiGet('facturas_almacen', 'select=*'),
         apiGet('facturas_csg', 'select=*'),
         apiGet('citas', 'select=*&estado=neq.borrador')
       ]);
 
-      calFacturas = [
+      calFacturas = [  // del calendario de facturas 
         ...(obra || []).map(f => ({ ...f, origen: 'facturas_obra' })),
         ...(almacen || []).map(f => ({ ...f, origen: 'facturas_almacen' })),
         ...(csg || []).map(f => ({ ...f, origen: 'facturas_csg' }))
@@ -3113,6 +3038,148 @@
       cerrarModalCita();
       cargarCalendarioPagos();
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    // ARCHIVOS
+
+    // Sube un fichero (PDF/imagen) al bucket "facturas-entrantes" de Supabase Storage
+    async function subirArchivoStorage(file) {
+      const rutaArchivo = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/facturas-entrantes/${rutaArchivo}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': file.type || 'application/octet-stream'
+        },
+        body: file
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return `${SUPABASE_URL}/storage/v1/object/public/facturas-entrantes/${rutaArchivo}`;
+    }
+
+    async function cargarInventarioCache() { inventarioDB = await apiGetAll('inventario', 'order=nombre'); actualizarDatalistProductos(); }
+    async function cargarClientesCache() { clientesDB = await apiGetAll('clientes', 'order=nombre'); }
+    async function cargarProveedoresCache() { proveedoresDB = await apiGet('proveedores', 'order=nombre'); }
+
+    function actualizarDatalistProductos() {
+      const dl = document.getElementById('dl_productos');
+      if (!dl) return;
+      dl.innerHTML = inventarioDB.map(p => `<option value="${(p.nombre || '').replace(/"/g, '&quot;')}"></option>`).join('');
+    }
+
+    function buscarProductoPorNombre(nombre) {
+      const norm = s => (s || '').toLowerCase().trim();
+      return inventarioDB.find(p => norm(p.nombre) === norm(nombre)) || null;
+    }
+
+    // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
+    function setupProveedorAC(inputNombreId, inputNifId) {
+      const inpN = document.getElementById(inputNombreId);
+      const inpF = document.getElementById(inputNifId);
+      if (!inpN || !inpF) return;
+
+      inpN.parentElement.style.position = 'relative';
+      inpF.parentElement.style.position = 'relative';
+
+      const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
+      const listaF = _crearLista('ac_f_' + inputNifId, inpF.parentElement);
+
+      function filtrar(q) {
+        return proveedoresDB.filter(p =>
+          (p.nombre || '').toLowerCase().includes(q) ||
+          (p.nif || '').toLowerCase().includes(q)
+        ).slice(0, 10);
+      }
+
+      function seleccionar(prov) {
+        inpN.value = prov.nombre || '';
+        inpF.value = prov.nif || '';
+        listaN.style.display = 'none';
+        listaF.style.display = 'none';
+      }
+
+      function renderLista(lista, items) {
+        if (!items.length) { lista.style.display = 'none'; return; }
+        lista.innerHTML = items.map(p =>
+          `<div class="ac-item" data-id="${p.id}">
+        <span class="ac-nombre">${p.nombre || '—'}</span>
+        <span class="ac-nif">${p.nif || 'Sin NIF'}</span>
+      </div>`
+        ).join('');
+        lista.style.display = 'block';
+        lista.querySelectorAll('.ac-item').forEach(el => {
+          el.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const prov = proveedoresDB.find(p => p.id == el.dataset.id);
+            if (prov) seleccionar(prov);
+          });
+        });
+      }
+
+      inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
+      inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
+      inpN.addEventListener('blur', () => setTimeout(() => {
+        listaN.style.display = 'none';
+        // Si lo que ha escrito coincide exactamente con un proveedor ya
+        // guardado, rellena el NIF aunque no haya hecho clic en la lista.
+        autocompletarNifDesdeDB(inputNombreId, inputNifId, { forzar: false });
+      }, 160));
+
+      inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
+      inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
+      inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));
+    }
+
+    // Busca un proveedor ya existente en la base de datos por nombre exacto
+    // (ignorando mayúsculas/espacios) y devuelve su NIF si lo encuentra.
+    // Se usa para autorellenar el NIF cuando el nombre del proveedor viene
+    // ya sea de la IA o escrito a mano, sin necesidad de hacer clic en el
+    // desplegable de autocompletado.
+    function nifDesdeProveedorDB(nombre) {
+      if (!nombre) return null;
+      const norm = s => (s || '').toLowerCase().trim();
+      const match = proveedoresDB.find(p => norm(p.nombre) === norm(nombre));
+      return (match && match.nif) ? match.nif : null;
+    }
+
+    // Rellena el campo NIF a partir del nombre de proveedor si existe en la
+    // base de datos. Por defecto, el NIF de la base de datos manda sobre
+    // cualquier otro valor (por ejemplo el que haya podido leer la IA),
+    // porque es el dato ya verificado.
+    function autocompletarNifDesdeDB(nombreInputId, nifInputId, { forzar = true } = {}) {
+      const inpN = document.getElementById(nombreInputId);
+      const inpF = document.getElementById(nifInputId);
+      if (!inpN || !inpF) return;
+      const nif = nifDesdeProveedorDB(inpN.value);
+      if (nif && (forzar || !inpF.value)) inpF.value = nif;
+    }
+
+    function _crearLista(id, parent) {
+      let el = document.getElementById(id);
+      if (!el) {
+        el = document.createElement('div');
+        el.id = id;
+        el.className = 'ac-list';
+        el.style.display = 'none';
+        parent.appendChild(el);
+      }
+      return el;
+    }
+
+
+
+    
 
 
     // ── CARGAR DATOS ──────────────────────────────────────────
@@ -6403,7 +6470,8 @@
     const REVISORES = {
       facturas_obra: [
         { nombre: 'Angel', email: 'angelperez@olivillatres.com', campo: 'revisado_angel' },
-        { nombre: 'Emilio', email: 'efernandez@olivillatres.com', campo: 'revisado_emilio' }
+        { nombre: 'Emilio', email: 'efernandez@olivillatres.com', campo: 'revisado_emilio' },
+        { nombre: 'Cynthia', email: 'cynthiagomez@olivillatres.com', campo: 'revisado_cynthia' }
       ],
       facturas_almacen: [
         { nombre: 'Cynthia', email: 'cynthiagomez@olivillatres.com', campo: 'revisado_cynthia' },
@@ -6411,7 +6479,8 @@
       ],
       facturas_csg: [
         { nombre: 'Angel', email: 'angelperez@olivillatres.com', campo: 'revisado_angel' },
-        { nombre: 'Emilio', email: 'efernandez@olivillatres.com', campo: 'revisado_emilio' }
+        { nombre: 'Emilio', email: 'efernandez@olivillatres.com', campo: 'revisado_emilio' },
+        { nombre: 'Cynthia', email: 'cynthiagomez@olivillatres.com', campo: 'revisado_cynthia' }
       ]
     };
 
