@@ -6180,17 +6180,7 @@
           const nifAlb = document.getElementById('f_nif').value.trim() || null;
           const totalAlb = parseFloat(document.getElementById('f_total').value || 0);
 
-          const duplicadoAlb = await buscarAlbaranDuplicado(numAlbaran, nifAlb, fecha, totalAlb, modalEditId);
-          if (duplicadoAlb) {
-            await registrarDuplicado(duplicadoAlb, {
-              numero_factura: numAlbaran,
-              nif: nifAlb,
-              proveedor: empresa,
-              total: totalAlb
-            }, 'manual');
-            toast('⚠️ Ya existe un albarán igual (duplicado registrado)', 'err');
-            return;
-          }
+
 
           // Los archivos ya se han subido a Storage según se iban seleccionando
           // (ver _leerArchivosAlbaran); aquí solo guardamos las URLs resultantes.
