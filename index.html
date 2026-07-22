@@ -5859,6 +5859,25 @@
       return null;
     }
 
+    async function buscarAlbaranDuplicado(numAlbaran, nif, fecha, total, idExcluir) {
+      if (numAlbaran) {
+        const dup = await apiGet('albaranes', `numero_albaran=eq.${encodeURIComponent(numAlbaran)}`);
+        const encontrado = dup.find(d => d.id !== idExcluir);
+        if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
+        // Igual que en facturas: si hay numero_albaran y no coincide,
+        // no usamos el respaldo NIF+fecha+total.
+        return null;
+      }
+
+      if (nif && fecha && total != null) {
+        const dup = await apiGet('albaranes', `nif=eq.${encodeURIComponent(nif)}&fecha=eq.${fecha}&total=eq.${total}`);
+        const encontrado = dup.find(d => d.id !== idExcluir);
+        if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
+      }
+
+      return null;
+    }
+
 
     async function registrarDuplicado(duplicado, datosIntento, origen) {
       try {
@@ -6179,7 +6198,17 @@
           const numAlbaran = document.getElementById('f_num').value.trim() || null;
           const nifAlb = document.getElementById('f_nif').value.trim() || null;
           const totalAlb = parseFloat(document.getElementById('f_total').value || 0);
-
+          const duplicadoAlb = await buscarAlbaranDuplicado(numAlbaran, nifAlb, fecha, totalAlb, modalEditId);
+          if (duplicadoAlb) {
+            await registrarDuplicado(duplicadoAlb, {
+              numero_factura: numAlbaran,
+              nif: nifAlb,
+              proveedor: empresa,
+              total: totalAlb
+            }, 'manual');
+            toast('⚠️ Ya existe un albarán igual (duplicado registrado)', 'err');
+            return;
+          }
 
 
           // Los archivos ya se han subido a Storage según se iban seleccionando
