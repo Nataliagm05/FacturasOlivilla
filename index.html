@@ -654,12 +654,16 @@
       min-width: 0;
     }
 
+
     .tabla-wrap {
       background: #fff;
       border-radius: 12px;
       border: 1.5px solid #ede5f5;
       overflow-x: auto;
-      overflow-y: visible;
+      overflow-y: auto;
+      /* en vez de clip */
+      max-height: calc(100vh - 230px);
+      /* acota la altura para que haga scroll interno */
       -webkit-overflow-scrolling: touch;
       max-width: 100%;
     }
@@ -689,6 +693,10 @@
       text-align: left;
       border-bottom: 1.5px solid #ede5f5;
       white-space: nowrap;
+      position: sticky;
+      top: 0;
+      /* antes: top: var(--topbar-h, 60px); */
+      z-index: 50;
     }
 
     tbody tr {
@@ -3833,7 +3841,25 @@
 
 
 
+    // ── ENCABEZADO DE TABLA PEGAJOSO (altura dinámica del topbar) ─
+    function actualizarAlturaTopbar() {
+      const topbar = document.querySelector('.topbar');
+      if (!topbar) return;
+      document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
+    }
 
+    if (window.ResizeObserver) {
+      const topbarEl = document.querySelector('.topbar');
+      if (topbarEl) {
+        new ResizeObserver(actualizarAlturaTopbar).observe(topbarEl);
+      }
+    } else {
+      // Fallback para navegadores sin ResizeObserver
+      window.addEventListener('resize', actualizarAlturaTopbar);
+    }
+
+    window.addEventListener('load', actualizarAlturaTopbar);
+    actualizarAlturaTopbar();
 
 
 
