@@ -2209,7 +2209,7 @@
   <div class="barra-scroll-fija" id="barraScrollFija">
     <div id="barraScrollFijaInner"></div>
   </div>
- 
+
   <script>
 
 
@@ -2879,7 +2879,7 @@
 
       calCitas = (citas || []).filter(c => c.fecha);
 
-      calEventos = [];
+      calEventos = [];   // Los eventos que pongan emilio o angel
       if (esAngelOEmilio) {
         try {
           const eventos = await apiEventos('listar');
@@ -2892,25 +2892,25 @@
       renderCalendarioPagos();
     }
 
-    function cambiarMesCalendario(delta) {
+    function cambiarMesCalendario(delta) {  // si le damos a la flecha izquierda despues de enero, pasa al año anterior, al igual que con la derecha con diciembre, pasa al siguiente año
       calMes += delta;
       if (calMes < 0) { calMes = 11; calAnio--; }
       if (calMes > 11) { calMes = 0; calAnio++; }
       renderCalendarioPagos();
     }
 
-    function irMesActualCalendario() {
+    function irMesActualCalendario() {  // recarga al mes actual
       const hoy = new Date();
       calAnio = hoy.getFullYear();
       calMes = hoy.getMonth();
       renderCalendarioPagos();
     }
 
-    function abrirDesdeCalendario(id, origen) {
-      const encontrada = calFacturas.find(f => f.id === id && f.origen === origen);
+    function abrirDesdeCalendario(id, origen) {   // para abrir la factura desde el calendario
+      const encontrada = calFacturas.find(f => f.id === id && f.origen === origen);  // busca la factura pinchada con su id y origen y si la encuentra mira si tiene mas de una y lo muestra
       if (!encontrada) { toast('No se ha encontrado la factura', 'err'); return; }
       if (!registros.some(r => r.id === id)) registros.push(encontrada);
-      abrirModalEditar(id, origen);
+      abrirModalEditar(id, origen);  // abre el modal de editar para poder editar desde el mismo calendario
     }
 
     // Desde la ficha de una obra, ir a Facturas de Obra ya filtrado por esa obra
@@ -2918,26 +2918,33 @@
     function renderCalendarioPagos() {
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
         'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      document.getElementById('calMesTitulo').textContent = `${meses[calMes]} ${calAnio}`;
+      document.getElementById('calMesTitulo').textContent = `${meses[calMes]} ${calAnio}`;  // busca en todo el archivo el titulo del mes en el html y pone el mes y el año
 
+      // dias y horas 
       const primerDia = new Date(calAnio, calMes, 1);
       const ultimoDia = new Date(calAnio, calMes + 1, 0);
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
 
       const diaSemanaInicio = (primerDia.getDay() + 6) % 7;
+      let html = '';
+      ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].forEach(d => {   // los dias de la semana para el html
+        html += `<div class="cal-diasemana">${d}</div>`;
+      });
+
+      for (let i = 0; i < diaSemanaInicio; i++) html += `<div class="cal-celda vacia"></div>`;  // rellena los dias de la semana
 
       const porDia = {};
-      calFacturas.forEach(f => {
+      calFacturas.forEach(f => {  // para cada factura, busca su fecha de vencimiento y mira si tiene, si no, pasa de ella
         const d = f.fecha_vencimiento;
         if (!d) return;
-        const [y, m] = d.split('-').map(Number);
-        if (y === calAnio && (m - 1) === calMes) {
-          (porDia[d] = porDia[d] || []).push(f);
+        const [y, m] = d.split('-').map(Number); // mira la fecha que pone
+        if (y === calAnio && (m - 1) === calMes) {  // ve si esa fecha coincide con el dia en el que estamos
+          (porDia[d] = porDia[d] || []).push(f);  // va guardando las que coincidan y las expone
         }
       });
 
-      const porDiaCitas = {};
+      const porDiaCitas = {}; // para las citas hace lo mismo que para las facturas
       calCitas.forEach(c => {
         const d = c.fecha;
         if (!d) return;
@@ -2948,7 +2955,7 @@
       });
 
       const porDiaEventos = {};
-      calEventos.forEach(ev => {
+      calEventos.forEach(ev => {  // con eventos lo mismo
         const d = ev.fecha;
         if (!d) return;
         const [y, m] = d.split('-').map(Number);
@@ -2957,27 +2964,21 @@
         }
       });
 
-      let html = '';
-      ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].forEach(d => {
-        html += `<div class="cal-diasemana">${d}</div>`;
-      });
 
-      for (let i = 0; i < diaSemanaInicio; i++) html += `<div class="cal-celda vacia"></div>`;
-
-      for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
-        const fechaStr = `${calAnio}-${String(calMes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-        const facturasDia = porDia[fechaStr] || [];
+      for (let dia = 1; dia <= ultimoDia.getDate(); dia++) { // genera todos los dias del mes
+        const fechaStr = `${calAnio}-${String(calMes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`; // transforma los numeros en formato fecha
+        const facturasDia = porDia[fechaStr] || [];  // introduce la fecha para ver las facturas, citas o eventos de ese dia
         const citasDia = porDiaCitas[fechaStr] || [];
         const eventosDia = porDiaEventos[fechaStr] || [];
         const fechaObj = new Date(calAnio, calMes, dia);
-        const esHoy = fechaObj.getTime() === hoy.getTime();
+        const esHoy = fechaObj.getTime() === hoy.getTime();  // mira si es el dia de hoy
 
-        const chipsFacturas = facturasDia.map(f => {
+        const chipsFacturas = facturasDia.map(f => {   // ahora para las facturas de caddadia mira su estado, comparandolo con el día de hoy para ver si esta vencida o no, proveedor, para así darle colores 
           const pagado = f.estado === 'pagado';
           const vencida = !pagado && fechaObj < hoy;
           const clase = pagado ? 'pagado' : (vencida ? 'vencido' : 'pendiente');
           const prov = (f.proveedor || 'Sin proveedor');
-          return `<div class="cal-chip ${clase}" onclick="abrirDesdeCalendario(${f.id},'${f.origen}')"
+          return `<div class="cal-chip ${clase}" onclick="abrirDesdeCalendario(${f.id},'${f.origen}')"  // esto permite abrir la factura desde el calendario
     title="${prov} — ${fmt(f.total)} — ${f.metodo_pago || 'Sin método de pago'}">
     <span class="cal-chip-prov">${prov.length > 16 ? prov.substring(0, 16) + '…' : prov}</span>
     <span>${fmt(f.total)}</span>
@@ -2985,7 +2986,7 @@
   </div>`;
         }).join('');
 
-        const chipsCitas = citasDia.map(c => {
+        const chipsCitas = citasDia.map(c => {  // hace lo mismo con las citas
           const clase = c.estado === 'confirmada' ? 'cita-confirmada'
             : c.estado === 'reprogramada' ? 'cita-reprogramada'
               : 'cita-pendiente';
@@ -2999,7 +3000,7 @@
 
         const totalDia = facturasDia.reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
 
-        const chipsEventos = eventosDia.map(ev => {
+        const chipsEventos = eventosDia.map(ev => {  // hace lo mismo con los eventos
           const titulo = ev.titulo || 'Evento';
           return `<div class="cal-chip evento" onclick="abrirEventoCalendario('${ev.id}')"
     title="${titulo} — ${NOMBRES_PERSONAS[ev.creado_por] || ev.creado_por}${ev.hora ? ' — ' + ev.hora : ''}">
