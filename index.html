@@ -1970,7 +1970,7 @@
           <button onclick="cambiarMesCalendario(1)"><i class="fa-solid fa-chevron-right"></i></button>
           <button class="cal-hoy-btn" onclick="irMesActualCalendario()">Hoy</button>
           <button class="cal-hoy-btn" id="btnAnadirEvento"
-            style="display:none;background:#b53987;border-color:#b53987;color:white;"
+            style="display:none;background:#b53987;border-color:#b53987;color:white"
             onclick="abrirModalNuevoEvento()"><i class="fa-solid fa-bell me-1"></i>Añadir evento</button>
         </div>
         <div class="cal-grid" id="calGrid">
@@ -2209,7 +2209,8 @@
   <div class="barra-scroll-fija" id="barraScrollFija">
     <div id="barraScrollFijaInner"></div>
   </div>
-
+  return ['modalNueva', 'modalMaterialObra', 'modalDetalle', 'modalExportar', 'modalExportarMateriales', 'modalCita',
+  'modalPuntos']
   <script>
 
 
@@ -2855,6 +2856,8 @@
       document.getElementById('calGrid').innerHTML =   /// la cuadricula del calendario, hasta que no carga pues que salga cargando...
         '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div>';
 
+
+
       const btnEvento = document.getElementById('btnAnadirEvento');
       const esAngelOEmilio = ['angel', 'emilio'].includes(currentPersona);
       if (btnEvento) btnEvento.style.display = esAngelOEmilio ? '' : 'none';
@@ -2880,7 +2883,7 @@
       calEventos = [];
       if (esAngelOEmilio) {
         try {
-          const eventos = await apiGet('eventos_calendario', 'select=*');
+          const eventos = await apiEventos('listar');
           calEventos = (eventos || []).filter(e => e.fecha);
         } catch (e) {
           console.error('No se pudieron cargar los eventos del calendario:', e);
@@ -3056,18 +3059,32 @@
       return persona === 'angel' ? 'emilio' : 'angel';
     }
 
+    async function apiEventos(accion, datos = {}) {
+      const r = await fetch(
+        'https://ppezngdpumbbqpkalpyx.supabase.co/functions/v1/eventos-calendario',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+          body: JSON.stringify({ accion, persona: currentPersona, ...datos })
+        }
+      );
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Error al comunicarse con eventos-calendario');
+      return data;
+    }
+
     function abrirModalNuevoEvento() {
       if (!['angel', 'emilio'].includes(currentPersona)) return;
       document.getElementById('eventoModalTitulo').textContent = 'Nuevo evento';
       document.getElementById('eventoModalBody').innerHTML = `
-    <div class="form-group"><label>Título *</label><input type="text" id="ev_titulo" placeholder="Ej: Revisar pedido con proveedor"></div>
-    <div class="form-group"><label>Fecha *</label><input type="date" id="ev_fecha" value="${hoy()}"></div>
-    <div class="form-group"><label>Hora <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="time" id="ev_hora"></div>
-    <div class="form-group"><label>Notas <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="text" id="ev_notas" placeholder="Detalles adicionales"></div>
-    <p style="font-size:.78rem;color:#888;margin-top:6px"><i class="fa-solid fa-circle-info me-1"></i>Se avisará por WhatsApp a ${NOMBRES_PERSONAS[otraPersonaEvento(currentPersona)]} en cuanto lo guardes.</p>`;
+<div class="form-group"><label>Título *</label><input type="text" id="ev_titulo" placeholder="Ej: Revisar pedido con proveedor"></div>
+<div class="form-group"><label>Fecha *</label><input type="date" id="ev_fecha" value="${hoy()}"></div>
+<div class="form-group"><label>Hora <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="time" id="ev_hora"></div>
+<div class="form-group"><label>Notas <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="text" id="ev_notas" placeholder="Detalles adicionales"></div>
+<p style="font-size:.78rem;color:#888;margin-top:6px"><i class="fa-solid fa-circle-info me-1"></i>Se avisará por WhatsApp a ${NOMBRES_PERSONAS[otraPersonaEvento(currentPersona)]} en cuanto lo guardes.</p>`;
       document.getElementById('eventoModalBtns').innerHTML = `
-    <button class="btn-cancelar" onclick="cerrarModal('modalEvento')">Cancelar</button>
-    <button class="btn-guardar" onclick="guardarEventoCalendario()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>`;
+<button class="btn-cancelar" onclick="cerrarModal('modalEvento')">Cancelar</button>
+<button class="btn-guardar" onclick="guardarEventoCalendario()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>`;
       document.getElementById('modalEvento').classList.add('visible');
     }
 
@@ -3081,10 +3098,8 @@
 
       const paraPersona = otraPersonaEvento(currentPersona);
       try {
-        await apiPost('eventos_calendario', {
-          titulo, fecha, hora, notas,
-          creado_por: currentPersona,
-          para_persona: paraPersona
+        await apiEventos('crear', {
+          evento: { titulo, fecha, hora, notas, para_persona: paraPersona }
         });
         toast('Evento guardado');
         cerrarModal('modalEvento');
@@ -3100,21 +3115,21 @@
       if (!ev) { toast('No se ha encontrado el evento', 'err'); return; }
       document.getElementById('eventoModalTitulo').textContent = 'Evento';
       document.getElementById('eventoModalBody').innerHTML = `
-    <p><b>${ev.titulo || '-'}</b></p>
-    <p><b>Fecha:</b> ${ev.fecha} &nbsp; <b>Hora:</b> ${ev.hora || '-'}</p>
-    <p><b>Añadido por:</b> ${NOMBRES_PERSONAS[ev.creado_por] || ev.creado_por}</p>
-    ${ev.notas ? `<p><b>Notas:</b> ${ev.notas}</p>` : ''}`;
+<p><b>${ev.titulo || '-'}</b></p>
+<p><b>Fecha:</b> ${ev.fecha} &nbsp; <b>Hora:</b> ${ev.hora || '-'}</p>
+<p><b>Añadido por:</b> ${NOMBRES_PERSONAS[ev.creado_por] || ev.creado_por}</p>
+${ev.notas ? `<p><b>Notas:</b> ${ev.notas}</p>` : ''}`;
       const puedeBorrar = currentPersona === ev.creado_por;
       document.getElementById('eventoModalBtns').innerHTML = `
-    <button class="btn-cancelar" onclick="cerrarModal('modalEvento')">Cerrar</button>
-    ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="eliminarEventoCalendario('${ev.id}')"><i class="fa-solid fa-trash me-1"></i>Eliminar</button>` : ''}`;
+<button class="btn-cancelar" onclick="cerrarModal('modalEvento')">Cerrar</button>
+${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="eliminarEventoCalendario('${ev.id}')"><i class="fa-solid fa-trash me-1"></i>Eliminar</button>` : ''}`;
       document.getElementById('modalEvento').classList.add('visible');
     }
 
     async function eliminarEventoCalendario(id) {
       if (!confirm('¿Seguro que deseas eliminar este evento?')) return;
       try {
-        await apiDelete('eventos_calendario', id);
+        await apiEventos('eliminar', { id });
         toast('Evento eliminado');
         cerrarModal('modalEvento');
         cargarCalendarioPagos();
