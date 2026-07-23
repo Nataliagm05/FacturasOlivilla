@@ -1084,14 +1084,15 @@
       display: flex;
       gap: 16px;
       width: 100%;
-      max-width: 1320px;
+      max-width: 1600px;
       margin: auto;
       align-items: flex-start;
     }
 
     .modal-nueva-wrap .modal-box {
-      flex: 1;
-      max-width: 900px;
+      flex: 1 1 640px;
+      min-width: 640px;
+      max-width: 960px;
       margin: 0;
     }
 
@@ -1106,8 +1107,8 @@
     }
 
     .modal-pdf-panel {
-      flex: 0 0 1000px;
-      max-width: 1000px;
+      flex: 1 1 760px;
+      max-width: 760px;
       background: #fff;
       border-radius: 14px;
       overflow: hidden;
@@ -1173,7 +1174,7 @@
       width: 100%;
     }
 
-    @media (max-width: 1100px) {
+    @media (max-width: 1450px) {
       .modal-nueva-wrap {
         flex-direction: column;
       }
@@ -4622,8 +4623,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }).join('');
       } else if (tablaActual === 'ingresos') {
         hdr.innerHTML = `<tr>
-    <th>Nº Int.</th><th>Fecha</th><th>Cobro previsto</th><th>Cliente</th><th>Obra</th>
-    <th>Nº Ingreso</th><th>Concepto</th>
+    <th>Nº Int.</th><th>Fecha</th><th>Cobro previsto</th><th>NIF</th><th>Cliente</th><th>Obra</th>
+    <th>Nº Factura</th><th>Concepto</th>
     <th class="num-cell">Base</th><th class="pct-cell">%IVA</th><th class="num-cell">IVA</th>
     <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th></th>
   </tr>`;
