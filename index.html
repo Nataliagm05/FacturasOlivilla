@@ -3063,12 +3063,12 @@
 
 
     async function guardarReprogramacionCalendario(id) {   // si se reprograma la cita 
-      const fecha = document.getElementById(`reprogFecha-${id}`).value;
+      const fecha = document.getElementById(`reprogFecha-${id}`).value; // guardamos el valor y la hora de la fecha nueva
       const hora = document.getElementById(`reprogHora-${id}`).value;
 
       const CITAS_ANON_KEY = 'sb_publishable_TDJzbWS4cL3TQoTx1DVAmg_pJ4Ur2M5';
 
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/reprogramar-cita`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/reprogramar-cita`, {  // se envia al usuario al reprogramacion
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3091,7 +3091,7 @@
       const CITAS_ANON_KEY = 'sb_publishable_TDJzbWS4cL3TQoTx1DVAmg_pJ4Ur2M5';
 
       try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/confirmar-cita`, {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/confirmar-cita`, {  // se conecta con supabase y se le envia la notificacion de la confirmación al usuario
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3118,7 +3118,7 @@
       const CITAS_ANON_KEY = 'sb_publishable_TDJzbWS4cL3TQoTx1DVAmg_pJ4Ur2M5';
 
       try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/cancelar-cita`, {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/cancelar-cita`, {  // se le envia la notificacion de la cancelacion al usuario
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3141,7 +3141,7 @@
 
 
 
-    // ── EVENTOS DE CALENDARIO (Angel / Emilio) ──────────────────
+    // EVENTOS DE CALENDARIO (Angel / Emilio)
     function otraPersonaEvento(persona) {   // esto es solo para angel o emilio, cualquier otra persona no lo ve
       return persona === 'angel' ? 'emilio' : 'angel';
     }
