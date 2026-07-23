@@ -2212,6 +2212,10 @@
         <label>Año</label>
         <select id="exportYear"></select>
       </div>
+      <div class="form-group" id="exportObraWrap" style="display:none">
+        <label>Obra</label>
+        <select id="exportObraFiltro"></select>
+      </div>
 
       <div class="form-group">
         <label>Meses</label>
@@ -2825,7 +2829,7 @@
       const esRevisadas = sec === 'revisadas_facturadas';
       const esObras = sec === 'obras';
       // si estamos en facturas, revisadas o materiales, le ponemos el botón de exportar, si no, ese boton se queda oculto
-      document.getElementById('btnExportar').style.display = (esFacturas || esRevisadas || sec === 'materiales_obra') ? 'flex' : 'none';
+      document.getElementById('btnExportar').style.display = (esFacturas || esRevisadas || sec === 'materiales_obra' || sec === 'ingresos') ? 'flex' : 'none';
       // si estamos en facturas o albaranes, saldrá el boton de duplicados
       document.getElementById('btnDuplicados').style.display = (esFacturas || sec === 'albaranes') ? 'flex' : 'none';
       // si estamos en revisadas no sale el boton de añadir nueva
@@ -5588,7 +5592,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             total_iva1: numToNull('f_total_iva1'),
             total: parseFloat(document.getElementById('f_total').value || 0),
             estado: document.getElementById('f_est').value,
-            fecha_vencimiento: document.getElementById('f_venc').value || null
+            fecha_vencimiento: document.getElementById('f_venc').value || null,
+            descuento: numToNull('f_descuento'),
+            pago_permisos: numToNull('f_pago_permisos'),
+            pct_iva_permisos: numToNull('f_pct_iva_permisos'),
+            total_iva_permisos: numToNull('f_total_iva_permisos'),
+            total_con_permisos: numToNull('f_total_con_permisos'),
           };
           if (archivosFacturaSeleccionados.length) {
             payload.archivo_url = archivosFacturaSeleccionados[0].url;
@@ -6243,6 +6252,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       set('f_total_iva1', p.total_iva1);
       set('f_total', p.total);
       set('f_venc', p.fecha_vencimiento);
+      set('f_descuento', p.descuento);
+      set('f_pago_permisos', p.pago_permisos);
+      set('f_pct_iva_permisos', p.pct_iva_permisos);
+      set('f_total_iva_permisos', p.total_iva_permisos);
+      set('f_total_con_permisos', p.total_con_permisos);
     }
 
 
@@ -6583,6 +6597,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           set('f_total', f.total);
           set('f_venc', f.fecha_vencimiento);
           set('f_est', f.estado || 'pendiente');
+          set('f_descuento', f.descuento);
+          set('f_pago_permisos', f.pago_permisos);
+          set('f_pct_iva_permisos', f.pct_iva_permisos);
+          set('f_total_iva_permisos', f.total_iva_permisos);
+          set('f_total_con_permisos', f.total_con_permisos);
 
           renderChipsRevisionModal('ingresos', f);
 
@@ -6867,6 +6886,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-group"><label>Base (€)</label><input type="number" id="f_base1" step="0.01" placeholder="0.00"></div>
       <div class="form-group"><label>% IVA</label><input type="number" id="f_pct_iva1" step="0.01" value="21"></div>
       <div class="form-group"><label>Total IVA (€)</label><input type="number" id="f_total_iva1" step="0.01" placeholder="0.00"></div>
+
+      <div class="form-group"><label>Descuento (€)</label><input type="number" id="f_descuento" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Pago de permisos (€)</label><input type="number" id="f_pago_permisos" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>% IVA permisos</label><input type="number" id="f_pct_iva_permisos" step="0.01" placeholder="21"></div>
+
+      <div class="form-group"><label>Total IVA permisos (€)</label><input type="number" id="f_total_iva_permisos" step="0.01" placeholder="0.00"></div>
+      <div class="form-group span2"><label>Total con permisos (€)</label><input type="number" id="f_total_con_permisos" step="0.01" placeholder="0.00"></div>
 
       <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
       <div class="form-group"><label>Cobro previsto</label><input type="date" id="f_venc"></div>
@@ -7390,8 +7416,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         abrirModalExportarMateriales();
         return;
       }
-      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas') {
-        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG, Revisadas y Facturadas, y Material de Obra', 'err');
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos') {
+        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG, Revisadas y Facturadas, Ingresos y Material de Obra', 'err');
         return;
       }
       const sel = document.getElementById('exportYear');
@@ -7404,32 +7430,87 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         sel.appendChild(opt);
       }
       sel.value = currentYear;
+
+      const obraWrap = document.getElementById('exportObraWrap');
+      if (tablaActual === 'ingresos') {
+        const obras = [...new Set(registros.map(r => r.nombre_obra).filter(Boolean))].sort();
+        document.getElementById('exportObraFiltro').innerHTML =
+          `<option value="">Todas las obras</option>` + obras.map(o => `<option value="${o}">${o}</option>`).join('');
+        obraWrap.style.display = 'block';
+      } else {
+        obraWrap.style.display = 'none';
+      }
+
       document.getElementById('modalExportar').classList.add('visible');
     }
 
     function exportarExcel() {
-      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas') {
-        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG y Revisadas y Facturadas', 'err');
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos') {
+        toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG, Revisadas y Facturadas e Ingresos', 'err');
         return;
       }
       if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
 
       const year = parseInt(document.getElementById('exportYear').value);
       const meses = Array.from(document.querySelectorAll('#exportMeses input:checked')).map(i => parseInt(i.value));
+      const obraFiltro = tablaActual === 'ingresos' ? document.getElementById('exportObraFiltro').value : '';
 
       const filtrados = registros.filter(f => {
         if (!f.fecha) return false;
         const [y, m] = f.fecha.split('-').map(Number);
         if (y !== year) return false;
         if (meses.length && !meses.includes(m)) return false;
+        if (obraFiltro && f.nombre_obra !== obraFiltro) return false;
         return true;
       });
 
       if (!filtrados.length) { toast('No hay datos para ese filtro', 'err'); return; }
 
+      // ── INGRESOS: rama independiente ──
+      if (tablaActual === 'ingresos') {
+        const cabeceras = [
+          'NUMERACION INTERNA', 'Fecha', 'Cliente', 'Obra', 'Nº Ingreso', 'Concepto',
+          'Base', '%IVA', 'Total IVA',
+          'Descuento', 'Pago permisos', '%IVA permisos', 'Total IVA permisos', 'Total con permisos',
+          'Cobro previsto', 'Estado', 'Total'
+        ];
+        const filas = filtrados.map(f => ({
+          'NUMERACION INTERNA': f.numero_interno || '',
+          'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
+          'Cliente': f.cliente || '',
+          'Obra': f.nombre_obra || '',
+          'Nº Ingreso': f.numero_ingreso || '',
+          'Concepto': f.concepto || '',
+          'Base': f.base1 != null ? parseFloat(f.base1) : '',
+          '%IVA': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
+          'Total IVA': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+          'Descuento': f.descuento != null ? parseFloat(f.descuento) : '',
+          'Pago permisos': f.pago_permisos != null ? parseFloat(f.pago_permisos) : '',
+          '%IVA permisos': f.pct_iva_permisos != null ? parseFloat(f.pct_iva_permisos) : '',
+          'Total IVA permisos': f.total_iva_permisos != null ? parseFloat(f.total_iva_permisos) : '',
+          'Total con permisos': f.total_con_permisos != null ? parseFloat(f.total_con_permisos) : '',
+          'Cobro previsto': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : '',
+          'Estado': (f.estado || 'pendiente') === 'pagado' ? 'COBRADO' : (f.estado || 'pendiente').toUpperCase(),
+          'Total': f.total != null ? parseFloat(f.total) : 0
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
+        ws['!cols'] = [14, 12, 22, 22, 14, 26, 10, 7, 10, 10, 12, 10, 12, 12, 12, 12, 10].map(w => ({ wch: w }));
+        XLSX.utils.book_append_sheet(wb, ws, 'Ingresos');
+        const fecha = new Date().toISOString().split('T')[0];
+        const nombre = `ingresos_${obraFiltro || 'todas'}_${fecha}.xlsx`;
+        XLSX.writeFile(wb, nombre);
+        toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
+        return;
+      }
+
+      // ── (a partir de aquí sigue tal cual tu código actual para
+      //     facturas_almacen / facturas_obra / facturas_csg / revisadas_facturadas) ──
       const esObra = tablaActual === 'facturas_obra';
       const esCsg = tablaActual === 'facturas_csg';
       const esRevisadas = tablaActual === 'revisadas_facturadas';
+
       const origenLabel = { facturas_almacen: 'Almacén', facturas_obra: 'Obra', facturas_csg: 'CSG' };
       const cabeceras = [
         ...(esRevisadas ? ['ORIGEN'] : []),
