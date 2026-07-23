@@ -2096,7 +2096,16 @@
     </div>
   </div>
 
-
+  <!-- MODAL COBROS PARCIALES (ingresos) -->
+  <div class="modal-overlay" id="modalCobros">
+    <div class="modal-box-sm">
+      <h3><i class="fa-solid fa-coins" style="color:#b53987"></i>Cobros parciales</h3>
+      <div id="cobrosModalBody"></div>
+      <div class="modal-btns">
+        <button class="btn-cancelar" onclick="cerrarModal('modalCobros')">Cerrar</button>
+      </div>
+    </div>
+  </div>
   <!-- MODAL COMPRA CLIENTE -->
   <div class="modal-overlay" id="modalPuntos">
     <div class="modal-box-sm">
@@ -2250,6 +2259,8 @@
   <div class="barra-scroll-fija" id="barraScrollFija">
     <div id="barraScrollFijaInner"></div>
   </div>
+
+
   <script>
 
 
@@ -2385,7 +2396,7 @@
 
     // Primero mira si hay un modal abierto, y si lo hay, no hace nada (para no romper lo que se está editando en ese momento).
     function hayModalAbierto() {
-      return ['modalNueva', 'modalMaterialObra', 'modalDetalle', 'modalExportar', 'modalExportarMateriales', 'modalCita', 'modalPuntos', 'modalEvento']
+      return ['modalNueva', 'modalMaterialObra', 'modalDetalle', 'modalExportar', 'modalExportarMateriales', 'modalCita', 'modalPuntos', 'modalEvento', 'modalCobros']
         // Mira si hay un modal abierto de la lista annterior y si hay uno o más responde true, si no, responde false
         .some(id => document.getElementById(id)?.classList.contains('visible')); // para cada id de la lista a revisar (document.getElementById(id) busca en la pagina exactamente el que tenga ese nombre) Mira si existe, si no sigue adelante, y si existe mira si esta visible
     }
@@ -4626,7 +4637,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     <th>Nº Int.</th><th>Fecha</th><th>Cobro previsto</th><th>NIF</th><th>Cliente</th><th>Obra</th>
     <th>Nº Factura</th><th>Concepto</th>
     <th class="num-cell">Base</th><th class="pct-cell">%IVA</th><th class="num-cell">IVA</th>
-    <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th></th>
+    <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Cobros</th><th></th>
   </tr>`;
         const fObraIng = document.getElementById('filtroObra').value;
         const lista = registros.filter(f => {
@@ -4644,6 +4655,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           return `<tr>
       <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
       <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+      <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
       <td class="td-nombre">${f.cliente || '—'}</td>
       <td class="td-nombre">${f.nombre_obra || '—'}</td>
       <td><strong>${f.numero_ingreso || '—'}</strong></td>
@@ -4661,6 +4673,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           ${est === 'pagado' ? '<i class="fa-solid fa-rotate-left me-1"></i>Pendiente' : '<i class="fa-solid fa-check me-1"></i>Cobrado'}
         </button>
       </td>
+      <td>${celdaCobrosParciales(f)}</td>
       <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
     </tr>`;
         }).join('');
@@ -5586,6 +5599,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             numero_ingreso: document.getElementById('f_num').value.trim() || null,
             fecha,
             cliente,
+            nif: document.getElementById('f_nif').value.trim() || null,
             nombre_obra: obra,
             concepto: document.getElementById('f_concepto').value.trim() || null,
             base1: numToNull('f_base1'),
@@ -5606,6 +5620,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           } else {
             payload.archivo_url = null;
             payload.archivos_urls = [];
+          }
+
+          if (modalEditId) {
+            await apiPatch('ingresos', modalEditId, payload);
+          } else {
+            await apiPost('ingresos', payload);
           }
         }
 
@@ -6276,7 +6296,85 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       return '—';
     }
 
+    function celdaCobrosParciales(f) {
+      const cobros = f.cobros_parciales || [];
+      const cobrado = cobros.reduce((s, c) => s + (parseFloat(c.cantidad) || 0), 0);
+      const pendiente = parseFloat(f.total || 0) - cobrado;
+      const estilo = cobros.length
+        ? (pendiente <= 0 ? 'background:#e8f5e9;color:#2d7a4f;border:1.5px solid #81c784'
+          : 'background:#fff3e0;color:#c47a00;border:1.5px solid #f0c060')
+        : 'background:#f7f0f5;color:#4a3b68;border:1.5px solid #ede5f5';
+      return `<button class="btn-toggle-pago" style="${estilo}" onclick="abrirModalCobros(${f.id})" title="Registrar cobros parciales">
+    <i class="fa-solid fa-coins me-1"></i>${cobros.length ? fmt(cobrado) : 'Añadir'}
+  </button>`;
+    }
 
+    let cobrosIngresoActualId = null;
+
+    function abrirModalCobros(id) {
+      const f = registros.find(r => r.id === id);
+      if (!f) { toast('No se ha encontrado el ingreso', 'err'); return; }
+      cobrosIngresoActualId = id;
+      renderModalCobros(f);
+      document.getElementById('modalCobros').classList.add('visible');
+    }
+
+    function renderModalCobros(f) {
+      const cobros = (f.cobros_parciales || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+      const totalCobrado = cobros.reduce((s, c) => s + (parseFloat(c.cantidad) || 0), 0);
+      const totalIngreso = parseFloat(f.total || 0);
+      const pendiente = totalIngreso - totalCobrado;
+
+      document.getElementById('cobrosModalBody').innerHTML = `
+    <p style="font-size:.85rem;margin-bottom:10px"><b>${f.cliente || '—'}</b> — ${f.numero_ingreso || 's/n'}</p>
+    <div class="stats-grid" style="margin-bottom:14px">
+      <div class="stat"><div class="slabel">Total factura</div><div class="sval">${fmt(totalIngreso)}</div></div>
+      <div class="stat verde"><div class="slabel">Cobrado</div><div class="sval">${fmt(totalCobrado)}</div></div>
+      <div class="stat rojo"><div class="slabel">Pendiente</div><div class="sval">${fmt(pendiente)}</div></div>
+    </div>
+    <table class="mini-table"><thead><tr><th>Fecha</th><th>Importe</th><th></th></tr></thead><tbody>
+      ${cobros.length ? cobros.map((c, i) => `<tr>
+        <td>${fmtF(c.fecha)}</td>
+        <td><strong>${fmt(c.cantidad)}</strong></td>
+        <td><button class="btn-eliminar" onclick="quitarCobroParcial(${i})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:#aaa">Sin cobros registrados</td></tr>'}
+    </tbody></table>
+    <div class="form-grid-2" style="margin-top:14px">
+      <div class="form-group"><label>Fecha</label><input type="date" id="cobro_fecha" value="${hoy()}"></div>
+      <div class="form-group"><label>Importe (€)</label><input type="number" id="cobro_cantidad" step="0.01" min="0" placeholder="0.00"></div>
+    </div>
+    <button type="button" class="btn-add-linea" style="margin-top:10px" onclick="addCobroParcial()"><i class="fa-solid fa-plus me-1"></i>Añadir cobro</button>
+  `;
+    }
+
+    async function addCobroParcial() {
+      const fecha = document.getElementById('cobro_fecha').value;
+      const cantidad = parseFloat(document.getElementById('cobro_cantidad').value || 0);
+      if (!fecha || !cantidad || cantidad <= 0) { toast('Indica fecha e importe válidos', 'err'); return; }
+      const f = registros.find(r => r.id === cobrosIngresoActualId);
+      if (!f) return;
+      const cobros = [...(f.cobros_parciales || []), { fecha, cantidad }];
+      try {
+        await apiPatch('ingresos', f.id, { cobros_parciales: cobros });
+        f.cobros_parciales = cobros;
+        renderModalCobros(f);
+        renderTabla();
+        toast('Cobro registrado');
+      } catch (e) { toast('Error al guardar el cobro: ' + e.message, 'err'); }
+    }
+
+    async function quitarCobroParcial(idx) {
+      const f = registros.find(r => r.id === cobrosIngresoActualId);
+      if (!f) return;
+      const cobros = (f.cobros_parciales || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+      cobros.splice(idx, 1);
+      try {
+        await apiPatch('ingresos', f.id, { cobros_parciales: cobros });
+        f.cobros_parciales = cobros;
+        renderModalCobros(f);
+        renderTabla();
+      } catch (e) { toast('Error al eliminar el cobro: ' + e.message, 'err'); }
+    }
 
 
 
@@ -6589,6 +6687,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           set('f_num_interno', f.numero_interno);
           set('f_num', f.numero_ingreso);
           set('f_fecha', f.fecha);
+          set('f_nif', f.nif);
           set('f_cliente', f.cliente);
           set('f_obra', f.nombre_obra);
           set('f_concepto', f.concepto);
@@ -6879,8 +6978,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-group"><label>Nº Ingreso</label><input type="text" id="f_num" placeholder="ING-2026-001"></div>
       <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
 
-      <div class="form-group span2"><label>Cliente *</label><input type="text" id="f_cliente" placeholder="Nombre del cliente"></div>
-      <div class="form-group"><label>Nombre de la obra *</label><input type="text" id="f_obra" list="dl_obras" placeholder="Ej: Reforma Calle Mayor 12"></div>
+<div class="form-group span2"><label>Cliente *</label><input type="text" id="f_cliente" placeholder="Nombre del cliente"></div>
+<div class="form-group"><label>NIF</label><input type="text" id="f_nif" placeholder="45123456B"></div>
+<div class="form-group"><label>Nombre de la obra *</label><input type="text" id="f_obra" list="dl_obras" placeholder="Ej: Reforma Calle Mayor 12"></div>
 
       <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción del ingreso"></div>
 
@@ -7470,34 +7570,43 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       // ── INGRESOS: rama independiente ──
       if (tablaActual === 'ingresos') {
         const cabeceras = [
-          'NUMERACION INTERNA', 'Fecha', 'Cliente', 'Obra', 'Nº Ingreso', 'Concepto',
+          'NUMERACION INTERNA', 'Fecha', 'NIF', 'Cliente', 'Obra', 'Nº Ingreso', 'Concepto',
           'Base', '%IVA', 'Total IVA',
           'Descuento', 'Pago permisos', '%IVA permisos', 'Total IVA permisos', 'Total con permisos',
-          'Cobro previsto', 'Estado', 'Total'
+          'Cobro previsto', 'Estado', 'Total', 'Cobrado', 'Pendiente', 'Detalle cobros'
         ];
-        const filas = filtrados.map(f => ({
-          'NUMERACION INTERNA': f.numero_interno || '',
-          'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
-          'Cliente': f.cliente || '',
-          'Obra': f.nombre_obra || '',
-          'Nº Ingreso': f.numero_ingreso || '',
-          'Concepto': f.concepto || '',
-          'Base': f.base1 != null ? parseFloat(f.base1) : '',
-          '%IVA': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
-          'Total IVA': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
-          'Descuento': f.descuento != null ? parseFloat(f.descuento) : '',
-          'Pago permisos': f.pago_permisos != null ? parseFloat(f.pago_permisos) : '',
-          '%IVA permisos': f.pct_iva_permisos != null ? parseFloat(f.pct_iva_permisos) : '',
-          'Total IVA permisos': f.total_iva_permisos != null ? parseFloat(f.total_iva_permisos) : '',
-          'Total con permisos': f.total_con_permisos != null ? parseFloat(f.total_con_permisos) : '',
-          'Cobro previsto': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : '',
-          'Estado': (f.estado || 'pendiente') === 'pagado' ? 'COBRADO' : (f.estado || 'pendiente').toUpperCase(),
-          'Total': f.total != null ? parseFloat(f.total) : 0
-        }));
+        const filas = filtrados.map(f => {
+          const cobros = (f.cobros_parciales || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+          const cobrado = cobros.reduce((s, c) => s + (parseFloat(c.cantidad) || 0), 0);
+          const detalle = cobros.map(c => `${c.fecha.split('-').reverse().join('/')}: ${parseFloat(c.cantidad).toFixed(2)}€`).join(' | ');
+          return {
+            'NUMERACION INTERNA': f.numero_interno || '',
+            'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
+            'NIF': f.nif || '',
+            'Cliente': f.cliente || '',
+            'Obra': f.nombre_obra || '',
+            'Nº Ingreso': f.numero_ingreso || '',
+            'Concepto': f.concepto || '',
+            'Base': f.base1 != null ? parseFloat(f.base1) : '',
+            '%IVA': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
+            'Total IVA': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+            'Descuento': f.descuento != null ? parseFloat(f.descuento) : '',
+            'Pago permisos': f.pago_permisos != null ? parseFloat(f.pago_permisos) : '',
+            '%IVA permisos': f.pct_iva_permisos != null ? parseFloat(f.pct_iva_permisos) : '',
+            'Total IVA permisos': f.total_iva_permisos != null ? parseFloat(f.total_iva_permisos) : '',
+            'Total con permisos': f.total_con_permisos != null ? parseFloat(f.total_con_permisos) : '',
+            'Cobro previsto': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : '',
+            'Estado': (f.estado || 'pendiente') === 'pagado' ? 'COBRADO' : (f.estado || 'pendiente').toUpperCase(),
+            'Total': f.total != null ? parseFloat(f.total) : 0,
+            'Cobrado': cobrado,
+            'Pendiente': (parseFloat(f.total || 0) - cobrado),
+            'Detalle cobros': detalle
+          };
+        });
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
-        ws['!cols'] = [14, 12, 22, 22, 14, 26, 10, 7, 10, 10, 12, 10, 12, 12, 12, 12, 10].map(w => ({ wch: w }));
+        ws['!cols'] = [14, 12, 22, 22, 14, 26, 10, 7, 10, 10, 12, 10, 12, 12, 12, 12, 10, 12, 10, 12, 40].map(w => ({ wch: w }));
         XLSX.utils.book_append_sheet(wb, ws, 'Ingresos');
         const fecha = new Date().toISOString().split('T')[0];
         const nombre = `ingresos_${obraFiltro || 'todas'}_${fecha}.xlsx`;
