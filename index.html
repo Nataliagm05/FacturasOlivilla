@@ -5729,7 +5729,21 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
 
-
+    async function crearProductoRapidoDesdeLineaCompra(idx) {
+      const inp = document.getElementById(`lc_prod_${idx}`);
+      if (!inp) return;
+      const nombre = inp.value.trim();
+      if (!nombre) { toast('Escribe primero el nombre del producto', 'err'); return; }
+      if (buscarProductoPorNombre(nombre)) { toast(`"${nombre}" ya existe en el inventario`, 'err'); return; }
+      try {
+        const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+        inventarioDB.push(nuevo);
+        actualizarDatalistProductos();
+        toast(`Producto "${nombre}" añadido al inventario`, 'ok');
+      } catch (e) {
+        toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
+      }
+    }
 
 
 
@@ -6472,7 +6486,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad</label>
-      <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center">
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLineaCompra(${idx})"
+          style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
     </div>
     <div class="form-group" style="margin:0;width:70px">
       <label style="font-size:.75rem">Puntos</label>
