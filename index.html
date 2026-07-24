@@ -5264,33 +5264,33 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       }
     }
 
-    function addLineaFactAlm() {
-      lineasFacturaCount++;
-      const idx = lineasFacturaCount;
+    function addLineaMaterial() {
+      lineasMaterialCount++;
+      const idx = lineasMaterialCount;
       const div = document.createElement('div');
-      div.id = `lfa_${idx}`;
+      div.id = `lm_${idx}`;
       div.className = 'linea-prod';
       div.innerHTML = `
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Producto</label>
-      <input type="text" id="lfa_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o añadir nuevo...">
+      <label style="font-size:.75rem">Material</label>
+      <input type="text" id="lm_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo...">
     </div>
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Cantidad recibida</label>
+      <label style="font-size:.75rem">Cantidad</label>
       <div style="display:flex;gap:4px;align-items:center">
-        <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
-        <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLinea(${idx})"
+        <input type="number" id="lm_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLineaMaterial(${idx})"
           style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
           <i class="fa-solid fa-plus"></i>
         </button>
       </div>
     </div>
     <div style="width:80px"></div>
-    <button type="button" onclick="document.getElementById('lfa_${idx}').remove()"
+    <button type="button" onclick="document.getElementById('lm_${idx}').remove()"
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
     </button>`;
-      document.getElementById('lineasFactAlm').appendChild(div);
+      document.getElementById('lineasMaterial').appendChild(div);
     }
 
     async function crearProductoRapidoDesdeLinea(idx) {
@@ -6183,7 +6183,21 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       toast(`<i class="fa-solid fa-file-excel me-1"></i>Excel descargado: <strong>${nombre}</strong>`, 'ok');
     }
 
-
+    async function crearProductoRapidoDesdeLineaMaterial(idx) {
+      const inp = document.getElementById(`lm_prod_${idx}`);
+      if (!inp) return;
+      const nombre = inp.value.trim();
+      if (!nombre) { toast('Escribe primero el nombre del material', 'err'); return; }
+      if (buscarProductoPorNombre(nombre)) { toast(`"${nombre}" ya existe en el inventario`, 'err'); return; }
+      try {
+        const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+        inventarioDB.push(nuevo);
+        actualizarDatalistProductos();
+        toast(`Producto "${nombre}" añadido al inventario`, 'ok');
+      } catch (e) {
+        toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
+      }
+    }
 
 
 
@@ -7582,7 +7596,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       // ── INGRESOS: rama independiente ──
       if (tablaActual === 'ingresos') {
         const cabeceras = [
-          'NUMERACION INTERNA', 'Fecha', 'NIF', 'Cliente', 'Obra', 'Nº Ingreso', 'Concepto',
+          'Nº Interno', 'Fecha', 'NIF', 'Cliente', 'Obra', 'Nº Factura', 'Concepto',
           'Base', '%IVA', 'Total IVA', 'Total',
           'Cobrado', 'Pendiente', 'Detalle cobros',
           'Descuento', 'Pago permisos', '%IVA permisos', 'Total IVA permisos', 'Total con permisos'
@@ -7592,12 +7606,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const cobrado = cobros.reduce((s, c) => s + (parseFloat(c.cantidad) || 0), 0);
           const detalle = cobros.map(c => `${c.fecha.split('-').reverse().join('/')}: ${parseFloat(c.cantidad).toFixed(2)}€`).join(' | ');
           return {
-            'NUMERACION INTERNA': f.numero_interno || '',
+            'Nº Interno': f.numero_interno || '',
             'Fecha': f.fecha ? f.fecha.split('-').reverse().join('/') : '',
             'NIF': f.nif || '',
             'Cliente': f.cliente || '',
             'Obra': f.nombre_obra || '',
-            'Nº Ingreso': f.numero_ingreso || '',
+            'Nº Factura': f.numero_ingreso || '',
             'Concepto': f.concepto || '',
             'Base': f.base1 != null ? parseFloat(f.base1) : '',
             '%IVA': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
