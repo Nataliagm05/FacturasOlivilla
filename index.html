@@ -3344,9 +3344,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     // ARCHIVOS
 
     // Sube un fichero (PDF/imagen) al bucket "facturas-entrantes" de Supabase Storage
-    async function subirArchivoStorage(file) {
-      const rutaArchivo = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/facturas-entrantes/${rutaArchivo}`, {
+    async function subirArchivoStorage(file) {   // subimos los archivos a supabase
+      const rutaArchivo = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;   // lo guardamos con la fecha de hoy y crea la ruta
+      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/facturas-entrantes/${rutaArchivo}`, {   // lo guarda
         method: 'POST',
         headers: {
           'apikey': SUPABASE_KEY,
@@ -3361,7 +3361,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
 
     // Detecta si el archivo es una imagen (fotos/escaneos con el móvil) en vez de un PDF real.
-    function esImagen(url) {
+    function esImagen(url) {   // mira la url para ver si es imagen
       return /\.(png|jpe?g|gif|webp|bmp)(\?|#|$)/i.test((url || '').split('#')[0].split('?')[0]);
     }
 
@@ -3369,7 +3369,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     // - PDF real: iframe con el visor nativo del navegador (con su propia barra si el navegador la da).
     // - Imagen: <img> con nuestra propia barra de zoom +/- y botón de descarga, porque las imágenes
     //   sueltas no traen ningún control del navegador y se veían "cortadas" a tamaño real.
-    function renderVisorContenido(contenedorId, url) {
+    function renderVisorContenido(contenedorId, url) {   // dependiendo del tipo de archivo, se verá una cabecera u otra
       const cont = document.getElementById(contenedorId);
       if (!cont) return;
 
@@ -3380,10 +3380,10 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         return;
       }
 
-      if (esImagen(url)) {
+      if (esImagen(url)) {  // si es imagen 
         const imgId = contenedorId + 'Img';
         const pctId = contenedorId + 'Pct';
-        cont.innerHTML = `
+        cont.innerHTML = `  // se ajusta todo y se ponen las funciones
           <div class="visor-img-zoom-barra">
             <button type="button" onclick="ajustarZoomImg('${contenedorId}', -0.25)" title="Reducir zoom"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
             <span id="${pctId}">100%</span>
@@ -3394,14 +3394,14 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             <img id="${imgId}" src="${url}" data-zoom="1" alt="Vista previa">
           </div>`;
       } else {
-        cont.innerHTML = `<iframe src="${url}#toolbar=1&view=FitH" style="width:100%;height:100%;border:none"></iframe>`;
+        cont.innerHTML = `<iframe src="${url}#toolbar=1&view=FitH" style="width:100%;height:100%;border:none"></iframe>`;  // si no es imagen se queda el contenedor normal de chrome
       }
     }
 
-    function ajustarZoomImg(contenedorId, delta) {
+    function ajustarZoomImg(contenedorId, delta) {  // esta funcion es para poder hacer zoom si el archivo es escaneado
       const img = document.getElementById(contenedorId + 'Img');
       const pct = document.getElementById(contenedorId + 'Pct');
-      if (!img) return;
+      if (!img) return;  // si no es imagen no hace nada
       let actual = parseFloat(img.dataset.zoom || '1');
       actual = Math.min(4, Math.max(0.25, actual + delta));
       img.dataset.zoom = actual;
@@ -3409,18 +3409,18 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       if (pct) pct.textContent = Math.round(actual * 100) + '%';
     }
 
-    function limpiarVisorContenido(contenedorId) {
+    function limpiarVisorContenido(contenedorId) {  // una vez que se ha visto, se limpia para que cuando queramos ver otro archivo no salga el mismo que antes
       const cont = document.getElementById(contenedorId);
       if (cont) cont.innerHTML = '';
     }
 
-    function verArchivoPanel(url, titulo) {
+    function verArchivoPanel(url, titulo) {  // si no funciona la url da error 
       if (!url || !/^https?:\/\//i.test(url)) {
         toast('Este archivo no tiene una URL válida (puede ser una factura antigua guardada antes de usar Storage) — súbelo de nuevo desde Editar', 'err');
         return;
       }
 
-      if (window.innerWidth <= 1100) {
+      if (window.innerWidth <= 1100) {  // si no, ajusta el visor
         mostrarVisorPdfMovil(url, titulo);
         return;
       }
@@ -3428,7 +3428,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const visor = document.getElementById('visorPdf');
       const origen = (window.event && window.event.target) ? window.event.target.closest('tr') : null;
 
-      visor.style.display = 'flex';
+      visor.style.display = 'flex';  // lo muestra
       document.getElementById('visorPdfTitulo').textContent = titulo || 'Factura';
       document.getElementById('visorPdfNueva').href = url;
       renderVisorContenido('visorPdfContenido', url);
@@ -3442,7 +3442,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       }
     }
 
-    function mostrarVisorPdfMovil(url, titulo) {
+    function mostrarVisorPdfMovil(url, titulo) {  // lo mismo pero para pantallas mas pequeñas
       const anterior = document.getElementById('visorPdfMovilFila');
       if (anterior) anterior.remove();
 
@@ -5382,6 +5382,21 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           }
           if (tabla === 'facturas_obra' || tabla === 'facturas_csg') payload.nombre_obra = document.getElementById('f_obra').value.trim();
 
+          const prevReg = modalEditId ? registros.find(r => r.id === modalEditId && (r.origen ? r.origen === tabla : true)) : null;
+          const productosPrevios = (prevReg && prevReg.productos_recibidos) || [];
+          const productosNuevos = [];
+          document.querySelectorAll('[id^="lfa_prod_"]').forEach(inp => {
+            const nombre = inp.value.trim();
+            if (!nombre) return;
+            const idx = inp.id.split('_')[2];
+            const cant = parseFloat(document.getElementById(`lfa_cant_${idx}`)?.value || 0);
+            if (cant > 0) productosNuevos.push({ producto_nombre: nombre, cantidad: cant });
+          });
+          if (productosNuevos.length) {
+            payload.productos_recibidos = [...productosPrevios, ...productosNuevos];
+            payload.productos_registrados = true;
+          }
+
           if (modalEditId) {
             await apiPatch(tabla, modalEditId, payload);
           } else {
@@ -6799,7 +6814,20 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         set('f_num_albaranes', (f.numeros_albaran || []).join(', '));
 
         renderChipsRevisionModal(tabla, f);
-
+        const avisoProd = document.getElementById('avisoProductosRegistrados');
+        if (avisoProd) {
+          const productos = f.productos_recibidos || [];
+          if (productos.length) {
+            avisoProd.innerHTML = `<div style="background:#e8f5e9;border:1.5px solid #81c784;border-radius:8px;padding:10px 12px;font-size:.82rem;color:#2d7a4f">
+      <div style="font-weight:600;margin-bottom:4px"><i class="fa-solid fa-check-circle me-1"></i>Productos ya registrados en esta factura:</div>
+      <ul style="margin:0;padding-left:18px">
+        ${productos.map(p => `<li>${p.producto_nombre} (${p.cantidad})</li>`).join('')}
+      </ul>
+    </div>`;
+          } else {
+            avisoProd.innerHTML = `<span class="badge-estado badge-vencido"><i class="fa-solid fa-triangle-exclamation"></i> Todavía NO se han registrado productos</span>`;
+          }
+        }
         if (f.archivos_urls && f.archivos_urls.length) {
           archivosFacturaSeleccionados = f.archivos_urls.map((url, i) => ({ url, nombre: `Archivo ${i + 1}` }));
         } else if (f.archivo_url) {
