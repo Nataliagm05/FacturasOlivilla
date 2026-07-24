@@ -4640,7 +4640,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     <th>Nº Int.</th><th>Fecha</th><th>Cobro previsto</th><th>NIF</th><th>Cliente</th><th>Obra</th>
     <th>Nº Factura</th><th>Concepto</th>
     <th class="num-cell">Base</th><th class="pct-cell">%IVA</th><th class="num-cell">IVA</th>
-    <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Cobros</th><th></th>
+    <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Cobros</th>
+    <th class="num-cell">Descuento</th><th class="num-cell">Pago permisos</th><th class="pct-cell">%IVA permisos</th><th class="num-cell">Total IVA permisos</th><th class="num-cell">Total con permisos</th>
+    <th></th>
   </tr>`;
         const fObraIng = document.getElementById('filtroObra').value;
         const lista = registros.filter(f => {
@@ -4677,7 +4679,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         </button>
       </td>
       <td>${celdaCobrosParciales(f)}</td>
-      <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+<td class="num-cell">${fmtN(f.descuento)}</td>
+<td class="num-cell">${fmtN(f.pago_permisos)}</td>
+<td class="pct-cell">${f.pct_iva_permisos != null ? f.pct_iva_permisos + '%' : '—'}</td>
+<td class="num-cell">${fmtN(f.total_iva_permisos)}</td>
+<td class="num-cell">${fmtN(f.total_con_permisos)}</td>
+<td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
     </tr>`;
         }).join('');
 
@@ -7576,9 +7583,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       if (tablaActual === 'ingresos') {
         const cabeceras = [
           'NUMERACION INTERNA', 'Fecha', 'NIF', 'Cliente', 'Obra', 'Nº Ingreso', 'Concepto',
-          'Base', '%IVA', 'Total IVA',
-          'Descuento', 'Pago permisos', '%IVA permisos', 'Total IVA permisos', 'Total con permisos',
-          'Cobro previsto', 'Estado', 'Total', 'Cobrado', 'Pendiente', 'Detalle cobros'
+          'Base', '%IVA', 'Total IVA', 'Total',
+          'Cobrado', 'Pendiente', 'Detalle cobros',
+          'Descuento', 'Pago permisos', '%IVA permisos', 'Total IVA permisos', 'Total con permisos'
         ];
         const filas = filtrados.map(f => {
           const cobros = (f.cobros_parciales || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
@@ -7595,23 +7602,21 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             'Base': f.base1 != null ? parseFloat(f.base1) : '',
             '%IVA': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
             'Total IVA': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+            'Total': f.total != null ? parseFloat(f.total) : 0,
+            'Cobrado': cobrado,
+            'Pendiente': (parseFloat(f.total || 0) - cobrado),
+            'Detalle cobros': detalle,
             'Descuento': f.descuento != null ? parseFloat(f.descuento) : '',
             'Pago permisos': f.pago_permisos != null ? parseFloat(f.pago_permisos) : '',
             '%IVA permisos': f.pct_iva_permisos != null ? parseFloat(f.pct_iva_permisos) : '',
             'Total IVA permisos': f.total_iva_permisos != null ? parseFloat(f.total_iva_permisos) : '',
-            'Total con permisos': f.total_con_permisos != null ? parseFloat(f.total_con_permisos) : '',
-            'Cobro previsto': f.fecha_vencimiento ? f.fecha_vencimiento.split('-').reverse().join('/') : '',
-            'Estado': (f.estado || 'pendiente') === 'pagado' ? 'COBRADO' : (f.estado || 'pendiente').toUpperCase(),
-            'Total': f.total != null ? parseFloat(f.total) : 0,
-            'Cobrado': cobrado,
-            'Pendiente': (parseFloat(f.total || 0) - cobrado),
-            'Detalle cobros': detalle
+            'Total con permisos': f.total_con_permisos != null ? parseFloat(f.total_con_permisos) : ''
           };
         });
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(filas, { header: cabeceras });
-        ws['!cols'] = [14, 12, 22, 22, 14, 26, 10, 7, 10, 10, 12, 10, 12, 12, 12, 12, 10, 12, 10, 12, 40].map(w => ({ wch: w }));
+        ws['!cols'] = [14, 12, 22, 22, 14, 26, 30, 10, 7, 10, 10, 10, 10, 40, 12, 12, 12, 12, 12].map(w => ({ wch: w }));
         XLSX.utils.book_append_sheet(wb, ws, 'Ingresos');
         const fecha = new Date().toISOString().split('T')[0];
         const nombre = `ingresos_${obraFiltro || 'todas'}_${fecha}.xlsx`;
