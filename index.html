@@ -3084,8 +3084,8 @@
     <span>${ev.hora || ''}</span>
   </div>`;
         }).join('');
-
-        html += `<div class="cal-celda${esHoy ? ' hoy' : ''}">  // ponemos en el dia las facturas, citas y eventos
+        // ponemos en el dia las facturas, citas y eventos
+        html += `<div class="cal-celda${esHoy ? ' hoy' : ''}">  
   <div class="cal-num">${dia}</div>
   ${facturasDia.length ? `<div class="cal-total-dia">${fmt(totalDia)}</div>` : ''}
   <div class="cal-chips">${chipsFacturas}${chipsCitas}${chipsEventos}</div>
@@ -3486,7 +3486,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     // Construye la celda "Archivo" de facturas, soportando 1 o varios archivos adjuntos
-    function celdaArchivoFactura(f) {  
+    function celdaArchivoFactura(f) {
       const titulo = (f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'");
       if (f.archivos_urls && f.archivos_urls.length > 1) {   // vemos si hay mas de un archivo
         return `<select class="select-albaranes" onchange="if(this.value) verArchivoPanel(this.value,'${titulo}')">
@@ -3584,7 +3584,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         });
       }
 
-        // Mientras el usuario escribe letras: filtra y dibuja las sugerencias al vuelo
+      // Mientras el usuario escribe letras: filtra y dibuja las sugerencias al vuelo
       inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
       // Si el usuario hace clic dentro de la casilla y ya había algo escrito: abre las sugerencias
       inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
@@ -3627,9 +3627,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       if (nif && (forzar || !inpF.value)) inpF.value = nif;
     }
 
-    function _crearLista(id, parent) {
-      let el = document.getElementById(id);
-      if (!el) {
+    function _crearLista(id, parent) {  // esta es la funcion que crea la lista anterior
+      let el = document.getElementById(id);  // busca el id
+      if (!el) {  // si no hay, se crea el provedor con los datos y se guarda
         el = document.createElement('div');
         el.id = id;
         el.className = 'ac-list';
@@ -3664,27 +3664,28 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
     // CARGAR DATOS
     async function cargarDatos() {
-      if (tablaActual === 'calendario_pagos') {
+      if (tablaActual === 'calendario_pagos') {  // si estamos en calendario, carga el calendario
         cargarCalendarioPagos();
         return;
       }
       document.getElementById('tablaBody').innerHTML =
-        `<tr><td colspan="23"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;
+        `<tr><td colspan="23"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i>Cargando...</div></td></tr>`;  // sale mientras carga
       try {
-        if (tablaActual === 'revisadas_facturadas') {
+        if (tablaActual === 'revisadas_facturadas') {  // si estamos en revisadas y facturadas,  busca de todas las tablas por orden de fecha
           const [almacen, obra, csg] = await Promise.all([
             apiGetAll('facturas_almacen', 'order=fecha.desc'),
             apiGetAll('facturas_obra', 'order=fecha.desc'),
             apiGetAll('facturas_csg', 'order=fecha.desc')
           ]);
-          const filtrarRevisadasYPagadas = (lista, origen) => (lista || [])
+          const filtrarRevisadasYPagadas = (lista, origen) => (lista || [])  // luego filtra las que esten totalmente revisadas y el estado ya sea pagado
             .filter(f => f.estado === 'pagado' && estaTotalmenteRevisada(origen, f))
-            .map(f => ({ ...f, origen }));
-          registros = [
+            .map(f => ({ ...f, origen }));  // para que vea el origen de donde vienen
+          registros = [  // mira las de todas la tablas
             ...filtrarRevisadasYPagadas(almacen, 'facturas_almacen'),
             ...filtrarRevisadasYPagadas(obra, 'facturas_obra'),
             ...filtrarRevisadasYPagadas(csg, 'facturas_csg')
-          ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+          ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));  // ordena todas las fechas juntas
+          // renueva y descarga todas las bases de datos
           inventarioDB = await apiGetAll('inventario', 'order=nombre');
           clientesDB = await apiGetAll('clientes', 'order=nombre');
           proveedoresDB = await apiGetAll('proveedores', 'order=nombre');
@@ -3693,7 +3694,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           return;
         }
         const orden = {
-          clasificacion: 'clasificado=eq.false&order=fecha_recibido.desc',
+          clasificacion: 'clasificado=eq.false&order=fecha_recibido.desc',  // coge todas las que no esten clasificadas
           facturas_almacen: 'order=fecha.desc',
           facturas_obra: 'order=fecha.desc',
           facturas_csg: 'order=fecha.desc',
