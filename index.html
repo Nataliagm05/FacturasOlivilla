@@ -3478,27 +3478,29 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       fila.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    function cerrarVisorPdf() {
-      document.getElementById('visorPdf').style.display = 'none';
-      limpiarVisorContenido('visorPdfContenido');
-      const filaMovil = document.getElementById('visorPdfMovilFila');
+    function cerrarVisorPdf() {  // para cerar el visor
+      document.getElementById('visorPdf').style.display = 'none';  // lo ocultamos
+      limpiarVisorContenido('visorPdfContenido');  // lo limpiamos para que no salga el mismo la proxima vez 
+      const filaMovil = document.getElementById('visorPdfMovilFila');   // si estamos en movil, se cierra el del movil
       if (filaMovil) filaMovil.remove();
     }
 
     // Construye la celda "Archivo" de facturas, soportando 1 o varios archivos adjuntos
-    function celdaArchivoFactura(f) {
+    function celdaArchivoFactura(f) {  
       const titulo = (f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'");
-      if (f.archivos_urls && f.archivos_urls.length > 1) {
+      if (f.archivos_urls && f.archivos_urls.length > 1) {   // vemos si hay mas de un archivo
         return `<select class="select-albaranes" onchange="if(this.value) verArchivoPanel(this.value,'${titulo}')">
       <option value="">${f.archivos_urls.length} archivos</option>
       ${f.archivos_urls.map((u, i) => `<option value="${u}">Archivo ${i + 1}</option>`).join('')}
     </select>`;
       }
-      if (f.archivo_url) {
+      if (f.archivo_url) {  // si solo hay uno
         return `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${titulo}')"><i class="fa-solid fa-paperclip"></i></span>`;
       }
       return '—';
     }
+
+
 
 
 
@@ -3538,26 +3540,26 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       return inventarioDB.find(p => norm(p.nombre) === norm(nombre)) || null;
     }
 
-    // ── AUTOCOMPLETADO PROVEEDORES ────────────────────────────
-    function setupProveedorAC(inputNombreId, inputNifId) {
+    // AUTOCOMPLETADO PROVEEDORES
+    function setupProveedorAC(inputNombreId, inputNifId) {   // busca la casilla del nombre y del nif del proveedor
       const inpN = document.getElementById(inputNombreId);
       const inpF = document.getElementById(inputNifId);
-      if (!inpN || !inpF) return;
+      if (!inpN || !inpF) return;  // si no existe alguna, termina
 
-      inpN.parentElement.style.position = 'relative';
+      inpN.parentElement.style.position = 'relative'; // hace un ajuste de diseño
       inpF.parentElement.style.position = 'relative';
 
-      const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);
+      const listaN = _crearLista('ac_n_' + inputNombreId, inpN.parentElement);   // crea dos caja vacias y es donde se pondran los resultados
       const listaF = _crearLista('ac_f_' + inputNifId, inpF.parentElement);
 
-      function filtrar(q) {
+      function filtrar(q) {   // cada vez que se escribe un proveedor se va a la lista de proveedores y busca coincidencias
         return proveedoresDB.filter(p =>
           (p.nombre || '').toLowerCase().includes(q) ||
           (p.nif || '').toLowerCase().includes(q)
         ).slice(0, 10);
       }
 
-      function seleccionar(prov) {
+      function seleccionar(prov) {  // cuando sale el proveedor y su nif debajo de lo que estamos poniendo y lo seleccionamos esta funcion lo rellena con esos datos las casillas correspondientes
         inpN.value = prov.nombre || '';
         inpF.value = prov.nif || '';
         listaN.style.display = 'none';
@@ -3565,7 +3567,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       }
 
       function renderLista(lista, items) {
-        if (!items.length) { lista.style.display = 'none'; return; }
+        if (!items.length) { lista.style.display = 'none'; return; }  // mira si hay algo escrito en esas casillas  y las pone, si no lo hay no
         lista.innerHTML = items.map(p =>
           `<div class="ac-item" data-id="${p.id}">
         <span class="ac-nombre">${p.nombre || '—'}</span>
@@ -3573,7 +3575,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       </div>`
         ).join('');
         lista.style.display = 'block';
-        lista.querySelectorAll('.ac-item').forEach(el => {
+        lista.querySelectorAll('.ac-item').forEach(el => {  // despues de los botones sugeridos, si la persona pulsa uno, se buscan los datos y se rellenan los datos
           el.addEventListener('mousedown', e => {
             e.preventDefault();
             const prov = proveedoresDB.find(p => p.id == el.dataset.id);
@@ -3582,18 +3584,23 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         });
       }
 
+        // Mientras el usuario escribe letras: filtra y dibuja las sugerencias al vuelo
       inpN.addEventListener('input', () => renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())));
+      // Si el usuario hace clic dentro de la casilla y ya había algo escrito: abre las sugerencias
       inpN.addEventListener('focus', () => { if (inpN.value.trim()) renderLista(listaN, filtrar(inpN.value.toLowerCase().trim())); });
-      inpN.addEventListener('blur', () => setTimeout(() => {
+      //Si el usuario hace clic fuera de la casilla (abandona el campo):
+      inpN.addEventListener('blur', () => setTimeout(() => {  // Esconde la lista flotante tras 0.16 segundos
+        // Si lo que escribió a mano coincide al 100% con un proveedor, 
+        // le auto-rellena el NIF de fondo aunque no haya hecho clic en la lista sugerida.
         listaN.style.display = 'none';
         // Si lo que ha escrito coincide exactamente con un proveedor ya
         // guardado, rellena el NIF aunque no haya hecho clic en la lista.
         autocompletarNifDesdeDB(inputNombreId, inputNifId, { forzar: false });
       }, 160));
 
-      inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())));
-      inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });
-      inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));
+      inpF.addEventListener('input', () => renderLista(listaF, filtrar(inpF.value.toLowerCase().trim()))); // dibuja la cajita flotante con las sugerencias
+      inpF.addEventListener('focus', () => { if (inpF.value.trim()) renderLista(listaF, filtrar(inpF.value.toLowerCase().trim())); });  // si el usuario ya había escrito un NIF a medias antes, vuelve a activar el buscador y reabre el menú desplegable con las sugerencias para que no tenga que borrar y volver a escribir para verlo.
+      inpF.addEventListener('blur', () => setTimeout(() => listaF.style.display = 'none', 160));  // Se activa en el milisegundo exacto en el que el usuario hace clic fuera de la casilla del NIF para pasar a otro campo del formulario
     }
 
     // Busca un proveedor ya existente en la base de datos por nombre exacto
