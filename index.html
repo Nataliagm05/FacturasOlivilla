@@ -5264,33 +5264,33 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       }
     }
 
-    function addLineaMaterial() {
-      lineasMaterialCount++;
-      const idx = lineasMaterialCount;
+    function addLineaFactAlm() {
+      lineasFacturaCount++;
+      const idx = lineasFacturaCount;
       const div = document.createElement('div');
-      div.id = `lm_${idx}`;
+      div.id = `lfa_${idx}`;
       div.className = 'linea-prod';
       div.innerHTML = `
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Material</label>
-      <input type="text" id="lm_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo...">
+      <label style="font-size:.75rem">Producto</label>
+      <input type="text" id="lfa_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o añadir nuevo...">
     </div>
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Cantidad</label>
+      <label style="font-size:.75rem">Cantidad recibida</label>
       <div style="display:flex;gap:4px;align-items:center">
-        <input type="number" id="lm_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
-        <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLineaMaterial(${idx})"
+        <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLinea(${idx})"
           style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
           <i class="fa-solid fa-plus"></i>
         </button>
       </div>
     </div>
     <div style="width:80px"></div>
-    <button type="button" onclick="document.getElementById('lm_${idx}').remove()"
+    <button type="button" onclick="document.getElementById('lfa_${idx}').remove()"
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
     </button>`;
-      document.getElementById('lineasMaterial').appendChild(div);
+      document.getElementById('lineasFactAlm').appendChild(div);
     }
 
     async function crearProductoRapidoDesdeLinea(idx) {
@@ -6564,8 +6564,15 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad</label>
-      <input type="number" id="lm_cant_${idx}" value="1" min="1" style="text-align:center">
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="number" id="lm_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLineaMaterial(${idx})"
+          style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
     </div>
+    <div style="width:80px"></div>
     <button type="button" onclick="document.getElementById('lm_${idx}').remove()"
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
