@@ -2821,7 +2821,7 @@
       document.getElementById('sPagar').previousElementSibling.textContent = esIngresos ? 'Por cobrar' : 'Por pagar';
       document.getElementById('alertasWrap').innerHTML = '';
       document.getElementById('badgePendientes').style.display = 'none';
-      document.getElementById('filtroObra').style.display = (sec === 'facturas_obra' || sec === 'albaranes' || sec === 'ingresos') ? '' : 'none';
+      document.getElementById('filtroObra').style.display = (sec === 'facturas_obra' || sec === 'facturas_csg' || sec === 'albaranes' || sec === 'ingresos') ? '' : 'none';
       document.getElementById('resumenObra').style.display = 'none';
       cerrarVisorPdf();
 
@@ -3716,7 +3716,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           actualizarStats(); renderAlertas();
           comprobarFacturasVencidasSinRevisar();
         }
-        if (tablaActual === 'facturas_obra' || tablaActual === 'albaranes' || tablaActual === 'ingresos') {
+        if (tablaActual === 'facturas_obra' || tablaActual === 'facturas_csg' || tablaActual === 'albaranes' || tablaActual === 'ingresos') {
           const obras = [...new Set(registros.map(r => r.nombre_obra).filter(Boolean))].sort();
           const selObra = document.getElementById('filtroObra');
           const actual = selObra.value;
@@ -4269,8 +4269,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         // FACTURAS CSG
       } else if (tablaActual === 'facturas_csg') {
         hdr.innerHTML = `<tr>
-      <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th>
-      <th>Nº Factura</th><th>Concepto</th>
+  <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
+  <th>Nº Factura</th><th>Concepto</th>
       <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
       <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th></th><th>Editar</th><th>Acción</th><th>Imputar</th><th>Impreso</th><th></th><th></th>
@@ -4281,11 +4281,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <th class="num-cell">Exento</th><th class="num-cell">Descuento</th>
       <th class="num-cell">Base Ret.</th><th class="pct-cell">%Ret.</th><th class="num-cell">Total Ret.</th>
     </tr>`;
+        const fObra = document.getElementById('filtroObra').value;
         const lista = registros.filter(f => {
-          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
+          const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto, f.nombre_obra].some(v => (v || '').toLowerCase().includes(q));
+          const mObra = !fObra || f.nombre_obra === fObra;
           const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
-          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
+          return mQ && mObra && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
         });
         if (!lista.length) { bdy.innerHTML = emptyRow(36, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
@@ -4297,7 +4299,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
-        <td><strong>${f.numero_factura || '—'}</strong>${f.veces_reenviada ? `<span title="Reenviada ${f.veces_reenviada} vez${f.veces_reenviada > 1 ? 'es' : ''}${f.ultimo_reenvio ? ' — última vez: ' + new Date(f.ultimo_reenvio).toLocaleString('es-ES') : ''}" style="margin-left:5px;font-size:.68rem;background:#fff3e0;color:#c47a00;padding:1px 6px;border-radius:20px;font-weight:600"><i class="fa-solid fa-clone"></i> ${f.veces_reenviada}</span>` : ''}</td>
+<td class="td-nombre">${f.nombre_obra || '—'}</td>
+<td><strong>${f.numero_factura || '—'}</strong>${f.veces_reenviada ? `<span title="Reenviada ${f.veces_reenviada} vez${f.veces_reenviada > 1 ? 'es' : ''}${f.ultimo_reenvio ? ' — última vez: ' + new Date(f.ultimo_reenvio).toLocaleString('es-ES') : ''}" style="margin-left:5px;font-size:.68rem;background:#fff3e0;color:#c47a00;padding:1px 6px;border-radius:20px;font-weight:600"><i class="fa-solid fa-clone"></i> ${f.veces_reenviada}</span>` : ''}</td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
         <td>${(f.numeros_albaran && f.numeros_albaran.length)
               ? `<select class="select-albaranes" onchange="if(this.value) verAlbaranPorNumero(this.value,'${f.nif || ''}')">
@@ -4942,7 +4945,6 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         // Si pasa de Obra a CSG
         if (origen === 'facturas_obra' && destino === 'facturas_csg') {
-          delete nueva.nombre_obra;
           delete nueva.revisado_juandavid;
           delete nueva.revisado_cynthia; // facturas_csg tampoco tiene esta columna
           delete nueva.no_corresponde_cynthia;
@@ -4960,6 +4962,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           // facturas_csg no tiene columna de Cynthia
           delete nueva.revisado_cynthia;
           delete nueva.no_corresponde_cynthia;
+          if (!('nombre_obra' in nueva)) nueva.nombre_obra = '';
         }
 
         // Si pasa de CSG a Almacén
@@ -4967,6 +4970,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           // facturas_almacen no tiene columna de Angel
           delete nueva.revisado_angel;
           delete nueva.no_corresponde_angel;
+          delete nueva.nombre_obra;
         }
 
         // Quitar metadatos que no deben copiarse (los genera la BD)
@@ -5369,7 +5373,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             payload.archivo_url = null;
             payload.archivos_urls = [];
           }
-          if (tabla === 'facturas_obra') payload.nombre_obra = document.getElementById('f_obra').value.trim();
+          if (tabla === 'facturas_obra' || tabla === 'facturas_csg') payload.nombre_obra = document.getElementById('f_obra').value.trim();
 
           if (modalEditId) {
             await apiPatch(tabla, modalEditId, payload);
@@ -6737,7 +6741,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         set('f_metodo_pago', f.metodo_pago || '');
         set('f_iban', f.iban || '');
         set('f_est', f.estado || 'pendiente');
-        if (tabla === 'facturas_obra') set('f_obra', f.nombre_obra);
+        if (tabla === 'facturas_obra' || tabla === 'facturas_csg') set('f_obra', f.nombre_obra);
         set('f_base1', f.base1); set('f_pct_iva1', f.pct_iva1 != null ? f.pct_iva1 : 21); set('f_total_iva1', f.total_iva1);
         set('f_pct_re1', f.pct_re1); set('f_total_re1', f.total_re1); set('f_tasas', f.tasas);
         set('f_base2', f.base2); set('f_pct_iva2', f.pct_iva2); set('f_total_iva2', f.total_iva2);
@@ -6940,7 +6944,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           <input type="text" id="f_nif" placeholder="Se rellena al elegir proveedor">
         </div>
 
-        <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
+        <div class="form-group span3"><label>Nombre de la obra <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="text" id="f_obra" list="dl_obras" placeholder="Ej: Reforma Calle Mayor 12"></div>
+<div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
 <div class="form-group span2"><label>Números de albarán <span style="font-size:.72rem;color:#888">(separados por coma)</span></label><input type="text" id="f_num_albaranes" placeholder="ALB-001, ALB-002, ALB-003"></div>
         <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
