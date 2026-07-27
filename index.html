@@ -2608,6 +2608,10 @@
 
     // Qué campos se buscan en cada tabla, y cómo se pinta cada resultado
     const TABLAS_BUSQUEDA_GLOBAL = [
+      { tabla: 'facturas_pendientes', seccion: 'clasificacion', label: 'Clasificación', icon: 'fa-inbox',
+        campos: ['remitente', 'asunto'],
+        titulo: f => f.remitente || 'Sin remitente',
+        sub: f => f.asunto || 'Sin asunto' },
       { tabla: 'facturas_almacen', seccion: 'facturas_almacen', label: 'Facturas Almacén', icon: 'fa-warehouse',
         campos: ['numero_factura', 'proveedor', 'nif', 'concepto', 'numero_interno'],
         titulo: f => f.proveedor || f.numero_factura || 'Factura',
@@ -2717,11 +2721,29 @@
 
       await cambiarSeccion(seccion);
 
+      // Clasificación no tiene modal de edición: se resalta la fila en la tabla
+      if (tabla === 'facturas_pendientes') {
+        const yaEsta = registros.some(r => r.id === id);
+        if (!yaEsta) {
+          toast('Esa factura ya no está pendiente de clasificar (puede que ya se haya clasificado)', 'err');
+          return;
+        }
+        setTimeout(() => {
+          const fila = document.getElementById('fila-clasif-' + id);
+          if (!fila) return;
+          fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          fila.style.transition = 'background .3s';
+          fila.style.background = '#fff3e0';
+          setTimeout(() => { fila.style.background = ''; }, 1800);
+        }, 150);
+        return;
+      }
+
       // Si el registro no está entre los ya cargados (p.ej. filtro de sección o límite), lo traemos aparte
       if (!registros.some(r => r.id === id)) {
         try {
-          const fila = await apiGet(tabla, `id=eq.${id}`);
-          if (fila && fila[0]) registros.push(fila[0]);
+          const filaExtra = await apiGet(tabla, `id=eq.${id}`);
+          if (filaExtra && filaExtra[0]) registros.push(filaExtra[0]);
         } catch (e) { /* si falla, el modal avisará de "no encontrado" */ }
       }
 
@@ -4285,7 +4307,7 @@ function renderAlertas() {
         hdr.innerHTML = `<tr><th>Recibido</th><th>Remitente</th><th>Asunto</th><th>Archivo</th><th>Clasificar como</th><th></th></tr>`;
         const lista = registros.filter(f => [f.remitente, f.asunto].some(v => (v || '').toLowerCase().includes(q)));
         if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay facturas pendientes de clasificar'); actualizarBarraScrollFija(); return; }
-        bdy.innerHTML = lista.map(f => `<tr>
+        bdy.innerHTML = lista.map(f => `<tr id="fila-clasif-${f.id}">
         <td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
         <td class="td-nombre">${f.remitente || '—'}</td>
         <td class="td-concepto" title="${f.asunto || ''}">${f.asunto || '—'}</td>
