@@ -3786,7 +3786,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       return dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
     }
 
-    function renderAlertas() {
+function renderAlertas() {
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
       const alertas = registros
         .filter(f => f.estado === 'pendiente' && f.fecha_vencimiento && !f.imputado)
@@ -3796,53 +3796,77 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const wrap = document.getElementById('alertasWrap');
       if (!alertas.length) { wrap.innerHTML = ''; return; }
 
-      // Agrupamos por proveedor (usando el NIF si existe, para no separar
-      // por pequeñas variaciones de nombre del mismo proveedor)
-      const grupos = {};
-      alertas.forEach(({ f, dias }) => {
-        const clave = f.nif || f.proveedor || '—';
-        if (!grupos[clave]) grupos[clave] = { empresa: f.proveedor || '—', items: [] };
-        grupos[clave].items.push({ f, dias });
-      });
+      // Agrupamos primero por VENCIDAS / POR VENCER y, dentro de cada una,
+      // por proveedor (usando el NIF si existe, para no separar por
+      // pequeñas variaciones de nombre del mismo proveedor)
+      function agruparPorProveedor(lista) {
+        const grupos = {};
+        lista.forEach(({ f, dias }) => {
+          const clave = f.nif || f.proveedor || '—';
+          if (!grupos[clave]) grupos[clave] = { empresa: f.proveedor || '—', items: [] };
+          grupos[clave].items.push({ f, dias });
+        });
+        return Object.values(grupos).map(g => {
+          g.items.sort((a, b) => a.dias - b.dias);
+          g.peorDias = g.items[0].dias;
+          g.total = g.items.reduce((s, x) => s + parseFloat(x.f.total || 0), 0);
+          return g;
+        }).sort((a, b) => a.peorDias - b.peorDias);
+      }
 
-      const listaGrupos = Object.values(grupos).map(g => {
-        g.items.sort((a, b) => a.dias - b.dias);
-        g.peorDias = g.items[0].dias;
-        g.total = g.items.reduce((s, x) => s + parseFloat(x.f.total || 0), 0);
-        return g;
-      }).sort((a, b) => a.peorDias - b.peorDias);
+      function renderCategoria(catId, titulo, lista) {
+        if (!lista.length) return '';
+        const critica = catId === 'vencidas';
+        const totalCat = lista.reduce((s, x) => s + parseFloat(x.f.total || 0), 0);
+        const gruposProveedor = agruparPorProveedor(lista);
 
-      wrap.innerHTML = listaGrupos.map((g, gi) => {
-        const critica = g.peorDias <= 0;
-        const nFacturas = g.items.length;
-        const cabecera = nFacturas === 1
-          ? `Ref: ${g.items[0].f.numero_factura || 's/n'}`
-          : `${nFacturas} facturas`;
+        const detalleProveedores = gruposProveedor.map((g, gi) => {
+          const idProv = `${catId}-${gi}`;
+          const nFacturas = g.items.length;
+          const cabecera = nFacturas === 1
+            ? `Ref: ${g.items[0].f.numero_factura || 's/n'}`
+            : `${nFacturas} facturas`;
 
-        const detalle = g.items.map(({ f, dias }) => {
-          const criticaItem = dias <= 0;
-          return `<div class="alerta-item alerta-subitem ${criticaItem ? 'critica' : ''}">
+          const detalleFacturas = g.items.map(({ f, dias }) => {
+            const criticaItem = dias <= 0;
+            return `<div class="alerta-item alerta-subitem ${criticaItem ? 'critica' : ''}">
             <i class="fa-solid fa-triangle-exclamation"></i>
             <div>Ref: ${f.numero_factura || 's/n'} — <strong>${fmt(f.total)}</strong>
             <span style="margin-left:8px;color:${criticaItem ? '#e53e3e' : '#c47a00'}">${mensajeVencimiento(dias)}</span></div>
           </div>`;
+          }).join('');
+
+          return `<div class="alerta-grupo" style="margin-left:16px">
+        <div class="alerta-item ${g.peorDias <= 0 ? 'critica' : ''}" style="cursor:pointer" onclick="toggleGrupoAlerta('${idProv}')">
+          <i class="fa-solid fa-building"></i>
+          <div style="flex:1"><strong>${g.empresa}</strong> — ${cabecera} — <strong>${fmt(g.total)}</strong>
+          <span style="margin-left:8px;color:${g.peorDias <= 0 ? '#e53e3e' : '#c47a00'}">${mensajeVencimiento(g.peorDias)}</span></div>
+          ${nFacturas > 1 ? `<i class="fa-solid fa-chevron-down" id="chevronAlerta${idProv}" style="transition:transform .15s"></i>` : ''}
+        </div>
+        ${nFacturas > 1 ? `<div class="alerta-detalle" id="detalleAlerta${idProv}" style="display:none;padding-left:24px">${detalleFacturas}</div>` : ''}
+      </div>`;
         }).join('');
 
         return `<div class="alerta-grupo">
-      <div class="alerta-item ${critica ? 'critica' : ''}" style="cursor:pointer" onclick="toggleGrupoAlerta(${gi})">
+      <div class="alerta-item ${critica ? 'critica' : ''}" style="cursor:pointer" onclick="toggleGrupoAlerta('${catId}')">
         <i class="fa-solid fa-triangle-exclamation"></i>
-        <div style="flex:1"><strong>${g.empresa}</strong> — ${cabecera} — <strong>${fmt(g.total)}</strong>
-        <span style="margin-left:8px;color:${critica ? '#e53e3e' : '#c47a00'}">${mensajeVencimiento(g.peorDias)}</span></div>
-        ${nFacturas > 1 ? `<i class="fa-solid fa-chevron-down" id="chevronAlerta${gi}" style="transition:transform .15s"></i>` : ''}
+        <div style="flex:1"><strong>${titulo}</strong> — ${lista.length} factura${lista.length > 1 ? 's' : ''} — <strong>${fmt(totalCat)}</strong></div>
+        <i class="fa-solid fa-chevron-down" id="chevronAlerta${catId}" style="transition:transform .15s"></i>
       </div>
-      ${nFacturas > 1 ? `<div class="alerta-detalle" id="detalleAlerta${gi}" style="display:none;padding-left:24px">${detalle}</div>` : ''}
+      <div class="alerta-detalle" id="detalleAlerta${catId}" style="display:none">${detalleProveedores}</div>
     </div>`;
-      }).join('');
+      }
+
+      const vencidas = alertas.filter(x => x.dias <= 0);
+      const porVencer = alertas.filter(x => x.dias > 0);
+
+      wrap.innerHTML = renderCategoria('vencidas', 'Facturas vencidas', vencidas)
+        + renderCategoria('porvencer', 'Facturas por vencer', porVencer);
     }
 
-    function toggleGrupoAlerta(gi) {
-      const det = document.getElementById('detalleAlerta' + gi);
-      const chev = document.getElementById('chevronAlerta' + gi);
+    function toggleGrupoAlerta(id) {
+      const det = document.getElementById('detalleAlerta' + id);
+      const chev = document.getElementById('chevronAlerta' + id);
       if (!det) return;
       const abierto = det.style.display !== 'none';
       det.style.display = abierto ? 'none' : 'block';
