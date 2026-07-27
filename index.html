@@ -268,6 +268,83 @@
       flex-wrap: wrap;
     }
 
+    .busqueda-global-wrap {
+      position: relative;
+    }
+
+    .busqueda-global-input {
+      background: #2a2040;
+      border: 1px solid #5a4878;
+      border-radius: 6px;
+      color: #fff;
+      padding: 6px 10px 6px 32px;
+      font-size: .85rem;
+      width: 220px;
+      transition: width .2s, border-color .2s;
+    }
+
+    .busqueda-global-input::placeholder { color: #8a7a99; }
+    .busqueda-global-input:focus { outline: none; border-color: #b53987; width: 280px; }
+
+    .busqueda-global-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #8a7a99;
+      font-size: .8rem;
+      pointer-events: none;
+    }
+
+    .busqueda-global-resultados {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 6px;
+      width: 340px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(74, 59, 104, .25);
+      max-height: 440px;
+      overflow-y: auto;
+      z-index: 500;
+      display: none;
+    }
+
+    .busqueda-global-resultados.visible { display: block; }
+
+    .bg-grupo-titulo {
+      padding: 8px 14px 4px;
+      font-size: .68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #b53987;
+      background: #faf7fc;
+      position: sticky;
+      top: 0;
+    }
+
+    .bg-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0eaf8;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .bg-item:hover { background: #f7f0f5; }
+    .bg-item-titulo { font-weight: 600; font-size: .85rem; color: #4a3b68; }
+    .bg-item-sub { font-size: .75rem; color: #999; }
+    .bg-vacio { padding: 20px 14px; text-align: center; color: #bbb; font-size: .85rem; }
+
+    @media (max-width: 768px) {
+      .busqueda-global-input { width: 150px; }
+      .busqueda-global-input:focus { width: 200px; }
+      .busqueda-global-resultados { width: 280px; }
+    }
+
     .btn-nav {
       background: transparent;
       border: 1px solid #5a4878;
@@ -1893,6 +1970,14 @@
       <div class="topbar-left">
         <img src="logo.png" alt="" onerror="this.style.display='none'">
         <span>Almacén Olivilla Tres</span>
+        <div class="busqueda-global-wrap">
+          <i class="fa-solid fa-magnifying-glass busqueda-global-icon"></i>
+          <input type="text" id="busquedaGlobalInput" class="busqueda-global-input"
+            placeholder="Buscar en todo el panel..."
+            oninput="onInputBusquedaGlobal()"
+            onfocus="onFocusBusquedaGlobal()">
+          <div class="busqueda-global-resultados" id="busquedaGlobalResultados"></div>
+        </div>
       </div>
       <div class="nav-principal">
         <button class="btn-nav active" onclick="cambiarSeccion('clasificacion')"><i
@@ -2521,7 +2606,131 @@
     ];
 
 
+    // Qué campos se buscan en cada tabla, y cómo se pinta cada resultado
+    const TABLAS_BUSQUEDA_GLOBAL = [
+      { tabla: 'facturas_almacen', seccion: 'facturas_almacen', label: 'Facturas Almacén', icon: 'fa-warehouse',
+        campos: ['numero_factura', 'proveedor', 'nif', 'concepto', 'numero_interno'],
+        titulo: f => f.proveedor || f.numero_factura || 'Factura',
+        sub: f => `${f.numero_factura || 's/n'} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
+      { tabla: 'facturas_obra', seccion: 'facturas_obra', label: 'Facturas Obra', icon: 'fa-helmet-safety',
+        campos: ['numero_factura', 'proveedor', 'nif', 'concepto', 'numero_interno', 'nombre_obra'],
+        titulo: f => f.proveedor || f.numero_factura || 'Factura',
+        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
+      { tabla: 'facturas_csg', seccion: 'facturas_csg', label: 'Facturas CSG', icon: 'fa-building',
+        campos: ['numero_factura', 'proveedor', 'nif', 'concepto', 'numero_interno', 'nombre_obra'],
+        titulo: f => f.proveedor || f.numero_factura || 'Factura',
+        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
+      { tabla: 'ingresos', seccion: 'ingresos', label: 'Ingresos', icon: 'fa-sack-dollar',
+        campos: ['numero_ingreso', 'cliente', 'nif', 'concepto', 'numero_interno', 'nombre_obra'],
+        titulo: f => f.cliente || f.numero_ingreso || 'Ingreso',
+        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
+      { tabla: 'albaranes', seccion: 'albaranes', label: 'Albaranes', icon: 'fa-file-signature',
+        campos: ['numero_albaran', 'empresa', 'nif'],
+        titulo: f => f.empresa || f.numero_albaran || 'Albarán',
+        sub: f => `${f.numero_albaran || 's/n'} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
+      { tabla: 'clientes', seccion: 'clientes', label: 'Clientes', icon: 'fa-users',
+        campos: ['nombre', 'nif', 'email'],
+        titulo: f => f.nombre || 'Cliente',
+        sub: f => `${f.nif || 'Sin NIF'} — ${f.email || ''}` },
+      { tabla: 'inventario', seccion: 'inventario', label: 'Inventario', icon: 'fa-boxes-stacked',
+        campos: ['nombre'],
+        titulo: f => f.nombre || 'Producto',
+        sub: f => `Stock: ${f.stock ?? 0} uds.` },
+      { tabla: 'materiales_obra', seccion: 'materiales_obra', label: 'Material de Obra', icon: 'fa-boxes-stacked',
+        campos: ['nombre_obra', 'nombre_empleado'],
+        titulo: f => f.nombre_obra || 'Material de obra',
+        sub: f => `${f.nombre_empleado || ''} — ${fmtF(f.fecha)}` },
+      { tabla: 'obras', seccion: 'obras', label: 'Obras', icon: 'fa-diagram-project',
+        campos: ['nombre', 'cliente', 'direccion'],
+        titulo: f => f.nombre || 'Obra',
+        sub: f => f.cliente || f.direccion || '' },
+      { tabla: 'presupuestos_seguimiento', seccion: 'presupuestos', label: 'Presupuestos', icon: 'fa-file-invoice-dollar',
+        campos: ['cliente', 'email_cliente', 'asunto'],
+        titulo: f => f.cliente || 'Presupuesto',
+        sub: f => f.asunto || f.email_cliente || '' }
+    ];
 
+    let _busquedaGlobalTimeout = null;
+
+    function onInputBusquedaGlobal() {
+      clearTimeout(_busquedaGlobalTimeout);
+      const q = document.getElementById('busquedaGlobalInput').value.trim();
+      if (q.length < 2) {
+        document.getElementById('busquedaGlobalResultados').classList.remove('visible');
+        return;
+      }
+      _busquedaGlobalTimeout = setTimeout(() => ejecutarBusquedaGlobal(q), 350);
+    }
+
+    function onFocusBusquedaGlobal() {
+      const q = document.getElementById('busquedaGlobalInput').value.trim();
+      if (q.length >= 2) ejecutarBusquedaGlobal(q);
+    }
+
+    // Cierra el desplegable si se hace clic fuera de él
+    document.addEventListener('click', (e) => {
+      const wrap = document.querySelector('.busqueda-global-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('busquedaGlobalResultados')?.classList.remove('visible');
+      }
+    });
+
+    async function ejecutarBusquedaGlobal(q) {
+      const resDiv = document.getElementById('busquedaGlobalResultados');
+      resDiv.innerHTML = `<div class="bg-vacio"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</div>`;
+      resDiv.classList.add('visible');
+
+      // Solo se busca en las secciones a las que la persona conectada tiene acceso
+      const tablasPermitidas = TABLAS_BUSQUEDA_GLOBAL.filter(t => tieneAccesoSeccion(currentPersona, t.seccion));
+      const term = encodeURIComponent(q);
+
+      try {
+        const resultadosPorTabla = await Promise.all(tablasPermitidas.map(async cfg => {
+          const orFiltro = cfg.campos.map(c => `${c}.ilike.*${term}*`).join(',');
+          const filas = await apiGet(cfg.tabla, `or=(${orFiltro})&limit=6`);
+          return { cfg, filas: filas || [] };
+        }));
+
+        const conResultados = resultadosPorTabla.filter(r => r.filas.length);
+
+        if (!conResultados.length) {
+          resDiv.innerHTML = `<div class="bg-vacio"><i class="fa-solid fa-magnifying-glass"></i><br>Sin resultados para "${q}"</div>`;
+          return;
+        }
+
+        resDiv.innerHTML = conResultados.map(({ cfg, filas }) => `
+      <div class="bg-grupo-titulo"><i class="fa-solid ${cfg.icon} me-1"></i>${cfg.label}</div>
+      ${filas.map(f => `
+        <div class="bg-item" onclick="irAResultadoGlobal('${cfg.seccion}', ${f.id}, '${cfg.tabla}')">
+          <span class="bg-item-titulo">${(cfg.titulo(f) || '').toString().replace(/</g, '&lt;')}</span>
+          <span class="bg-item-sub">${(cfg.sub(f) || '').toString().replace(/</g, '&lt;')}</span>
+        </div>`).join('')}
+    `).join('');
+      } catch (e) {
+        resDiv.innerHTML = `<div class="bg-vacio" style="color:#e53e3e">Error al buscar: ${e.message}</div>`;
+      }
+    }
+
+    async function irAResultadoGlobal(seccion, id, tabla) {
+      document.getElementById('busquedaGlobalResultados').classList.remove('visible');
+      document.getElementById('busquedaGlobalInput').value = '';
+
+      await cambiarSeccion(seccion);
+
+      // Si el registro no está entre los ya cargados (p.ej. filtro de sección o límite), lo traemos aparte
+      if (!registros.some(r => r.id === id)) {
+        try {
+          const fila = await apiGet(tabla, `id=eq.${id}`);
+          if (fila && fila[0]) registros.push(fila[0]);
+        } catch (e) { /* si falla, el modal avisará de "no encontrado" */ }
+      }
+
+      if (tabla === 'albaranes') {
+        abrirModalEditarAlbaran(id);
+      } else {
+        abrirModalEditar(id, tabla === 'presupuestos_seguimiento' ? 'presupuestos' : tabla);
+      }
+    }
 
 
     let registros = [];
