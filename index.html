@@ -283,8 +283,15 @@
       transition: width .2s, border-color .2s;
     }
 
-    .busqueda-global-input::placeholder { color: #8a7a99; }
-    .busqueda-global-input:focus { outline: none; border-color: #b53987; width: 280px; }
+    .busqueda-global-input::placeholder {
+      color: #8a7a99;
+    }
+
+    .busqueda-global-input:focus {
+      outline: none;
+      border-color: #b53987;
+      width: 280px;
+    }
 
     .busqueda-global-icon {
       position: absolute;
@@ -311,7 +318,9 @@
       display: none;
     }
 
-    .busqueda-global-resultados.visible { display: block; }
+    .busqueda-global-resultados.visible {
+      display: block;
+    }
 
     .bg-grupo-titulo {
       padding: 8px 14px 4px;
@@ -334,15 +343,40 @@
       gap: 2px;
     }
 
-    .bg-item:hover { background: #f7f0f5; }
-    .bg-item-titulo { font-weight: 600; font-size: .85rem; color: #4a3b68; }
-    .bg-item-sub { font-size: .75rem; color: #999; }
-    .bg-vacio { padding: 20px 14px; text-align: center; color: #bbb; font-size: .85rem; }
+    .bg-item:hover {
+      background: #f7f0f5;
+    }
+
+    .bg-item-titulo {
+      font-weight: 600;
+      font-size: .85rem;
+      color: #4a3b68;
+    }
+
+    .bg-item-sub {
+      font-size: .75rem;
+      color: #999;
+    }
+
+    .bg-vacio {
+      padding: 20px 14px;
+      text-align: center;
+      color: #bbb;
+      font-size: .85rem;
+    }
 
     @media (max-width: 768px) {
-      .busqueda-global-input { width: 150px; }
-      .busqueda-global-input:focus { width: 200px; }
-      .busqueda-global-resultados { width: 280px; }
+      .busqueda-global-input {
+        width: 150px;
+      }
+
+      .busqueda-global-input:focus {
+        width: 200px;
+      }
+
+      .busqueda-global-resultados {
+        width: 280px;
+      }
     }
 
     .btn-nav {
@@ -700,6 +734,26 @@
 
     .btn-nueva:hover {
       background: #4a3b68;
+    }
+
+    .btn-historial {
+      background: #6a1b9a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .btn-historial:hover {
+      background: #4a0e70;
     }
 
     .btn-exportar {
@@ -1973,8 +2027,7 @@
         <div class="busqueda-global-wrap">
           <i class="fa-solid fa-magnifying-glass busqueda-global-icon"></i>
           <input type="text" id="busquedaGlobalInput" class="busqueda-global-input"
-            placeholder="Buscar en todo el panel..."
-            oninput="onInputBusquedaGlobal()"
+            placeholder="Buscar en todo el panel..." oninput="onInputBusquedaGlobal()"
             onfocus="onFocusBusquedaGlobal()">
           <div class="busqueda-global-resultados" id="busquedaGlobalResultados"></div>
         </div>
@@ -2056,6 +2109,9 @@
             class="fa-solid fa-file-excel"></i>Exportar Excel</button>
         <button class="btn-exportar" id="btnDuplicados" onclick="verDuplicados()" style="display:none">
           <i class="fa-solid fa-clone"></i>Duplicados
+        </button>
+        <button class="btn-historial" id="btnHistorial" onclick="abrirHistorialMovimientos()" style="display:none">
+          <i class="fa-solid fa-clock-rotate-left"></i>Historial
         </button>
       </div>
       <div id="resumenObra" style="display:none; margin: -8px 0 14px; font-weight:600; color:#333;"></div>
@@ -2608,50 +2664,72 @@
 
     // Qué campos se buscan en cada tabla, y cómo se pinta cada resultado
     const TABLAS_BUSQUEDA_GLOBAL = [
-      { tabla: 'facturas_pendientes', seccion: 'clasificacion', label: 'Clasificación', icon: 'fa-inbox',
+      {
+        tabla: 'facturas_pendientes', seccion: 'clasificacion', label: 'Clasificación', icon: 'fa-inbox',
         campos: ['remitente', 'asunto'],
         titulo: f => f.remitente || 'Sin remitente',
-        sub: f => f.asunto || 'Sin asunto' },
-      { tabla: 'facturas_almacen', seccion: 'facturas_almacen', label: 'Facturas Almacén', icon: 'fa-warehouse',
+        sub: f => f.asunto || 'Sin asunto'
+      },
+      {
+        tabla: 'facturas_almacen', seccion: 'facturas_almacen', label: 'Facturas Almacén', icon: 'fa-warehouse',
         campos: ['numero_factura', 'proveedor', 'nif', 'concepto', 'numero_interno'],
         titulo: f => f.proveedor || f.numero_factura || 'Factura',
-        sub: f => `${f.numero_factura || 's/n'} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
-      { tabla: 'facturas_obra', seccion: 'facturas_obra', label: 'Facturas Obra', icon: 'fa-helmet-safety',
+        sub: f => `${f.numero_factura || 's/n'} — ${fmt(f.total)} — ${fmtF(f.fecha)}`
+      },
+      {
+        tabla: 'facturas_obra', seccion: 'facturas_obra', label: 'Facturas Obra', icon: 'fa-helmet-safety',
         campos: ['numero_factura', 'proveedor', 'nif', 'concepto', 'numero_interno', 'nombre_obra'],
         titulo: f => f.proveedor || f.numero_factura || 'Factura',
-        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
-      { tabla: 'facturas_csg', seccion: 'facturas_csg', label: 'Facturas CSG', icon: 'fa-building',
+        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}`
+      },
+      {
+        tabla: 'facturas_csg', seccion: 'facturas_csg', label: 'Facturas CSG', icon: 'fa-building',
         campos: ['numero_factura', 'proveedor', 'nif', 'concepto', 'numero_interno', 'nombre_obra'],
         titulo: f => f.proveedor || f.numero_factura || 'Factura',
-        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
-      { tabla: 'ingresos', seccion: 'ingresos', label: 'Ingresos', icon: 'fa-sack-dollar',
+        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}`
+      },
+      {
+        tabla: 'ingresos', seccion: 'ingresos', label: 'Ingresos', icon: 'fa-sack-dollar',
         campos: ['numero_ingreso', 'cliente', 'nif', 'concepto', 'numero_interno', 'nombre_obra'],
         titulo: f => f.cliente || f.numero_ingreso || 'Ingreso',
-        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
-      { tabla: 'albaranes', seccion: 'albaranes', label: 'Albaranes', icon: 'fa-file-signature',
+        sub: f => `${f.nombre_obra || ''} — ${fmt(f.total)} — ${fmtF(f.fecha)}`
+      },
+      {
+        tabla: 'albaranes', seccion: 'albaranes', label: 'Albaranes', icon: 'fa-file-signature',
         campos: ['numero_albaran', 'empresa', 'nif'],
         titulo: f => f.empresa || f.numero_albaran || 'Albarán',
-        sub: f => `${f.numero_albaran || 's/n'} — ${fmt(f.total)} — ${fmtF(f.fecha)}` },
-      { tabla: 'clientes', seccion: 'clientes', label: 'Clientes', icon: 'fa-users',
+        sub: f => `${f.numero_albaran || 's/n'} — ${fmt(f.total)} — ${fmtF(f.fecha)}`
+      },
+      {
+        tabla: 'clientes', seccion: 'clientes', label: 'Clientes', icon: 'fa-users',
         campos: ['nombre', 'nif', 'email'],
         titulo: f => f.nombre || 'Cliente',
-        sub: f => `${f.nif || 'Sin NIF'} — ${f.email || ''}` },
-      { tabla: 'inventario', seccion: 'inventario', label: 'Inventario', icon: 'fa-boxes-stacked',
+        sub: f => `${f.nif || 'Sin NIF'} — ${f.email || ''}`
+      },
+      {
+        tabla: 'inventario', seccion: 'inventario', label: 'Inventario', icon: 'fa-boxes-stacked',
         campos: ['nombre'],
         titulo: f => f.nombre || 'Producto',
-        sub: f => `Stock: ${f.stock ?? 0} uds.` },
-      { tabla: 'materiales_obra', seccion: 'materiales_obra', label: 'Material de Obra', icon: 'fa-boxes-stacked',
+        sub: f => `Stock: ${f.stock ?? 0} uds.`
+      },
+      {
+        tabla: 'materiales_obra', seccion: 'materiales_obra', label: 'Material de Obra', icon: 'fa-boxes-stacked',
         campos: ['nombre_obra', 'nombre_empleado'],
         titulo: f => f.nombre_obra || 'Material de obra',
-        sub: f => `${f.nombre_empleado || ''} — ${fmtF(f.fecha)}` },
-      { tabla: 'obras', seccion: 'obras', label: 'Obras', icon: 'fa-diagram-project',
+        sub: f => `${f.nombre_empleado || ''} — ${fmtF(f.fecha)}`
+      },
+      {
+        tabla: 'obras', seccion: 'obras', label: 'Obras', icon: 'fa-diagram-project',
         campos: ['nombre', 'cliente', 'direccion'],
         titulo: f => f.nombre || 'Obra',
-        sub: f => f.cliente || f.direccion || '' },
-      { tabla: 'presupuestos_seguimiento', seccion: 'presupuestos', label: 'Presupuestos', icon: 'fa-file-invoice-dollar',
+        sub: f => f.cliente || f.direccion || ''
+      },
+      {
+        tabla: 'presupuestos_seguimiento', seccion: 'presupuestos', label: 'Presupuestos', icon: 'fa-file-invoice-dollar',
         campos: ['cliente', 'email_cliente', 'asunto'],
         titulo: f => f.cliente || 'Presupuesto',
-        sub: f => f.asunto || f.email_cliente || '' }
+        sub: f => f.asunto || f.email_cliente || ''
+      }
     ];
 
     let _busquedaGlobalTimeout = null;
@@ -3076,6 +3154,7 @@
       document.getElementById('btnExportar').style.display = (esFacturas || esRevisadas || sec === 'materiales_obra' || sec === 'ingresos') ? 'flex' : 'none';
       // si estamos en facturas o albaranes, saldrá el boton de duplicados
       document.getElementById('btnDuplicados').style.display = (esFacturas || sec === 'albaranes') ? 'flex' : 'none';
+      document.getElementById('btnHistorial').style.display = (sec === 'clientes' || sec === 'inventario' || sec === 'materiales_obra') ? 'flex' : 'none';
       // si estamos en revisadas no sale el boton de añadir nueva
       document.getElementById('btnNuevo').style.display = esRevisadas ? 'none' : 'flex';
 
@@ -4018,7 +4097,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       return dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
     }
 
-function renderAlertas() {
+    function renderAlertas() {
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
       const alertas = registros
         .filter(f => f.estado === 'pendiente' && f.fecha_vencimiento && !f.imputado)
@@ -4111,6 +4190,61 @@ function renderAlertas() {
 
 
 
+
+
+
+
+    // BOTON HITORIAL
+    const TIPO_HISTORIAL_POR_SECCION = {
+      clientes: { tipo: 'compra_cliente', titulo: 'Historial de compras de clientes' },
+      inventario: { tipo: 'inventario', titulo: 'Historial de movimientos de inventario' },
+      materiales_obra: { tipo: 'material_obra', titulo: 'Historial de material de obra' }
+    };
+
+    async function registrarHistorial(tipo, detalle) {
+      try {
+        await apiPost('historial_movimientos', { tipo, persona: currentPersona, detalle });
+      } catch (e) {
+        console.error('No se pudo registrar en el historial:', e);
+      }
+    }
+
+    function formatearDetalleHistorial(tipo, d) {
+      if (!d) return '—';
+      if (tipo === 'compra_cliente') {
+        const productos = (d.productos || []).map(p => `${p.nombre} (${p.cantidad})`).join(', ') || '—';
+        return `<strong>${d.cliente || '—'}</strong> — ${productos}${d.total != null ? ` — Total: ${fmt(d.total)}` : ''}`;
+      }
+      if (tipo === 'inventario') {
+        const signo = d.accion === 'resta' ? '-' : '+';
+        return `<strong>${d.producto || '—'}</strong> — ${signo}${d.cantidad} uds. (stock: ${d.stock_antes} → ${d.stock_despues})`;
+      }
+      if (tipo === 'material_obra') {
+        const materiales = (d.materiales || []).map(m => `${m.nombre} (${m.cantidad})`).join(', ') || '—';
+        return `<strong>${d.obra || '—'}</strong> — Empleado: ${d.empleado || '—'} — ${materiales}`;
+      }
+      return '—';
+    }
+
+    async function abrirHistorialMovimientos() {
+      const cfg = TIPO_HISTORIAL_POR_SECCION[tablaActual];
+      if (!cfg) return;
+      try {
+        const registrosHist = await apiGetAll('historial_movimientos', `tipo=eq.${cfg.tipo}&order=fecha.desc`);
+        document.getElementById('modalDetalleTitulo').innerHTML =
+          `<i class="fa-solid fa-clock-rotate-left" style="color:#b53987"></i>${cfg.titulo}`;
+        document.getElementById('modalDetalleContenido').innerHTML = !registrosHist.length
+          ? `<p style="text-align:center;color:#aaa;padding:2rem">Todavía no hay movimientos registrados</p>`
+          : `<table class="mini-table"><thead><tr><th>Fecha</th><th>Quién</th><th>Detalle</th></tr></thead><tbody>
+        ${registrosHist.map(h => `<tr>
+          <td style="font-size:.78rem;white-space:nowrap">${h.fecha ? new Date(h.fecha).toLocaleString('es-ES') : '—'}</td>
+          <td><strong>${NOMBRES_PERSONAS[h.persona] || h.persona}</strong></td>
+          <td style="font-size:.82rem">${formatearDetalleHistorial(cfg.tipo, h.detalle)}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+        document.getElementById('modalDetalle').classList.add('visible');
+      } catch (e) { toast('Error al cargar el historial: ' + e.message, 'err'); }
+    }
 
 
 
@@ -5865,14 +5999,25 @@ function renderAlertas() {
         } else if (tabla === 'inventario') {
           const nombre = document.getElementById('f_nombre').value.trim();
           if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+          const nuevoStock = parseFloat(document.getElementById('f_stock').value || 0);
           const payload = {
             nombre,
-            stock: parseFloat(document.getElementById('f_stock').value || 0),
+            stock: nuevoStock,
             puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0)
           };
 
           if (modalEditId) {
+            const prevProd = inventarioDB.find(p => p.id === modalEditId);
+            const stockAntes = prevProd ? (parseFloat(prevProd.stock) || 0) : null;
             await apiPatch('inventario', modalEditId, payload);
+            if (stockAntes !== null && stockAntes !== nuevoStock) {
+              registrarHistorial('inventario', {
+                producto: nombre,
+                accion: nuevoStock > stockAntes ? 'suma' : 'resta',
+                cantidad: Math.abs(nuevoStock - stockAntes),
+                stock_antes: stockAntes, stock_despues: nuevoStock
+              });
+            }
           } else {
             await apiPost('inventario', payload);
           }
@@ -6001,9 +6146,16 @@ function renderAlertas() {
       if (!cantidad || cantidad <= 0) return;
 
       const p = inventarioDB.find(x => x.id == id);
+      const stockAntes = parseFloat(p.stock) || 0;
+      const stockDespues = stockAntes + cantidad;
 
       await apiPatch("inventario", id, {
-        stock: (parseFloat(p.stock) || 0) + cantidad
+        stock: stockDespues
+      });
+
+      registrarHistorial('inventario', {
+        producto: p.nombre, accion: 'suma', cantidad,
+        stock_antes: stockAntes, stock_despues: stockDespues
       });
 
       cargarDatos();
@@ -6016,13 +6168,19 @@ function renderAlertas() {
       if (!cantidad || cantidad <= 0) return;
 
       const p = inventarioDB.find(x => x.id == id);
+      const stockAntes = parseFloat(p.stock) || 0;
 
-      let stock = (parseFloat(p.stock) || 0) - cantidad;
+      let stock = stockAntes - cantidad;
 
       if (stock < 0) stock = 0;
 
       await apiPatch("inventario", id, {
         stock: stock
+      });
+
+      registrarHistorial('inventario', {
+        producto: p.nombre, accion: 'resta', cantidad: (stockAntes - stock),
+        stock_antes: stockAntes, stock_despues: stock
       });
 
       cargarDatos();
@@ -6410,6 +6568,12 @@ function renderAlertas() {
         toast(modalEditId
           ? 'Material de obra actualizado correctamente'
           : 'Material de obra registrado correctamente');
+
+        registrarHistorial('material_obra', {
+          obra: nombre_obra,
+          empleado: nombre_empleado,
+          materiales: lineas.map(l => ({ nombre: l.producto_nombre, cantidad: l.cantidad }))
+        });
 
         modalEditId = null;
         cerrarModal('modalMaterialObra');
@@ -6867,6 +7031,12 @@ function renderAlertas() {
           await enviarEmailPuntos(cliente.email, cliente.nombre, puntosNuevos, 'compra');
         }
         toast(`<i class="fa-solid fa-star me-1"></i>Compra registrada — <strong>+${totalPuntos} pts</strong>`, 'ok');
+        registrarHistorial('compra_cliente', {
+          cliente: cliente?.nombre || '—',
+          productos: lineas.map(l => ({ nombre: l.nombre, cantidad: l.cantidad })),
+          total: totalCompra,
+          puntos: totalPuntos
+        });
         cerrarModal('modalPuntos');
         cargarDatos();
       } catch (e) { toast('Error al guardar compra: ' + e.message, 'err'); }
