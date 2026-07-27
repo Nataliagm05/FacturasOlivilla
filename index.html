@@ -3921,6 +3921,24 @@ function renderAlertas() {
       }
     }
 
+
+
+    // Pinta el historial de ediciones (quién y cuándo) dentro del modal de edición
+    function renderHistorialEdicionesModal(f) {
+      const cont = document.getElementById('historialEdicionesWrap');
+      if (!cont) return;
+      const historial = (f && f.historial_ediciones) || [];
+      if (!historial.length) {
+        cont.innerHTML = `<span style="font-size:.78rem;color:#aaa"><i class="fa-solid fa-circle-info me-1"></i>Todavía no se ha editado esta factura</span>`;
+        return;
+      }
+      const ordenado = historial.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+      cont.innerHTML = `<div style="background:#f7f0f5;border:1.5px solid #ede5f5;border-radius:8px;padding:10px 12px;font-size:.8rem;color:#4a3b68;max-height:120px;overflow-y:auto">
+        ${ordenado.map(h => `<div style="padding:2px 0"><i class="fa-solid fa-pen" style="color:#b53987;margin-right:5px"></i><strong>${NOMBRES_PERSONAS[h.persona] || h.persona}</strong> — ${h.fecha ? new Date(h.fecha).toLocaleString('es-ES') : '—'}</div>`).join('')}
+      </div>`;
+    }
+
+
     // Pinta (o repinta) los botones de revisión dentro del modal de edición de facturas
     function renderChipsRevisionModal(tabla, f) {
       const wrap = document.getElementById('revisionModalWrap');
@@ -5432,6 +5450,8 @@ function renderAlertas() {
           }
 
           if (modalEditId) {
+            const historialPrevio = (prevReg && prevReg.historial_ediciones) || [];
+            payload.historial_ediciones = [...historialPrevio, { persona: currentPersona, fecha: new Date().toISOString() }];
             await apiPatch(tabla, modalEditId, payload);
           } else {
             try {
@@ -6848,6 +6868,7 @@ function renderAlertas() {
         set('f_num_albaranes', (f.numeros_albaran || []).join(', '));
 
         renderChipsRevisionModal(tabla, f);
+        renderHistorialEdicionesModal(f);
         const avisoProd = document.getElementById('avisoProductosRegistrados');
         if (avisoProd) {
           const productos = f.productos_recibidos || [];
@@ -6949,6 +6970,8 @@ function renderAlertas() {
       </div>
       ${htmlCampoArchivo()}
       ${htmlCamposExcel()}
+      <div class="form-seccion">Historial de ediciones</div>
+      <div id="historialEdicionesWrap" style="margin-bottom:14px"><span style="font-size:.78rem;color:#aaa"><i class="fa-solid fa-circle-info me-1"></i>Se registrará automáticamente al guardar cambios</span></div>
       <div class="form-seccion">Productos recibidos <span style="font-weight:400;font-size:.75rem;color:#888">(suman stock automáticamente)</span></div>
       <div id="avisoProductosRegistrados" style="margin-bottom:8px"></div>
       <p style="font-size:.78rem;color:#888;margin-bottom:10px"><i class="fa-solid fa-arrow-trend-up me-1" style="color:#2d7a4f"></i>Al guardar, la cantidad se <strong>sumará al stock</strong> del producto.</p>
