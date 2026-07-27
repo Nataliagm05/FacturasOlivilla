@@ -2477,7 +2477,7 @@
       inventario: ['cynthia', 'juandavid', 'jose', 'emilio'],
       materiales_obra: ['cynthia', 'juandavid', 'jose', 'emilio'],
       calendario_pagos: ['cynthia', 'angel', 'emilio', 'juandavid'],
-      ingresos: ['natalia']
+      ingresos: ['natalia', 'angel', 'emilio']
     };
 
     // Personas con acceso EXCLUSIVO a una lista concreta de secciones
@@ -2578,6 +2578,7 @@
         { campo: 'revisado_cynthia', nombre: 'Cynthia' }
       ],
       ingresos: [
+        { campo: 'revisado_angel', nombre: 'Angel' },
         { campo: 'revisado_emilio', nombre: 'Emilio' }
       ]
     };
@@ -4704,7 +4705,7 @@ function renderAlertas() {
       <td class="td-total">${fmt(f.total)}</td>
       <td><span class="badge-estado badge-${eR}">${eR === 'pagado' ? 'COBRADO' : eR.toUpperCase()}</span></td>
       <td>${celdaArchivoIngreso(f)}</td>
-      <td class="td-acciones">${celdaRevision(f, 'revisado_emilio', 'ingresos', 'Emilio')}</td>
+      <td class="td-acciones">${celdaRevision(f, 'revisado_angel', 'ingresos', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'ingresos', 'Emilio')}</td>
       <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'ingresos')" title="Editar ingreso"><i class="fa-solid fa-pen"></i></button></td>
       <td>
         <button class="btn-toggle-pago ${eR}" onclick="toggleEstado(${f.id},'${est}','ingresos')">
@@ -7827,6 +7828,7 @@ function renderAlertas() {
         { nombre: 'Cynthia', email: 'cynthiagomez@olivillatres.com', campo: 'revisado_cynthia' }
       ],
       ingresos: [
+        { nombre: 'Angel', email: 'angelperez@olivillatres.com', campo: 'revisado_angel' },
         { nombre: 'Emilio', email: 'efernandez@olivillatres.com', campo: 'revisado_emilio' }
       ]
     };
