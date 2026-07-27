@@ -3383,7 +3383,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       if (esImagen(url)) {  // si es imagen 
         const imgId = contenedorId + 'Img';
         const pctId = contenedorId + 'Pct';
-        cont.innerHTML = `  // se ajusta todo y se ponen las funciones
+        // se ajusta todo y se ponen las funciones
+        cont.innerHTML = `  
           <div class="visor-img-zoom-barra">
             <button type="button" onclick="ajustarZoomImg('${contenedorId}', -0.25)" title="Reducir zoom"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
             <span id="${pctId}">100%</span>
