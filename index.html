@@ -1490,7 +1490,7 @@
     .linea-prod {
       display: grid;
       grid-template-columns: 1fr 152px 94px auto;
-      gap: 8px;
+      gap: 8px;         
       align-items: end;
       margin-bottom: 8px;
     }
@@ -2614,17 +2614,18 @@
       facturas_obra: ['cynthia', 'angel', 'emilio'],
       facturas_csg: ['angel', 'emilio', 'cynthia'],
       revisadas_facturadas: ['cynthia', 'angel', 'emilio'],
-      clientes: ['cynthia', 'juandavid', 'jose', 'emilio'],
-      inventario: ['cynthia', 'juandavid', 'jose', 'emilio'],
+      clientes: ['cynthia', 'jose', 'emilio'],
+      inventario: ['cynthia', 'jose', 'emilio'],
       materiales_obra: ['cynthia', 'juandavid', 'jose', 'emilio'],
-      calendario_pagos: ['cynthia', 'angel', 'emilio', 'juandavid'],
+      calendario_pagos: ['cynthia', 'angel', 'emilio'],
       ingresos: ['natalia', 'angel', 'emilio']
     };
 
     // Personas con acceso EXCLUSIVO a una lista concreta de secciones
     // (en vez de "todo menos lo restringido", ven solo esto).
     const ACCESO_EXCLUSIVO = {
-      jose: ['clientes', 'inventario', 'materiales_obra']
+      jose: ['clientes', 'inventario', 'materiales_obra'],
+      juandavid: ['materiales_obra']
     };
 
     const PERSONAS_ACCESO_TOTAL = ['natalia'];
@@ -2877,7 +2878,6 @@
       ],
       facturas_obra: [
         { campo: 'revisado_angel', nombre: 'Angel' },
-        { campo: 'revisado_juandavid', nombre: 'Juan David' },
         { campo: 'revisado_emilio', nombre: 'Emilio' },
         { campo: 'revisado_cynthia', nombre: 'Cynthia' }
       ],
@@ -4623,7 +4623,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${celdaArchivoFactura(f)}</td>
-        <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${celdaRevision(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_juandavid', 'facturas_obra', 'Juan David')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
+        <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${celdaRevision(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
         <td class="td-acciones">${celdaRevision(f, 'revisado_cynthia', 'facturas_obra', 'Cynthia')}</td>
 <td>
   <button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'facturas_obra')" title="Editar factura">
