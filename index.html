@@ -1490,7 +1490,7 @@
     .linea-prod {
       display: grid;
       grid-template-columns: 1fr 152px 94px auto;
-      gap: 8px;         
+      gap: 8px;
       align-items: end;
       margin-bottom: 8px;
     }
@@ -2113,6 +2113,10 @@
         <button class="btn-historial" id="btnHistorial" onclick="abrirHistorialMovimientos()" style="display:none">
           <i class="fa-solid fa-clock-rotate-left"></i>Historial
         </button>
+        <button class="btn-toggle-pago vencido" id="btnEliminarSeleccionados" onclick="eliminarSeleccionados()"
+          style="display:none">
+          <i class="fa-solid fa-trash me-1"></i><span>Eliminar (0)</span>
+        </button>
       </div>
       <div id="resumenObra" style="display:none; margin: -8px 0 14px; font-weight:600; color:#333;"></div>
       <div class="split-wrap" id="splitWrap">
@@ -2326,6 +2330,14 @@
         <button type="button" class="btn-add-linea" onclick="addLineaMaterial()">
           <i class="fa-solid fa-plus me-1"></i>Añadir material
         </button>
+        <div class="form-seccion">Material exclusivo de obra <span
+            style="font-weight:400;font-size:.75rem;color:#888">(no descuenta del inventario de la tienda)</span></div>
+        <p style="font-size:.78rem;color:#888;margin-top:-8px"><i class="fa-solid fa-info-circle me-1"></i>Para
+          materiales que solo existen para esta obra concreta.</p>
+        <div id="lineasMaterialExclusivo"></div>
+        <button type="button" class="btn-add-linea" onclick="addLineaMaterialExclusivo()">
+          <i class="fa-solid fa-plus me-1"></i>Añadir material exclusivo
+        </button>
       </div>
       <div class="modal-btns">
         <button class="btn-cancelar" onclick="cerrarModal('modalMaterialObra')">Cancelar</button>
@@ -2396,6 +2408,7 @@
   </div>
   <div class="toast-wrap" id="toastWrap"></div>
   <datalist id="dl_productos"></datalist>
+  <datalist id="dl_materiales_exclusivos"></datalist>
   <datalist id="dl_obras"></datalist>
   <div class="barra-scroll-fija" id="barraScrollFija">
     <div id="barraScrollFijaInner"></div>
@@ -2970,7 +2983,7 @@
       document.getElementById('loginView').style.display = 'none';  // oculta la pagina de logi
       document.getElementById('appView').style.display = 'none';  // y el panel
       if (!cachesIniciales) { // mira si es la primera vez que entra y no hay datos guardados 
-        cachesIniciales = Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache(), cargarObrasCache()]); // descarga las cuatro listas
+        cachesIniciales = Promise.all([cargarInventarioCache(), cargarClientesCache(), cargarProveedoresCache(), cargarObrasCache(), cargarMaterialesExclusivosCache()]); // descarga las cuatro listas
       }
       await cachesIniciales;
       mostrarSelectorPanel(); // muestra el panel
@@ -3117,7 +3130,7 @@
         alert("No tienes acceso a esta sección.");  // si no tiene acceso se avisa y no deja entrar 
         return;
       }
-
+      seleccionados.clear();
       tablaActual = sec;  // se le dice en que seccion estamos y esa es la tabla actual
       document.querySelectorAll('.btn-nav').forEach(b =>  // busca en todo el documento los .btn-nav y a cada uno, se ve cual coindice con la seccion a la que queremos entrar y si coincide lo pone como activo
         b.classList.toggle('active', b.getAttribute('onclick').includes(`'${sec}'`))
@@ -4011,7 +4024,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           facturas_obra: 'order=fecha.desc',
           facturas_csg: 'order=fecha.desc',
           albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre',
-          materiales_obra: 'select=*,materiales_obra_items(*)&order=fecha.desc',
+          materiales_obra: 'select=*,materiales_obra_items(*),materiales_exclusivos_obra_items(*)&order=fecha.desc',
           obras: 'order=nombre', presupuestos: 'order=fecha_recordatorio.asc',
           ingresos: 'order=fecha.desc'
         };
@@ -4438,11 +4451,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
       // BANDEJA DE CLASIFICACIÓN
       if (tablaActual === 'clasificacion') {
-        hdr.innerHTML = `<tr><th>Recibido</th><th>Remitente</th><th>Asunto</th><th>Archivo</th><th>Clasificar como</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Recibido</th><th>Remitente</th><th>Asunto</th><th>Archivo</th><th>Clasificar como</th><th></th></tr>`;
         const lista = registros.filter(f => [f.remitente, f.asunto].some(v => (v || '').toLowerCase().includes(q)));
         if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay facturas pendientes de clasificar'); actualizarBarraScrollFija(); return; }
         bdy.innerHTML = lista.map(f => `<tr id="fila-clasif-${f.id}">
-        <td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
+        <td>${celdaCheck(f.id)}</td><td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
         <td class="td-nombre">${f.remitente || '—'}</td>
         <td class="td-concepto" title="${f.asunto || ''}">${f.asunto || '—'}</td>
         <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.asunto || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-pdf"></i>Ver archivo</span>` : '<span style="color:#ccc;font-size:.78rem">Sin archivo</span>'}</td>
@@ -4458,6 +4471,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         // FACTURAS ALMACÉN
       } else if (tablaActual === 'facturas_almacen') {
         hdr.innerHTML = `<tr>
+          <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
       <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th>
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
@@ -4483,6 +4497,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
           return `<tr>
+            <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
@@ -4570,6 +4585,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         // FACTURAS OBRA
       } else if (tablaActual === 'facturas_obra') {
         hdr.innerHTML = `<tr>
+          <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
       <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
@@ -4604,6 +4620,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
           return `<tr>
+            <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
@@ -4686,6 +4703,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         // FACTURAS CSG
       } else if (tablaActual === 'facturas_csg') {
         hdr.innerHTML = `<tr>
+          <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
   <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
   <th>Nº Factura</th><th>Concepto</th>
       <th>Albaranes</th>
@@ -4712,6 +4730,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
           return `<tr>
+            <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
@@ -4826,15 +4845,16 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         // OBRAS
       } else if (tablaActual === 'obras') {
         hdr.innerHTML = `<tr>
+          <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
       <th>Obra</th><th>Dirección</th><th>Cliente</th><th>Fecha inicio</th><th>Estado</th>
       <th class="num-cell">Presupuesto</th><th class="num-cell">Facturado</th><th class="num-cell">Diferencia</th>
-      <th>Rentabilidad</th><th></th><th></th><th>Editar</th><th></th>
+      <th>Rentabilidad</th><th></th><th></th><th></th><th>Editar</th><th></th>
     </tr>`;
         const lista = registros.filter(o => {
           const mQ = [o.nombre, o.cliente, o.direccion].some(v => (v || '').toLowerCase().includes(q));
           return mQ && (!fEst || fEst === (o.estado || 'en_curso'));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(13, 'No hay obras dadas de alta todavía'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(14, 'No hay obras dadas de alta todavía'); return; }
         bdy.innerHTML = lista.map(o => {
           const est = o.estado || 'en_curso';
           const presupuesto = o.presupuesto != null ? parseFloat(o.presupuesto) : null;
@@ -4843,6 +4863,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const diferencia = tienePresupuesto ? (presupuesto - facturado) : null;
           const rentable = tienePresupuesto ? diferencia >= 0 : null;
           return `<tr>
+            <td>${celdaCheck(o.id)}</td>
         <td class="td-nombre">${o.nombre || '—'}</td>
         <td>${o.direccion || '—'}</td>
         <td>${o.cliente || '—'}</td>
@@ -4856,6 +4877,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
               : '<span style="color:#ccc;font-size:.78rem">Sin presupuesto</span>'}</td>
         <td><span class="link-badge factura" onclick="verFacturasDeObra('${(o.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-folder-open"></i>Ver facturas${o._num_facturas ? ` (${o._num_facturas})` : ''}</span></td>
         <td><span class="link-badge factura" onclick="verAlbaranesDeObra('${(o.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-file-signature"></i>Ver albaranes${o._num_albaranes ? ` (${o._num_albaranes})` : ''}</span></td>
+        <td><span class="link-badge factura" onclick="verMaterialExclusivoDeObra('${(o.nombre || '').replace(/'/g, "\\'")}')"><i class="fa-solid fa-boxes-stacked"></i>Material excl.</span></td>
         <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${o.id},'obras')" title="Editar obra"><i class="fa-solid fa-pen"></i></button></td>
         <td><button class="btn-eliminar" onclick="eliminar(${o.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
@@ -4863,7 +4885,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         // ALBARANES
       } else if (tablaActual === 'albaranes') {
-        hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Obra</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Archivo</th><th>Facturas por NIF</th><th>Acción</th><th>Editar</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Nº Albarán</th><th>Proveedor</th><th>NIF</th><th>Obra</th><th>Fecha</th><th>Total</th><th>Facturado</th><th>Archivo</th><th>Facturas por NIF</th><th>Acción</th><th>Editar</th><th></th></tr>`;
         const fObraAlb = document.getElementById('filtroObra').value;
         const lista = registros.filter(f => {
           const mQ = [f.numero_albaran, f.empresa, f.nif].some(v => (v || '').toLowerCase().includes(q));
@@ -4875,6 +4897,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         bdy.innerHTML = lista.map(f => {
           const fact = !!f.facturado;
           return `<tr>
+            <td>${celdaCheck(f.id)}</td>
         <td><strong>${f.numero_albaran || '—'}</strong></td>
         <td class="td-nombre">${f.empresa || '—'}</td>
         <td style="font-size:.8rem;color:#888">${f.nif || '—'}</td>
@@ -4903,7 +4926,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         // CLIENTES
       } else if (tablaActual === 'clientes') {
-        hdr.innerHTML = `<tr><th>Nombre</th><th>NIF</th><th>Email</th><th>Teléfono</th><th>Puntos</th><th>Última compra</th><th>Acciones</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Nombre</th><th>NIF</th><th>Email</th><th>Teléfono</th><th>Puntos</th><th>Última compra</th><th>Acciones</th><th></th></tr>`;
         const lista = registros.filter(f => [f.nombre, f.nif, f.email].some(v => (v || '').toLowerCase().includes(q)));
         if (!lista.length) { bdy.innerHTML = emptyRow(8, 'No se encontraron clientes'); return; }
         bdy.innerHTML = lista.map(f => {
@@ -4911,6 +4934,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const meses = uc ? Math.floor((new Date() - uc) / (1000 * 60 * 60 * 24 * 30)) : null;
           const alerta = meses !== null && meses >= 5;
           return `<tr style="${alerta ? 'background:#fff8e1' : ''}">
+            <td>${celdaCheck(f.id)}</td>
         <td class="td-nombre">
           ${alerta ? '<i class="fa-solid fa-triangle-exclamation" style="color:#c47a00;margin-right:5px"></i>' : ''}
           <strong>${f.nombre || '—'}</strong>
@@ -4950,7 +4974,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         // PRESUPUESTOS ENVIADOS
       } else if (tablaActual === 'presupuestos') {
-        hdr.innerHTML = `<tr><th>Cliente</th><th>Email</th><th>Asunto</th><th>Fecha envío</th><th>Fecha recordatorio</th><th>Estado</th><th>Acciones</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Cliente</th><th>Email</th><th>Asunto</th><th>Fecha envío</th><th>Fecha recordatorio</th><th>Estado</th><th>Acciones</th><th></th></tr>`;
         const lista = registros
           .filter(f => [f.cliente, f.email_cliente, f.asunto].some(v => (v || '').toLowerCase().includes(q)))
           .filter(f => !fEst || (fEst === 'respondido' ? f.respondido : !f.respondido));
@@ -4959,6 +4983,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const respondido = !!f.respondido;
           const vencido = !respondido && f.fecha_recordatorio && f.fecha_recordatorio <= hoy();
           return `<tr style="${vencido ? 'background:#fff8e1' : ''}">
+            <td>${celdaCheck(f.id)}</td>
         <td class="td-nombre">${f.cliente || '—'}</td>
         <td style="font-size:.82rem">${f.email_cliente || '—'}</td>
         <td style="font-size:.82rem">${f.asunto || '—'}</td>
@@ -4984,12 +5009,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         // INVENTARIO
       } else if (tablaActual === 'inventario') {
-        hdr.innerHTML = `<tr><th>Producto</th><th>Stock</th><th>Pts/unidad</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Producto</th><th>Stock</th><th>Pts/unidad</th><th></th></tr>`;
         const lista = registros.filter(p => (p.nombre || '').toLowerCase().includes(q));
         if (!lista.length) { bdy.innerHTML = emptyRow(4, 'No se encontraron productos'); return; }
         bdy.innerHTML = lista.map(p => {
           const agotado = parseFloat(p.stock || 0) <= 0;
           return `<tr>
+            <td>${celdaCheck(p.id)}</td>
         <td><strong>${p.nombre || '—'}</strong></td>
         <td><span style="font-size:1.1rem;font-weight:700;color:${agotado ? '#b53987' : '#2d7a4f'}">${fmtStock(p.stock)}</span>
 <span style="font-size:.78rem;color:#aaa"> ${unidadCorta(p)}</span>
@@ -5023,15 +5049,21 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }).join('');
         // MATERIALES OBRA
       } else if (tablaActual === 'materiales_obra') {
-        hdr.innerHTML = `<tr><th>Obra</th><th>Empleado</th><th>Fecha</th><th>Materiales</th><th>Detalle</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Obra</th><th>Empleado</th><th>Fecha</th><th>Materiales</th><th>Detalle</th><th></th></tr>`;
         const lista = registros.filter(f => [f.nombre_obra, f.nombre_empleado].some(v => (v || '').toLowerCase().includes(q)));
         if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay materiales registrados'); return; }
         bdy.innerHTML = lista.map(f => {
           const items = f.materiales_obra_items || [];
-          const resumen = items.length
-            ? items.slice(0, 2).map(i => `${i.producto_nombre} (${i.cantidad})`).join(', ') + (items.length > 2 ? ` +${items.length - 2} más` : '')
+          const itemsExcl = f.materiales_exclusivos_obra_items || [];
+          const todosItems = [
+            ...items.map(i => ({ nombre: i.producto_nombre, cantidad: i.cantidad })),
+            ...itemsExcl.map(i => ({ nombre: i.producto_nombre + ' (excl.)', cantidad: i.cantidad }))
+          ];
+          const resumen = todosItems.length
+            ? todosItems.slice(0, 2).map(i => `${i.nombre} (${i.cantidad})`).join(', ') + (todosItems.length > 2 ? ` +${todosItems.length - 2} más` : '')
             : 'Sin materiales';
           return `<tr>
+            <td>${celdaCheck(f.id)}</td>
         <td class="td-nombre"><strong>${f.nombre_obra || '—'}</strong></td>
         <td>${f.nombre_empleado || '—'}</td>
         <td>${fmtF(f.fecha)}</td>
@@ -5054,6 +5086,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }).join('');
       } else if (tablaActual === 'ingresos') {
         hdr.innerHTML = `<tr>
+          <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
     <th>Nº Int.</th><th>Fecha</th><th>Cobro previsto</th><th>NIF</th><th>Cliente</th><th>Obra</th>
     <th>Nº Factura</th><th>Concepto</th>
     <th class="num-cell">Base</th><th class="pct-cell">%IVA</th><th class="num-cell">IVA</th>
@@ -5075,6 +5108,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = esVenc ? 'vencido' : est;
           return `<tr>
+            <td>${celdaCheck(f.id)}</td>
       <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
       <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
       <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
@@ -5106,6 +5140,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }).join('');
 
       }
+      actualizarBarraSeleccion();
       actualizarBarraScrollFija();
     }
 
@@ -6116,6 +6151,57 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } catch (e) { toast('Error al eliminar: ' + e.message, 'err'); }
     }
 
+    let seleccionados = new Set();
+
+    function celdaCheck(id) {
+      return `<input type="checkbox" class="chk-fila" data-id="${id}" ${seleccionados.has(id) ? 'checked' : ''} onchange="toggleSeleccionFila(${id}, this.checked)">`;
+    }
+
+    function toggleSeleccionFila(id, marcado) {
+      if (marcado) seleccionados.add(id); else seleccionados.delete(id);
+      actualizarBarraSeleccion();
+    }
+
+    function toggleSeleccionarTodos(chkCabecera) {
+      const marcado = chkCabecera.checked;
+      document.querySelectorAll('#tablaBody .chk-fila').forEach(chk => {
+        chk.checked = marcado;
+        const id = parseInt(chk.dataset.id);
+        if (marcado) seleccionados.add(id); else seleccionados.delete(id);
+      });
+      actualizarBarraSeleccion();
+    }
+
+    function actualizarBarraSeleccion() {
+      const btn = document.getElementById('btnEliminarSeleccionados');
+      if (!btn) return;
+      if (seleccionados.size > 0) {
+        btn.style.display = 'flex';
+        btn.querySelector('span').textContent = `Eliminar (${seleccionados.size})`;
+      } else {
+        btn.style.display = 'none';
+      }
+    }
+
+    async function apiDeleteMultiple(tabla, ids) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}?id=in.(${ids.join(',')})`, {
+        method: 'DELETE', headers: await authHeaders()
+      });
+      if (!r.ok) throw new Error(await r.text());
+    }
+
+    async function eliminarSeleccionados() {
+      if (!seleccionados.size) return;
+      if (!confirm(`¿Seguro que deseas eliminar ${seleccionados.size} registro(s)? No se podrá deshacer.`)) return;
+      try {
+        await apiDeleteMultiple(tablaReal(tablaActual), [...seleccionados]);
+        toast(`${seleccionados.size} registro(s) eliminado(s)`, 'ok');
+        seleccionados.clear();
+        cargarDatos();
+      } catch (e) {
+        toast('Error al eliminar: ' + e.message, 'err');
+      }
+    }
 
 
 
@@ -6210,8 +6296,38 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
 
+    let materialesExclusivosDB = [];
+    async function cargarMaterialesExclusivosCache() {
+      const items = await apiGetAll('materiales_exclusivos_obra_items', 'select=producto_nombre');
+      materialesExclusivosDB = [...new Set(items.map(i => i.producto_nombre).filter(Boolean))].sort();
+      const dl = document.getElementById('dl_materiales_exclusivos');
+      if (dl) dl.innerHTML = materialesExclusivosDB.map(n => `<option value="${n.replace(/"/g, '&quot;')}"></option>`).join('');
+    }
 
+    let lineasMaterialExclusivoCount = 0;
 
+    function addLineaMaterialExclusivo() {
+      lineasMaterialExclusivoCount++;
+      const idx = lineasMaterialExclusivoCount;
+      const div = document.createElement('div');
+      div.id = `lme_${idx}`;
+      div.className = 'linea-prod';
+      div.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Material exclusivo</label>
+      <input type="text" id="lme_prod_${idx}" list="dl_materiales_exclusivos" placeholder="Ej: Tablas de encofrado...">
+    </div>
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Cantidad</label>
+      <input type="number" id="lme_cant_${idx}" value="1" min="0.01" step="0.01" style="text-align:center;width:100%">
+    </div>
+    <div style="width:80px"></div>
+    <button type="button" onclick="document.getElementById('lme_${idx}').remove()"
+      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`;
+      document.getElementById('lineasMaterialExclusivo').appendChild(div);
+    }
 
 
 
@@ -6451,14 +6567,22 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const reg = registros.find(r => r.id === id);
       if (!reg) return;
       const items = reg.materiales_obra_items || [];
+      const itemsExcl = reg.materiales_exclusivos_obra_items || [];
       document.getElementById('modalDetalleTitulo').innerHTML =
         `<i class="fa-solid fa-boxes-stacked" style="color:#b53987"></i>Materiales — ${reg.nombre_obra || '—'}`;
-      document.getElementById('modalDetalleContenido').innerHTML = !items.length
+      const tablaNormal = !items.length ? '' : `
+    <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Del inventario</div>
+    <table class="mini-table"><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>
+    ${items.map(i => `<tr><td>${i.producto_nombre || '—'}</td><td><strong>${i.cantidad}</strong></td></tr>`).join('')}
+    </tbody></table>`;
+      const tablaExcl = !itemsExcl.length ? '' : `
+    <div class="form-seccion">Exclusivo de obra</div>
+    <table class="mini-table"><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>
+    ${itemsExcl.map(i => `<tr><td>${i.producto_nombre || '—'}</td><td><strong>${i.cantidad}</strong></td></tr>`).join('')}
+    </tbody></table>`;
+      document.getElementById('modalDetalleContenido').innerHTML = (!items.length && !itemsExcl.length)
         ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin materiales registrados</p>`
-        : `<p style="font-size:.85rem;color:#888;margin-bottom:8px">Empleado: <strong>${reg.nombre_empleado || '—'}</strong> · Fecha: <strong>${fmtF(reg.fecha)}</strong></p>
-        <table class="mini-table"><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>
-        ${items.map(i => `<tr><td>${i.producto_nombre || '—'}</td><td><strong>${i.cantidad}</strong></td></tr>`).join('')}
-      </tbody></table>`;
+        : `<p style="font-size:.85rem;color:#888;margin-bottom:8px">Empleado: <strong>${reg.nombre_empleado || '—'}</strong> · Fecha: <strong>${fmtF(reg.fecha)}</strong></p>${tablaNormal}${tablaExcl}`;
       document.getElementById('modalDetalle').classList.add('visible');
     }
 
@@ -6497,9 +6621,20 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         const stock = parseFloat(prod.stock || 0);
         if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${fmtStock(stock)} ${unidadCorta(prod)}`, 'err'); ok = false; continue; }
         lineas.push({ producto_id: prod.id, producto_nombre: nombre, cantidad: cant, stock });
+
       }
+      const lineasExclusivas = [];
+      for (const inp of document.querySelectorAll('[id^="lme_prod_"]')) {
+        const nombre = inp.value.trim();
+        if (!nombre) continue;
+        const idx = inp.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lme_cant_${idx}`)?.value || 0);
+        if (cant <= 0) { toast(`Cantidad inválida en material exclusivo "${nombre}"`, 'err'); ok = false; continue; }
+        lineasExclusivas.push({ producto_nombre: nombre, cantidad: cant });
+      }
+
       if (!ok) return;
-      if (!lineas.length) { toast('Añade al menos un material', 'err'); return; }
+      if (!lineas.length && !lineasExclusivas.length) { toast('Añade al menos un material', 'err'); return; }
 
       try {
         let headerId;
@@ -6568,6 +6703,16 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             stock: Number(prod.stock) - Number(l.cantidad)
           });
 
+        }
+        if (lineasExclusivas.length) {
+          await apiPost('materiales_exclusivos_obra_items', lineasExclusivas.map(l => ({
+            materiales_obra_id: headerId,
+            nombre_obra,
+            producto_nombre: l.producto_nombre,
+            cantidad: l.cantidad,
+            fecha
+          })));
+          cargarMaterialesExclusivosCache(); // refresca el autocompletar, no bloqueante
         }
         toast(modalEditId
           ? 'Material de obra actualizado correctamente'
@@ -6640,14 +6785,28 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const filas = [];
       filtrados.forEach(r => {
         const items = r.materiales_obra_items || [];
-        if (!items.length) {
-          filas.push({ 'OBRA': r.nombre_obra || '', 'EMPLEADO': r.nombre_empleado || '', 'FECHA': r.fecha ? r.fecha.split('-').reverse().join('/') : '', 'PRODUCTO': '', 'CANTIDAD': '' });
+        const itemsExcl = r.materiales_exclusivos_obra_items || [];
+        const fecha = r.fecha ? r.fecha.split('-').reverse().join('/') : '';
+
+        if (!items.length && !itemsExcl.length) {
+          filas.push({ 'OBRA': r.nombre_obra || '', 'EMPLEADO': r.nombre_empleado || '', 'FECHA': fecha, 'TIPO': '', 'PRODUCTO': '', 'CANTIDAD': '' });
         } else {
           items.forEach(i => {
             filas.push({
               'OBRA': r.nombre_obra || '',
               'EMPLEADO': r.nombre_empleado || '',
-              'FECHA': r.fecha ? r.fecha.split('-').reverse().join('/') : '',
+              'FECHA': fecha,
+              'TIPO': 'Inventario',
+              'PRODUCTO': i.producto_nombre || '',
+              'CANTIDAD': i.cantidad != null ? parseFloat(i.cantidad) : ''
+            });
+          });
+          itemsExcl.forEach(i => {
+            filas.push({
+              'OBRA': r.nombre_obra || '',
+              'EMPLEADO': r.nombre_empleado || '',
+              'FECHA': fecha,
+              'TIPO': 'Exclusivo obra',
               'PRODUCTO': i.producto_nombre || '',
               'CANTIDAD': i.cantidad != null ? parseFloat(i.cantidad) : ''
             });
@@ -6656,8 +6815,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       });
 
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(filas, { header: ['OBRA', 'EMPLEADO', 'FECHA', 'PRODUCTO', 'CANTIDAD'] });
-      ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 12 }, { wch: 30 }, { wch: 10 }];
+      const ws = XLSX.utils.json_to_sheet(filas, { header: ['OBRA', 'EMPLEADO', 'FECHA', 'TIPO', 'PRODUCTO', 'CANTIDAD'] });
+      ws['!cols'] = [{ wch: 28 }, { wch: 22 }, { wch: 12 }, { wch: 14 }, { wch: 30 }, { wch: 10 }];
       XLSX.utils.book_append_sheet(wb, ws, 'Materiales Obra');
       const fecha = new Date().toISOString().split('T')[0];
       const nombre = `materiales_obra_${obraSel || 'todas'}_${fecha}.xlsx`;
@@ -6684,7 +6843,25 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
 
-
+    async function verMaterialExclusivoDeObra(nombreObra) {
+      try {
+        const items = await apiGetAll('materiales_exclusivos_obra_items', `nombre_obra=eq.${encodeURIComponent(nombreObra)}`);
+        const agrupado = {};
+        items.forEach(i => {
+          const key = (i.producto_nombre || '').trim();
+          agrupado[key] = (agrupado[key] || 0) + (parseFloat(i.cantidad) || 0);
+        });
+        const filas = Object.entries(agrupado).sort((a, b) => a[0].localeCompare(b[0]));
+        document.getElementById('modalDetalleTitulo').innerHTML =
+          `<i class="fa-solid fa-boxes-stacked" style="color:#b53987"></i>Material exclusivo — ${nombreObra}`;
+        document.getElementById('modalDetalleContenido').innerHTML = !filas.length
+          ? `<p style="text-align:center;color:#aaa;padding:2rem">Sin material exclusivo registrado para esta obra</p>`
+          : `<table class="mini-table"><thead><tr><th>Material</th><th>Total llevado</th></tr></thead><tbody>
+        ${filas.map(([nombre, cant]) => `<tr><td>${nombre}</td><td><strong>${fmtStock(cant)}</strong></td></tr>`).join('')}
+      </tbody></table>`;
+        document.getElementById('modalDetalle').classList.add('visible');
+      } catch (e) { toast('Error: ' + e.message, 'err'); }
+    }
 
 
 
@@ -7214,6 +7391,18 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         } else {
           addLineaMaterial();
         }
+        document.getElementById('lineasMaterialExclusivo').innerHTML = '';
+        lineasMaterialExclusivoCount = 0;
+        const itemsExcl = f.materiales_exclusivos_obra_items || [];
+        if (itemsExcl.length) {
+          itemsExcl.forEach(item => {
+            addLineaMaterialExclusivo();
+            document.getElementById(`lme_prod_${lineasMaterialExclusivoCount}`).value = item.producto_nombre || '';
+            document.getElementById(`lme_cant_${lineasMaterialExclusivoCount}`).value = item.cantidad;
+          });
+        } else {
+          addLineaMaterialExclusivo();
+        }
         return;
       }
       if (tabla == "ingresos") {
@@ -7330,9 +7519,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         document.getElementById('mo_nombre_empleado').value = '';
         document.getElementById('mo_fecha').value = hoy();
         document.getElementById('lineasMaterial').innerHTML = '';
+        document.getElementById('lineasMaterialExclusivo').innerHTML = '';
         lineasMaterialCount = 0;
+        lineasMaterialExclusivoCount = 0;
         document.getElementById('modalMaterialObra').classList.add('visible');
         addLineaMaterial();
+        addLineaMaterialExclusivo();
         return;
       }
 
