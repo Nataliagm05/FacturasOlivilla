@@ -4984,15 +4984,15 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         // INVENTARIO
       } else if (tablaActual === 'inventario') {
-        hdr.innerHTML = `<tr><th>Producto</th><th>Stock (uds.)</th><th>Pts/unidad</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th>Producto</th><th>Stock</th><th>Pts/unidad</th><th></th></tr>`;
         const lista = registros.filter(p => (p.nombre || '').toLowerCase().includes(q));
         if (!lista.length) { bdy.innerHTML = emptyRow(4, 'No se encontraron productos'); return; }
         bdy.innerHTML = lista.map(p => {
           const agotado = parseFloat(p.stock || 0) <= 0;
           return `<tr>
         <td><strong>${p.nombre || '—'}</strong></td>
-        <td><span style="font-size:1.1rem;font-weight:700;color:${agotado ? '#b53987' : '#2d7a4f'}">${p.stock ?? 0}</span>
-          <span style="font-size:.78rem;color:#aaa"> uds.</span>
+        <td><span style="font-size:1.1rem;font-weight:700;color:${agotado ? '#b53987' : '#2d7a4f'}">${fmtStock(p.stock)}</span>
+<span style="font-size:.78rem;color:#aaa"> ${unidadCorta(p)}</span>
           ${agotado ? '<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>' : ''}
         </td>
         <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${p.puntos_por_unidad || 0} pts</span></td>
@@ -5690,12 +5690,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
-      <input type="text" id="lfa_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o añadir nuevo...">
+      <input type="text" id="lfa_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o añadir nuevo..." oninput="actualizarUnidadLinea('lfa',${idx})">
     </div>
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Cantidad recibida</label>
+      <label style="font-size:.75rem">Cantidad recibida <span id="lfa_uni_${idx}" style="color:#b53987;font-weight:600"></span></label>
       <div style="display:flex;gap:4px;align-items:center">
-        <input type="number" id="lfa_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <input type="number" id="lfa_cant_${idx}" value="1" min="0.01" step="0.01" style="text-align:center;width:100%">
         <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLinea(${idx})"
           style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
           <i class="fa-solid fa-plus"></i>
@@ -6003,6 +6003,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const payload = {
             nombre,
             stock: nuevoStock,
+            unidad: document.getElementById('f_unidad')?.value || 'unidades',
             puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0)
           };
 
@@ -6140,49 +6141,27 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     // INVENTARIO
 
     async function sumarStock(id) {
-
-      const cantidad = parseFloat(prompt("Cantidad a añadir"));
-
-      if (!cantidad || cantidad <= 0) return;
-
       const p = inventarioDB.find(x => x.id == id);
+      const entrada = prompt(`Cantidad a añadir (${unidadCorta(p)})`);
+      const cantidad = parseFloat((entrada || '').replace(',', '.'));
+      if (!cantidad || cantidad <= 0) return;
       const stockAntes = parseFloat(p.stock) || 0;
       const stockDespues = stockAntes + cantidad;
-
-      await apiPatch("inventario", id, {
-        stock: stockDespues
-      });
-
-      registrarHistorial('inventario', {
-        producto: p.nombre, accion: 'suma', cantidad,
-        stock_antes: stockAntes, stock_despues: stockDespues
-      });
-
+      await apiPatch("inventario", id, { stock: stockDespues });
+      registrarHistorial('inventario', { producto: p.nombre, accion: 'suma', cantidad, stock_antes: stockAntes, stock_despues: stockDespues });
       cargarDatos();
     }
 
     async function restarStock(id) {
-
-      const cantidad = parseFloat(prompt("Cantidad a descontar"));
-
-      if (!cantidad || cantidad <= 0) return;
-
       const p = inventarioDB.find(x => x.id == id);
+      const entrada = prompt(`Cantidad a descontar (${unidadCorta(p)})`);
+      const cantidad = parseFloat((entrada || '').replace(',', '.'));
+      if (!cantidad || cantidad <= 0) return;
       const stockAntes = parseFloat(p.stock) || 0;
-
       let stock = stockAntes - cantidad;
-
       if (stock < 0) stock = 0;
-
-      await apiPatch("inventario", id, {
-        stock: stock
-      });
-
-      registrarHistorial('inventario', {
-        producto: p.nombre, accion: 'resta', cantidad: (stockAntes - stock),
-        stock_antes: stockAntes, stock_despues: stock
-      });
-
+      await apiPatch("inventario", id, { stock: stock });
+      registrarHistorial('inventario', { producto: p.nombre, accion: 'resta', cantidad: (stockAntes - stock), stock_antes: stockAntes, stock_despues: stock });
       cargarDatos();
     }
 
@@ -6203,7 +6182,19 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       }
     }
 
-
+    function unidadProducto(p) { return (p && p.unidad === 'metros') ? 'metros' : 'unidades'; }
+    function unidadCorta(p) { return unidadProducto(p) === 'metros' ? 'm' : 'uds.'; }
+    function fmtStock(v) {
+      const n = parseFloat(v || 0);
+      return (n % 1 === 0) ? n.toString() : n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function actualizarUnidadLinea(prefijo, idx) {
+      const inpNombre = document.getElementById(`${prefijo}_prod_${idx}`);
+      const spanUni = document.getElementById(`${prefijo}_uni_${idx}`);
+      if (!inpNombre || !spanUni) return;
+      const prod = buscarProductoPorNombre(inpNombre.value);
+      spanUni.textContent = prod ? `(${unidadCorta(prod)})` : '';
+    }
 
 
 
@@ -6491,7 +6482,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }
 
         const stock = parseFloat(prod.stock || 0);
-        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; continue; }
+        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${fmtStock(stock)} ${unidadCorta(prod)}`, 'err'); ok = false; continue; }
         lineas.push({ producto_id: prod.id, producto_nombre: nombre, cantidad: cant, stock });
       }
       if (!ok) return;
@@ -6946,12 +6937,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
-      <input type="text" id="lc_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo...">
+      <input type="text" id="lc_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo..." oninput="actualizarUnidadLinea('lc',${idx})">
     </div>
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Cantidad</label>
+      <label style="font-size:.75rem">Cantidad <span id="lc_uni_${idx}" style="color:#b53987;font-weight:600"></span></label>
       <div style="display:flex;gap:4px;align-items:center">
-        <input type="number" id="lc_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <input type="number" id="lc_cant_${idx}" value="1" min="0.01" step="0.01" style="text-align:center;width:100%">
         <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLineaCompra(${idx})"
           style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
           <i class="fa-solid fa-plus"></i>
@@ -7004,7 +6995,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }
 
         const stock = parseFloat(prod.stock || 0);
-        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${stock} uds.`, 'err'); ok = false; continue; }
+        if (cant > stock) { toast(`Stock insuficiente para "${nombre}": hay ${fmtStock(stock)} ${unidadCorta(prod)}`, 'err'); ok = false; continue; }
         lineas.push({ producto_id: prod.id, cantidad: cant, nombre, stock });
       }
 
@@ -7050,12 +7041,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Material</label>
-      <input type="text" id="lm_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo...">
+      <input type="text" id="lm_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo..." oninput="actualizarUnidadLinea('lm',${idx})">
     </div>
     <div class="form-group" style="margin:0">
-      <label style="font-size:.75rem">Cantidad</label>
+      <label style="font-size:.75rem">Cantidad <span id="lm_uni_${idx}" style="color:#b53987;font-weight:600"></span></label>
       <div style="display:flex;gap:4px;align-items:center">
-        <input type="number" id="lm_cant_${idx}" value="1" min="1" style="text-align:center;width:100%">
+        <input type="number" id="lm_cant_${idx}" value="1" min="0.01" step="0.01" style="text-align:center;width:100%">
         <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLineaMaterial(${idx})"
           style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
           <i class="fa-solid fa-plus"></i>
@@ -7139,6 +7130,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
           document.getElementById("f_nombre").value = f.nombre || "";
           document.getElementById("f_stock").value = f.stock || 0;
+          document.getElementById("f_unidad").value = f.unidad || "unidades";
           document.getElementById("f_pts").value = f.puntos_por_unidad || 0;
 
         }, 100);
@@ -7194,6 +7186,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             addLineaMaterial();
             document.getElementById(`lm_prod_${lineasMaterialCount}`).value = item.producto_nombre || '';
             document.getElementById(`lm_cant_${lineasMaterialCount}`).value = item.cantidad;
+            actualizarUnidadLinea('lm', lineasMaterialCount);
           });
         } else {
           addLineaMaterial();
@@ -7611,11 +7604,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } else if (tabla === 'inventario') {
         document.getElementById('modalTitulo').textContent = 'Nuevo Producto';
         cont.innerHTML = `<div class="form-grid-2">
-      <div class="form-group span2"><label>Nombre del producto *</label><input type="text" id="f_nombre" placeholder="Ej: Cemento CEM II 25kg"></div>
-      <div class="form-group"><label>Stock inicial (uds.)</label><input type="number" id="f_stock" value="0" min="0"></div>
-      <div class="form-group"><label>Puntos por unidad</label><input type="number" id="f_pts" value="0" min="0"></div>
-    </div>
-    <p style="font-size:.78rem;color:#888;margin-top:10px"><i class="fa-solid fa-info-circle me-1"></i>Los puntos por unidad se usarán automáticamente al registrar una compra de cliente.</p>`;
+  <div class="form-group span2"><label>Nombre del producto *</label><input type="text" id="f_nombre" placeholder="Ej: Cemento CEM II 25kg"></div>
+  <div class="form-group"><label>Se mide por</label><select id="f_unidad"><option value="unidades">Unidades</option><option value="metros">Metros</option></select></div>
+  <div class="form-group"><label>Stock inicial</label><input type="number" id="f_stock" value="0" step="0.01" min="0"></div>
+  <div class="form-group"><label>Puntos por unidad</label><input type="number" id="f_pts" value="0" min="0"></div>
+</div>
+<p style="font-size:.78rem;color:#888;margin-top:10px"><i class="fa-solid fa-info-circle me-1"></i>Si el producto se mide por metros, podrás usar decimales al restar/sumar stock (ej. 2,5 m).</p>`;
         document.getElementById('modalNueva').classList.add('visible');
 
         // ── OBRA ──
