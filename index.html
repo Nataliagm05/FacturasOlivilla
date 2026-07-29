@@ -2914,7 +2914,8 @@
 
 
     // ── UTILIDADES ────────────────────────────────────────────
-    function fmt(v) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+    function simboloMoneda(m) { return m === 'USD' ? '$' : '€'; }
+function fmt(v, moneda) { return parseFloat(v || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + simboloMoneda(moneda); }
     function fmtN(v) { if (v === null || v === undefined || v === '' || isNaN(parseFloat(v))) return '—'; return parseFloat(v).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function fmtF(f) { return f ? f.split('-').reverse().join('/') : '—'; }
     function hoy() { return new Date().toISOString().split('T')[0]; }
@@ -4514,7 +4515,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="td-total">${fmt(f.total)}</td>
+        <td class="td-total">${fmt(f.total, f.moneda)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${celdaArchivoFactura(f)}</td>
         <td class="td-acciones">${celdaRevision(f, 'revisado_cynthia', 'facturas_almacen', 'Cynthia')}${chipRevisado(f, 'revisado_emilio', 'facturas_almacen', 'Emilio')}</td>
@@ -4637,7 +4638,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="td-total">${fmt(f.total)}</td>
+        <td class="td-total">${fmt(f.total, f.moneda)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${celdaArchivoFactura(f)}</td>
         <td class="td-acciones" style="flex-wrap:nowrap;overflow-x:auto">${celdaRevision(f, 'revisado_angel', 'facturas_obra', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'facturas_obra', 'Emilio')}</td>
@@ -4747,7 +4748,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <td class="num-cell">${fmtN(f.base1)}</td>
         <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
         <td class="num-cell">${fmtN(f.total_iva1)}</td>
-        <td class="td-total">${fmt(f.total)}</td>
+        <td class="td-total">${fmt(f.total, f.moneda)}</td>
         <td><span class="badge-estado badge-${eR}">${eR.toUpperCase()}</span></td>
         <td>${celdaArchivoFactura(f)}</td>
         <td class="td-acciones">${celdaRevision(f, 'revisado_angel', 'facturas_csg', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'facturas_csg', 'Emilio')}</td>
@@ -4836,7 +4837,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <td class="td-nombre">${f.proveedor || '—'}</td>
         <td><strong>${f.numero_factura || '—'}</strong></td>
         <td class="td-concepto" title="${f.concepto || ''}">${f.concepto || '—'}</td>
-        <td class="td-total">${fmt(f.total)}</td>
+        <td class="td-total">${fmt(f.total, f.moneda)}</td>
         <td class="td-acciones">${(CAMPOS_REVISION[f.origen] || []).map(c => celdaRevision(f, c.campo, f.origen, c.nombre)).join('')}</td>
         <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.proveedor || f.numero_factura || 'Factura').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
         <td><button class="btn-toggle-pago pendiente" onclick="abrirModalEditar(${f.id},'${f.origen}')" title="Editar factura"><i class="fa-solid fa-pen"></i></button></td>
@@ -5119,7 +5120,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <td class="num-cell">${fmtN(f.base1)}</td>
       <td class="pct-cell">${f.pct_iva1 != null ? f.pct_iva1 + '%' : '—'}</td>
       <td class="num-cell">${fmtN(f.total_iva1)}</td>
-      <td class="td-total">${fmt(f.total)}</td>
+      <td class="td-total">${fmt(f.total, f.moneda)}</td>
       <td><span class="badge-estado badge-${eR}">${eR === 'pagado' ? 'COBRADO' : eR.toUpperCase()}</span></td>
       <td>${celdaArchivoIngreso(f)}</td>
       <td class="td-acciones">${celdaRevision(f, 'revisado_angel', 'ingresos', 'Angel')}${chipRevisado(f, 'revisado_emilio', 'ingresos', 'Emilio')}</td>
@@ -5825,6 +5826,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             nif: document.getElementById('f_nif').value.trim() || null,
             concepto: document.getElementById('f_concepto').value.trim() || null,
             total: parseFloat(document.getElementById('f_total').value || 0),
+            moneda: document.getElementById('f_moneda').value || 'EUR',
             estado: document.getElementById('f_est').value,
             fecha_vencimiento: document.getElementById('f_venc').value || null,
             numeros_albaran: document.getElementById('f_num_albaranes').value
@@ -6104,6 +6106,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             pct_iva1: numToNull('f_pct_iva1'),
             total_iva1: numToNull('f_total_iva1'),
             total: parseFloat(document.getElementById('f_total').value || 0),
+            moneda: document.getElementById('f_moneda').value || 'EUR',
             estado: document.getElementById('f_est').value,
             fecha_vencimiento: document.getElementById('f_venc').value || null,
             descuento: numToNull('f_descuento'),
@@ -7422,6 +7425,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           set('f_pct_iva1', f.pct_iva1 != null ? f.pct_iva1 : 21);
           set('f_total_iva1', f.total_iva1);
           set('f_total', f.total);
+          set('f_moneda', f.moneda || 'EUR');
           set('f_venc', f.fecha_vencimiento);
           set('f_est', f.estado || 'pendiente');
           set('f_descuento', f.descuento);
@@ -7460,6 +7464,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         set('f_nif', f.nif);
         set('f_concepto', f.concepto);
         set('f_total', f.total);
+        set('f_moneda', f.moneda || 'EUR');
         set('f_venc', f.fecha_vencimiento);
         set('f_metodo_pago', f.metodo_pago || '');
         set('f_iban', f.iban || '');
@@ -7571,7 +7576,14 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
 <div class="form-group span2"><label>Números de albarán <span style="font-size:.72rem;color:#888">(separados por coma)</span></label><input type="text" id="f_num_albaranes" placeholder="ALB-001, ALB-002, ALB-003"></div>
-        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group"><label>Total *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group">
+  <label>Moneda</label>
+  <select id="f_moneda">
+    <option value="EUR">€ Euro</option>
+    <option value="USD">$ Dólar</option>
+  </select>
+</div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       <div class="form-seccion" id="revisionModalWrap" style="display:none">Revisión</div>
@@ -7632,7 +7644,14 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <div class="form-group span3"><label>Nombre de la obra *</label><input type="text" id="f_obra" placeholder="Ej: Reforma Calle Mayor 12"></div>
         <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
 <div class="form-group span2"><label>Números de albarán <span style="font-size:.72rem;color:#888">(separados por coma)</span></label><input type="text" id="f_num_albaranes" placeholder="ALB-001, ALB-002, ALB-003"></div>
-        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group"><label>Total *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group">
+  <label>Moneda</label>
+  <select id="f_moneda">
+    <option value="EUR">€ Euro</option>
+    <option value="USD">$ Dólar</option>
+  </select>
+</div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       <div class="form-seccion" id="revisionModalWrap" style="display:none">Revisión</div>
@@ -7693,7 +7712,14 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <div class="form-group span3"><label>Nombre de la obra <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="text" id="f_obra" list="dl_obras" placeholder="Ej: Reforma Calle Mayor 12"></div>
 <div class="form-group span3"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Descripción de la factura"></div>
 <div class="form-group span2"><label>Números de albarán <span style="font-size:.72rem;color:#888">(separados por coma)</span></label><input type="text" id="f_num_albaranes" placeholder="ALB-001, ALB-002, ALB-003"></div>
-        <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group"><label>Total *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+        <div class="form-group">
+  <label>Moneda</label>
+  <select id="f_moneda">
+    <option value="EUR">€ Euro</option>
+    <option value="USD">$ Dólar</option>
+  </select>
+</div>
         <div class="form-group"><label>Vencimiento</label><input type="date" id="f_venc"></div>
         <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Pagada</option></select></div>
       <div class="form-seccion" id="revisionModalWrap" style="display:none">Revisión</div>
@@ -7749,7 +7775,14 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-group"><label>Total IVA permisos (€)</label><input type="number" id="f_total_iva_permisos" step="0.01" placeholder="0.00"></div>
       <div class="form-group span2"><label>Total con permisos (€)</label><input type="number" id="f_total_con_permisos" step="0.01" placeholder="0.00"></div>
 
-      <div class="form-group"><label>Total (€) *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+      <div class="form-group"><label>Total *</label><input type="number" id="f_total" value="0" step="0.01" min="0"></div>
+      <div class="form-group">
+  <label>Moneda</label>
+  <select id="f_moneda">
+    <option value="EUR">€ Euro</option>
+    <option value="USD">$ Dólar</option>
+  </select>
+</div>
       <div class="form-group"><label>Cobro previsto</label><input type="date" id="f_venc"></div>
       <div class="form-group"><label>Estado</label><select id="f_est"><option value="pendiente">Pendiente</option><option value="pagado">Cobrado</option></select></div>
 
