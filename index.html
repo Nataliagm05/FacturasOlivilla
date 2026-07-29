@@ -4071,6 +4071,35 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           `<tr><td colspan="23"><div class="empty-state" style="color:#e53e3e"><i class="fa-solid fa-circle-xmark"></i>${e.message}</div></td></tr>`;
       }
     }
+    function _filaVisibleSuperior() {
+  const wrap = document.getElementById('tablaWrapEl');
+  if (!wrap) return null;
+  const filas = wrap.querySelectorAll('tbody tr[data-id]');
+  const wrapTop = wrap.getBoundingClientRect().top;
+  for (const fila of filas) {
+    const r = fila.getBoundingClientRect();
+    if (r.bottom > wrapTop) return { id: fila.dataset.id, offset: r.top - wrapTop };
+  }
+  return null;
+}
+
+function _restaurarFilaVisible(ancla) {
+  if (!ancla) return;
+  const wrap = document.getElementById('tablaWrapEl');
+  if (!wrap) return;
+  const fila = wrap.querySelector(`tbody tr[data-id="${ancla.id}"]`);
+  if (!fila) return;
+  const wrapTop = wrap.getBoundingClientRect().top;
+  const filaTop = fila.getBoundingClientRect().top;
+  wrap.scrollTop += (filaTop - wrapTop) - ancla.offset;
+}
+
+function renderTablaConScroll() {
+  const wrap = document.getElementById('tablaWrapEl');
+  const ancla = _filaVisibleSuperior();
+  renderTabla();
+  if (wrap && ancla) _restaurarFilaVisible(ancla);
+}
 
     // Envoltorio: guarda dónde estabas mirando (scroll vertical y horizontal
     // de la tabla, y el scroll de la página) ANTES de que _cargarDatosInterna
@@ -4078,19 +4107,24 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     // llega una actualización (tuya o de un compañero), la pantalla no
     // salta al principio de la tabla.
     async function cargarDatos() {
-      const scrollWrap = document.getElementById('tablaWrapEl');
-      const scrollTopGuardado = scrollWrap ? scrollWrap.scrollTop : 0;
-      const scrollLeftGuardado = scrollWrap ? scrollWrap.scrollLeft : 0;
-      const scrollYGuardado = window.scrollY;
+  const wrap = document.getElementById('tablaWrapEl');
+  const ancla = _filaVisibleSuperior();
+  const scrollLeftGuardado = wrap ? wrap.scrollLeft : 0;
+  const scrollYGuardado = window.scrollY;
 
-      await _cargarDatosInterna();
+  await _cargarDatosInterna();
 
-      if (scrollWrap) {
-        scrollWrap.scrollTop = scrollTopGuardado;
-        scrollWrap.scrollLeft = scrollLeftGuardado;
-      }
-      window.scrollTo(window.scrollX, scrollYGuardado);
-    }
+  if (wrap) {
+    if (ancla) _restaurarFilaVisible(ancla);
+    wrap.scrollLeft = scrollLeftGuardado;
+  }
+  window.scrollTo(window.scrollX, scrollYGuardado);
+
+  // Por si algo (iconos, fuentes) reajusta el alto justo después del pintado
+  requestAnimationFrame(() => {
+    if (wrap && ancla) _restaurarFilaVisible(ancla);
+  });
+}
 
 
 
@@ -4312,7 +4346,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           registros = registros.filter(r => r !== reg);
         }
 
-        renderTabla();
+        renderTablaConScroll();
         if (modalEditId === id) renderChipsRevisionModal(tabla, reg);
 
       } catch (e) {
@@ -4414,7 +4448,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           registros = registros.filter(r => r !== reg);
         }
 
-        renderTabla();
+        renderTablaConScroll();
         if (modalEditId === id) renderChipsRevisionModal(tabla, reg);
 
       } catch (e) {
@@ -4517,7 +4551,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
-          return `<tr>
+          return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
@@ -4640,7 +4674,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
-          return `<tr>
+          return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
@@ -4750,7 +4784,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
-          return `<tr>
+          return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
@@ -4849,7 +4883,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           return mQ && (!fEst || fEst === f.origen);
         });
         if (!lista.length) { bdy.innerHTML = emptyRow(11, 'Todavía no hay facturas revisadas por todos y marcadas como pagadas'); return; }
-        bdy.innerHTML = lista.map(f => `<tr>
+        bdy.innerHTML = lista.map(f => `<tr data-id="${f.id}">
         <td><span class="badge-estado badge-pagado">${origenLabel[f.origen] || f.origen}</span></td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td>
@@ -4883,7 +4917,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const tienePresupuesto = presupuesto != null && !isNaN(presupuesto);
           const diferencia = tienePresupuesto ? (presupuesto - facturado) : null;
           const rentable = tienePresupuesto ? diferencia >= 0 : null;
-          return `<tr>
+          return `<tr data-id="${o.id}">
             <td>${celdaCheck(o.id)}</td>
         <td class="td-nombre">${o.nombre || '—'}</td>
         <td>${o.direccion || '—'}</td>
@@ -4917,7 +4951,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         if (!lista.length) { bdy.innerHTML = emptyRow(12, 'No se encontraron albaranes'); return; }
         bdy.innerHTML = lista.map(f => {
           const fact = !!f.facturado;
-          return `<tr>
+          return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td><strong>${f.numero_albaran || '—'}</strong></td>
         <td class="td-nombre">${f.empresa || '—'}</td>
@@ -4954,7 +4988,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const uc = f.ultima_compra ? new Date(f.ultima_compra) : null;
           const meses = uc ? Math.floor((new Date() - uc) / (1000 * 60 * 60 * 24 * 30)) : null;
           const alerta = meses !== null && meses >= 5;
-          return `<tr style="${alerta ? 'background:#fff8e1' : ''}">
+          return `<tr data-id="${f.id}" style="${alerta ? 'background:#fff8e1' : ''}">
             <td>${celdaCheck(f.id)}</td>
         <td class="td-nombre">
           ${alerta ? '<i class="fa-solid fa-triangle-exclamation" style="color:#c47a00;margin-right:5px"></i>' : ''}
@@ -5003,7 +5037,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         bdy.innerHTML = lista.map(f => {
           const respondido = !!f.respondido;
           const vencido = !respondido && f.fecha_recordatorio && f.fecha_recordatorio <= hoy();
-          return `<tr style="${vencido ? 'background:#fff8e1' : ''}">
+          return `<tr data-id="${f.id}" style="${vencido ? 'background:#fff8e1' : ''}">
             <td>${celdaCheck(f.id)}</td>
         <td class="td-nombre">${f.cliente || '—'}</td>
         <td style="font-size:.82rem">${f.email_cliente || '—'}</td>
@@ -5035,7 +5069,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         if (!lista.length) { bdy.innerHTML = emptyRow(4, 'No se encontraron productos'); return; }
         bdy.innerHTML = lista.map(p => {
           const agotado = parseFloat(p.stock || 0) <= 0;
-          return `<tr>
+          return `<tr data-id="${p.id}">
             <td>${celdaCheck(p.id)}</td>
         <td><strong>${p.nombre || '—'}</strong></td>
         <td><span style="font-size:1.1rem;font-weight:700;color:${agotado ? '#b53987' : '#2d7a4f'}">${fmtStock(p.stock)}</span>
@@ -5083,7 +5117,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const resumen = todosItems.length
             ? todosItems.slice(0, 2).map(i => `${i.nombre} (${i.cantidad})`).join(', ') + (todosItems.length > 2 ? ` +${todosItems.length - 2} más` : '')
             : 'Sin materiales';
-          return `<tr>
+          return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td class="td-nombre"><strong>${f.nombre_obra || '—'}</strong></td>
         <td>${f.nombre_empleado || '—'}</td>
@@ -5128,7 +5162,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = esVenc ? 'vencido' : est;
-          return `<tr>
+          return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
       <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
       <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
@@ -5522,7 +5556,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         await apiPatch(tabla, id, { estado: nuevo });
         const reg = registros.find(r => r.id === id);
         if (reg) reg.estado = nuevo;
-        actualizarStats(); renderAlertas(); renderTabla();
+        actualizarStats(); renderAlertas(); renderTablaConScroll();
         toast(`Factura marcada como <strong>${nuevo.toUpperCase()}</strong>`);
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
@@ -5537,7 +5571,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         await apiPatch(tabla, id, { imputado: !actual });
         const reg = registros.find(r => r.id === id);
         if (reg) reg.imputado = !actual;
-        actualizarStats(); renderAlertas(); renderTabla();
+        actualizarStats(); renderAlertas(); renderTablaConScroll();
         toast(!actual ? 'Factura marcada como <strong>IMPUTADA</strong>' : 'Se ha quitado la imputación de la factura');
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
@@ -5551,7 +5585,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         await apiPatch(tabla, id, { impreso: !actual });
         const reg = registros.find(r => r.id === id && (r.origen ? r.origen === tabla : true));
         if (reg) reg.impreso = !actual;
-        renderTabla();
+        renderTablaConScroll();
       } catch (e) {
         toast('Error: ' + e.message, 'err');
       }
@@ -6370,7 +6404,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         await apiPatch('presupuestos_seguimiento', id, { respondido: !actual });
         const reg = registros.find(r => r.id === id);
         if (reg) reg.respondido = !actual;
-        renderTabla();
+        renderTablaConScroll();
         toast(!actual ? 'Marcado como respondido' : 'Vuelto a marcar como pendiente');
       } catch (e) { toast('Error: ' + e.message, 'err'); }
     }
