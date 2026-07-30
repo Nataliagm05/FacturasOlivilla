@@ -5972,10 +5972,10 @@ function addLineaFactAlm() {
             if (cant <= 0) continue;
 
             let prod = buscarProductoPorNombre(nombre);
+            const unidadSeleccionada = document.getElementById(`lfa_unidadnueva_${idx}`)?.value || 'unidades';
             if (!prod) {
-              const unidadNueva = document.getElementById(`lfa_unidadnueva_${idx}`)?.value || 'unidades';
               try {
-                const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad: unidadNueva, puntos_por_unidad: 0 });
+                const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad: unidadSeleccionada, puntos_por_unidad: 0 });
                 inventarioDB.push(nuevo);
                 actualizarDatalistProductos();
                 prod = nuevo;
@@ -5983,6 +5983,14 @@ function addLineaFactAlm() {
               } catch (e) {
                 toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
                 continue;
+              }
+            } else if (unidadSeleccionada !== unidadProducto(prod)) {
+              try {
+                await apiPatch('inventario', prod.id, { unidad: unidadSeleccionada });
+                prod.unidad = unidadSeleccionada;
+                toast(`Unidad de "${nombre}" cambiada a ${unidadSeleccionada === 'metros' ? 'metros' : 'unidades'}`, 'ok');
+              } catch (e) {
+                toast(`No se pudo cambiar la unidad de "${nombre}": ` + e.message, 'err');
               }
             }
             lineas.push({
@@ -6377,10 +6385,10 @@ function addLineaFactAlm() {
       const selUni = document.getElementById(`${prefijo}_unidadnueva_${idx}`);
       if (!inpNombre) return;
       const prod = buscarProductoPorNombre(inpNombre.value);
-      if (spanUni) spanUni.textContent = prod ? `(${unidadCorta(prod)})` : '';
+      if (spanUni) spanUni.textContent = prod ? `(actual: ${unidadCorta(prod)})` : '';
       if (selUni) {
-        if (prod) { selUni.value = unidadProducto(prod); selUni.disabled = true; }
-        else { selUni.disabled = false; }
+        if (prod) selUni.value = unidadProducto(prod);
+        selUni.disabled = false;
       }
     }
 
@@ -6694,10 +6702,10 @@ function addLineaFactAlm() {
         if (cant <= 0) { toast(`Cantidad inválida en "${nombre}"`, 'err'); ok = false; continue; }
 
         let prod = buscarProductoPorNombre(nombre);
+        const unidadSeleccionada = document.getElementById(`lm_unidadnueva_${idx}`)?.value || 'unidades';
         if (!prod) {
-          const unidadNueva = document.getElementById(`lm_unidadnueva_${idx}`)?.value || 'unidades';
           try {
-            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad: unidadNueva, puntos_por_unidad: 0 });
+            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad: unidadSeleccionada, puntos_por_unidad: 0 });
             inventarioDB.push(nuevo);
             actualizarDatalistProductos();
             prod = nuevo;
@@ -6705,6 +6713,14 @@ function addLineaFactAlm() {
           } catch (e) {
             toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
             ok = false; continue;
+          }
+        } else if (unidadSeleccionada !== unidadProducto(prod)) {
+          try {
+            await apiPatch('inventario', prod.id, { unidad: unidadSeleccionada });
+            prod.unidad = unidadSeleccionada;
+            toast(`Unidad de "${nombre}" cambiada a ${unidadSeleccionada === 'metros' ? 'metros' : 'unidades'}`, 'ok');
+          } catch (e) {
+            toast(`No se pudo cambiar la unidad de "${nombre}": ` + e.message, 'err');
           }
         }
 
