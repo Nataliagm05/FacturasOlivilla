@@ -5973,8 +5973,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
             let prod = buscarProductoPorNombre(nombre);
             if (!prod) {
+              const unidadNueva = document.getElementById(`lfa_unidadnueva_${idx}`)?.value || 'unidades';
               try {
-                const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+                const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad: unidadNueva, puntos_por_unidad: 0 });
                 inventarioDB.push(nuevo);
                 actualizarDatalistProductos();
                 prod = nuevo;
@@ -6694,8 +6695,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         let prod = buscarProductoPorNombre(nombre);
         if (!prod) {
+          const unidadNueva = document.getElementById(`lm_unidadnueva_${idx}`)?.value || 'unidades';
           try {
-            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad: unidadNueva, puntos_por_unidad: 0 });
             inventarioDB.push(nuevo);
             actualizarDatalistProductos();
             prod = nuevo;
@@ -7266,8 +7268,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         let prod = buscarProductoPorNombre(nombre);
         if (!prod) {
+          const unidadNueva = document.getElementById(`lc_unidadnueva_${idx}`)?.value || 'unidades';
           try {
-            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, puntos_por_unidad: 0 });
+            const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad: unidadNueva, puntos_por_unidad: 0 });
             inventarioDB.push(nuevo);
             actualizarDatalistProductos();
             prod = nuevo;
