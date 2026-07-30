@@ -5198,13 +5198,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     </tr>`;
         }).join('');
       } else if (tablaActual === 'varios') {
-        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Recibido</th><th>Enviado por</th><th>Remitente</th><th>Mensaje</th><th>Archivo</th><th></th></tr>`;
-        const lista = registros.filter(f => [f.remitente, f.mensaje, f.enviado_por].some(v => (v || '').toLowerCase().includes(q)));
-        if (!lista.length) { bdy.innerHTML = emptyRow(7, 'No hay nada guardado en Varios'); return; }
-        bdy.innerHTML = lista.map(f => `<tr data-id="${f.id}">
+  hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Recibido</th><th>Remitente</th><th>Mensaje</th><th>Archivo</th><th></th></tr>`;
+  const lista = registros.filter(f => [f.remitente, f.mensaje].some(v => (v || '').toLowerCase().includes(q)));
+  if (!lista.length) { bdy.innerHTML = emptyRow(6, 'No hay nada guardado en Varios'); return; }
+  bdy.innerHTML = lista.map(f => `<tr data-id="${f.id}">
     <td>${celdaCheck(f.id)}</td>
     <td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
-    <td class="td-nombre">${NOMBRES_PERSONAS[f.enviado_por] || f.enviado_por || '—'}</td>
     <td class="td-nombre">${f.remitente || '—'}</td>
     <td class="td-concepto" title="${(f.mensaje || '').replace(/"/g, '&quot;')}">${f.mensaje || '—'}</td>
     <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.remitente || 'Varios').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
@@ -5390,23 +5389,22 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       autocompletarNifDesdeDB('f_prov', 'f_nif');
     }
     async function clasificarComoVarios(id) {
-      const p = registros.find(r => r.id === id);
-      if (!p) return;
-      try {
-        await apiPost('varios', {
-          remitente: p.remitente || null,
-          mensaje: p.asunto || null,
-          archivo_url: p.archivo_url || null,
-          enviado_por: currentPersona,
-          fecha_recibido: p.fecha_recibido || new Date().toISOString()
-        });
-        await apiDelete('facturas_pendientes', id);
-        toast('Guardado en Varios correctamente');
-        cargarDatos();
-      } catch (e) {
-        toast('Error al guardar en Varios: ' + e.message, 'err');
-      }
-    }
+  const p = registros.find(r => r.id === id);
+  if (!p) return;
+  try {
+    await apiPost('varios', {
+      remitente: p.remitente || null,
+      mensaje: p.asunto || null,
+      archivo_url: p.archivo_url || null,
+      fecha_recibido: p.fecha_recibido || new Date().toISOString()
+    });
+    await apiDelete('facturas_pendientes', id);
+    toast('Guardado en Varios correctamente');
+    cargarDatos();
+  } catch (e) {
+    toast('Error al guardar en Varios: ' + e.message, 'err');
+  }
+}
 
 
 
