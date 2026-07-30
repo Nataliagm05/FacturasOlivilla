@@ -2059,6 +2059,7 @@
             class="fa-solid fa-boxes-stacked"></i>Material Obra</button>
         <button class="btn-nav" onclick="cambiarSeccion('ingresos')"><i
             class="fa-solid fa-sack-dollar"></i>Ingresos</button>
+        <button class="btn-nav" onclick="cambiarSeccion('varios')"><i class="fa-solid fa-ellipsis"></i>Varios</button>
       </div>
       <span id="usuarioConectado" style="color:#fff;opacity:.85;font-size:.85rem;margin-right:10px"></span>
       <button class="btn-salir" onclick="volverAlPanel()" style="margin-right:8px"><i
@@ -2543,7 +2544,7 @@
     const TABLAS_REALTIME = [
       'facturas_pendientes', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
       'albaranes', 'clientes', 'inventario', 'proveedores', 'materiales_obra', 'citas',
-      'ingresos'
+      'ingresos', 'varios'
     ];
 
     let _refrescoPendiente = null;  // Crea una variable vacia para guardar el temporizador de refresco, para que no se ejecute varias veces seguidas si llegan varios cambios en poco tiempo.
@@ -2631,7 +2632,8 @@
       inventario: ['cynthia', 'jose', 'emilio'],
       materiales_obra: ['cynthia', 'juandavid', 'jose', 'emilio'],
       calendario_pagos: ['cynthia', 'angel', 'emilio'],
-      ingresos: ['natalia', 'angel', 'emilio']
+      ingresos: ['natalia', 'angel', 'emilio'],
+      varios: ['cynthia', 'emilio']
     };
 
     // Personas con acceso EXCLUSIVO a una lista concreta de secciones
@@ -2672,7 +2674,7 @@
     const TODAS_LAS_SECCIONES = [
       'clasificacion', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
       'revisadas_facturadas', 'obras', 'calendario_pagos', 'presupuestos',
-      'albaranes', 'clientes', 'inventario', 'materiales_obra', 'ingresos'
+      'albaranes', 'clientes', 'inventario', 'materiales_obra', 'ingresos', 'varios'
     ];
 
 
@@ -2964,7 +2966,8 @@
       clientes: ['Clientes', 'fa-users', false],
       inventario: ['Inventario', 'fa-boxes-stacked', false],
       materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false],
-      ingresos: ['Ingresos', 'fa-sack-dollar', true]
+      ingresos: ['Ingresos', 'fa-sack-dollar', true],
+      varios: ['Varios', 'fa-ellipsis', false]
     };
 
     function aplicarPermisosMenu() { // creo que no es necesaria
@@ -4027,7 +4030,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre',
           materiales_obra: 'select=*,materiales_obra_items(*),materiales_exclusivos_obra_items(*)&order=fecha.desc',
           obras: 'order=nombre', presupuestos: 'order=fecha_recordatorio.asc',
-          ingresos: 'order=fecha.desc'
+          ingresos: 'order=fecha.desc',
+          varios: 'order=fecha_recibido.desc'
         };
         registros = await apiGetAll(tablaReal(tablaActual), orden[tablaActual] || '');
         inventarioDB = await apiGetAll('inventario', 'order=nombre');
@@ -4072,34 +4076,34 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       }
     }
     function _filaVisibleSuperior() {
-  const wrap = document.getElementById('tablaWrapEl');
-  if (!wrap) return null;
-  const filas = wrap.querySelectorAll('tbody tr[data-id]');
-  const wrapTop = wrap.getBoundingClientRect().top;
-  for (const fila of filas) {
-    const r = fila.getBoundingClientRect();
-    if (r.bottom > wrapTop) return { id: fila.dataset.id, offset: r.top - wrapTop };
-  }
-  return null;
-}
+      const wrap = document.getElementById('tablaWrapEl');
+      if (!wrap) return null;
+      const filas = wrap.querySelectorAll('tbody tr[data-id]');
+      const wrapTop = wrap.getBoundingClientRect().top;
+      for (const fila of filas) {
+        const r = fila.getBoundingClientRect();
+        if (r.bottom > wrapTop) return { id: fila.dataset.id, offset: r.top - wrapTop };
+      }
+      return null;
+    }
 
-function _restaurarFilaVisible(ancla) {
-  if (!ancla) return;
-  const wrap = document.getElementById('tablaWrapEl');
-  if (!wrap) return;
-  const fila = wrap.querySelector(`tbody tr[data-id="${ancla.id}"]`);
-  if (!fila) return;
-  const wrapTop = wrap.getBoundingClientRect().top;
-  const filaTop = fila.getBoundingClientRect().top;
-  wrap.scrollTop += (filaTop - wrapTop) - ancla.offset;
-}
+    function _restaurarFilaVisible(ancla) {
+      if (!ancla) return;
+      const wrap = document.getElementById('tablaWrapEl');
+      if (!wrap) return;
+      const fila = wrap.querySelector(`tbody tr[data-id="${ancla.id}"]`);
+      if (!fila) return;
+      const wrapTop = wrap.getBoundingClientRect().top;
+      const filaTop = fila.getBoundingClientRect().top;
+      wrap.scrollTop += (filaTop - wrapTop) - ancla.offset;
+    }
 
-function renderTablaConScroll() {
-  const wrap = document.getElementById('tablaWrapEl');
-  const ancla = _filaVisibleSuperior();
-  renderTabla();
-  if (wrap && ancla) _restaurarFilaVisible(ancla);
-}
+    function renderTablaConScroll() {
+      const wrap = document.getElementById('tablaWrapEl');
+      const ancla = _filaVisibleSuperior();
+      renderTabla();
+      if (wrap && ancla) _restaurarFilaVisible(ancla);
+    }
 
     // Envoltorio: guarda dónde estabas mirando (scroll vertical y horizontal
     // de la tabla, y el scroll de la página) ANTES de que _cargarDatosInterna
@@ -4107,24 +4111,24 @@ function renderTablaConScroll() {
     // llega una actualización (tuya o de un compañero), la pantalla no
     // salta al principio de la tabla.
     async function cargarDatos() {
-  const wrap = document.getElementById('tablaWrapEl');
-  const ancla = _filaVisibleSuperior();
-  const scrollLeftGuardado = wrap ? wrap.scrollLeft : 0;
-  const scrollYGuardado = window.scrollY;
+      const wrap = document.getElementById('tablaWrapEl');
+      const ancla = _filaVisibleSuperior();
+      const scrollLeftGuardado = wrap ? wrap.scrollLeft : 0;
+      const scrollYGuardado = window.scrollY;
 
-  await _cargarDatosInterna();
+      await _cargarDatosInterna();
 
-  if (wrap) {
-    if (ancla) _restaurarFilaVisible(ancla);
-    wrap.scrollLeft = scrollLeftGuardado;
-  }
-  window.scrollTo(window.scrollX, scrollYGuardado);
+      if (wrap) {
+        if (ancla) _restaurarFilaVisible(ancla);
+        wrap.scrollLeft = scrollLeftGuardado;
+      }
+      window.scrollTo(window.scrollX, scrollYGuardado);
 
-  // Por si algo (iconos, fuentes) reajusta el alto justo después del pintado
-  requestAnimationFrame(() => {
-    if (wrap && ancla) _restaurarFilaVisible(ancla);
-  });
-}
+      // Por si algo (iconos, fuentes) reajusta el alto justo después del pintado
+      requestAnimationFrame(() => {
+        if (wrap && ancla) _restaurarFilaVisible(ancla);
+      });
+    }
 
 
 
@@ -4518,7 +4522,7 @@ function renderTablaConScroll() {
           <button class="btn-toggle-pago pagado" onclick="clasificarPendiente(${f.id},'facturas_almacen')"><i class="fa-solid fa-warehouse me-1"></i>Almacén</button>
           <button class="btn-toggle-pago vencido" onclick="clasificarPendiente(${f.id},'facturas_obra')"><i class="fa-solid fa-helmet-safety me-1"></i>Obra</button>
           <button class="btn-toggle-pago pendiente" onclick="clasificarPendiente(${f.id},'facturas_csg')"><i class="fa-solid fa-building me-1"></i>CSG</button>
-          <button class="btn-toggle-pago" style="background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8" onclick="clasificarComoAlbaran(${f.id})"><i class="fa-solid fa-file-signature me-1"></i>Albarán</button>
+          <button class="btn-toggle-pago" style="background:#f3e5f5;color:#6a1b9a;border:1.5px solid #d9b8e8" onclick="clasificarComoAlbaran(${f.id})"><i class="fa-solid fa-file-signature me-1"></i>Albarán</button> <button class="btn-toggle-pago" style="background:#607d8b;color:#fff;border:1.5px solid #546570" onclick="clasificarComoVarios(${f.id})"><i class="fa-solid fa-ellipsis me-1"></i>Varios</button>
         </td>
         <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`).join('');
@@ -5193,7 +5197,19 @@ function renderTablaConScroll() {
 <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
     </tr>`;
         }).join('');
-
+      } else if (tablaActual === 'varios') {
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Recibido</th><th>Enviado por</th><th>Remitente</th><th>Mensaje</th><th>Archivo</th><th></th></tr>`;
+        const lista = registros.filter(f => [f.remitente, f.mensaje, f.enviado_por].some(v => (v || '').toLowerCase().includes(q)));
+        if (!lista.length) { bdy.innerHTML = emptyRow(7, 'No hay nada guardado en Varios'); return; }
+        bdy.innerHTML = lista.map(f => `<tr data-id="${f.id}">
+    <td>${celdaCheck(f.id)}</td>
+    <td style="font-size:.78rem;color:#888;white-space:nowrap">${f.fecha_recibido ? new Date(f.fecha_recibido).toLocaleString('es-ES') : '—'}</td>
+    <td class="td-nombre">${NOMBRES_PERSONAS[f.enviado_por] || f.enviado_por || '—'}</td>
+    <td class="td-nombre">${f.remitente || '—'}</td>
+    <td class="td-concepto" title="${(f.mensaje || '').replace(/"/g, '&quot;')}">${f.mensaje || '—'}</td>
+    <td>${f.archivo_url ? `<span class="link-badge factura" onclick="verArchivoPanel('${f.archivo_url}','${(f.remitente || 'Varios').replace(/'/g, "\\'")}')"><i class="fa-solid fa-paperclip"></i></span>` : '—'}</td>
+    <td><button class="btn-eliminar" onclick="eliminar(${f.id})"><i class="fa-solid fa-trash"></i></button></td>
+  </tr>`).join('');
       }
       actualizarBarraSeleccion();
       actualizarBarraScrollFija();
@@ -5373,7 +5389,24 @@ function renderTablaConScroll() {
       // guardado manda sobre el que haya podido leer la IA.
       autocompletarNifDesdeDB('f_prov', 'f_nif');
     }
-
+    async function clasificarComoVarios(id) {
+      const p = registros.find(r => r.id === id);
+      if (!p) return;
+      try {
+        await apiPost('varios', {
+          remitente: p.remitente || null,
+          mensaje: p.asunto || null,
+          archivo_url: p.archivo_url || null,
+          enviado_por: currentPersona,
+          fecha_recibido: p.fecha_recibido || new Date().toISOString()
+        });
+        await apiDelete('facturas_pendientes', id);
+        toast('Guardado en Varios correctamente');
+        cargarDatos();
+      } catch (e) {
+        toast('Error al guardar en Varios: ' + e.message, 'err');
+      }
+    }
 
 
 
