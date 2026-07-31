@@ -6226,6 +6226,29 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           } else {
             await apiPost('obras', payload);
           }
+          } else if (tabla === 'varios') {
+          const remitente = document.getElementById('f_remitente').value.trim();
+          const mensaje = document.getElementById('f_mensaje').value.trim();
+          if (!remitente && !mensaje) { toast('Indica al menos el remitente o el mensaje', 'err'); return; }
+
+          const fileInput = document.getElementById('f_archivo_varios');
+          let archivo_url = null;
+          if (fileInput && fileInput.files.length) {
+            archivo_url = await subirArchivoStorage(fileInput.files[0]);
+          }
+
+          const payload = {
+            remitente: remitente || null,
+            mensaje: mensaje || null,
+            archivo_url
+          };
+
+          if (modalEditId) {
+            await apiPatch('varios', modalEditId, payload);
+          } else {
+            payload.fecha_recibido = new Date().toISOString();
+            await apiPost('varios', payload);
+          }
         } else if (tabla === 'ingresos') {
           const cliente = document.getElementById('f_cliente').value.trim();
           const obra = document.getElementById('f_obra').value.trim();
@@ -8033,6 +8056,15 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-group"><label>Estado</label><select id="f_obra_estado"><option value="en_curso">En curso</option><option value="cerrada">Cerrada</option></select></div>
       <div class="form-group span2"><label>Presupuesto (€) <span style="font-size:.72rem;color:#888">(para calcular si es rentable)</span></label><input type="number" id="f_obra_presupuesto" step="0.01" min="0" placeholder="0.00"></div>
       <div class="form-group span2"><label>Notas</label><input type="text" id="f_obra_notas" placeholder="Observaciones opcionales"></div>
+    </div>`;
+        document.getElementById('modalNueva').classList.add('visible');
+      // ── VARIOS ──
+      } else if (tabla === 'varios') {
+        document.getElementById('modalTitulo').textContent = 'Nuevo registro en Varios';
+        cont.innerHTML = `<div class="form-grid-2">
+      <div class="form-group span2"><label>Remitente</label><input type="text" id="f_remitente" placeholder="nombre@empresa.com o nombre de quien lo envía"></div>
+      <div class="form-group span2"><label>Mensaje</label><input type="text" id="f_mensaje" placeholder="Breve descripción o mensaje"></div>
+      <div class="form-group span2"><label>Archivo (PDF o imagen) <span style="font-size:.72rem;color:#888">(opcional)</span></label><input type="file" id="f_archivo_varios" accept="application/pdf,image/*"></div>
     </div>`;
         document.getElementById('modalNueva').classList.add('visible');
       }
