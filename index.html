@@ -6226,7 +6226,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           } else {
             await apiPost('obras', payload);
           }
-          } else if (tabla === 'varios') {
+        } else if (tabla === 'varios') {
           const remitente = document.getElementById('f_remitente').value.trim();
           const mensaje = document.getElementById('f_mensaje').value.trim();
           if (!remitente && !mensaje) { toast('Indica al menos el remitente o el mensaje', 'err'); return; }
@@ -6260,10 +6260,10 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
           const payload = {
             numero_interno: document.getElementById('f_num_interno').value.trim() || null,
-  numero_ingreso: document.getElementById('f_num').value.trim() || null,
-  fecha,
-  fecha_recibido: document.getElementById('f_fecha_recibido').value || null,
-  cliente,
+            numero_ingreso: document.getElementById('f_num').value.trim() || null,
+            fecha,
+            fecha_recibido: document.getElementById('f_fecha_recibido').value || null,
+            cliente,
             nif: document.getElementById('f_nif').value.trim() || null,
             nombre_obra: obra,
             concepto: document.getElementById('f_concepto').value.trim() || null,
@@ -7737,7 +7737,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-grid">
         <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
         <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FA-2026-001"></div>
-        <div class="form-group"><label>Fecha de recepción</label><input type="date" id="f_fecha_recibido" value="${hoy()}"></div>
+<div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+<div class="form-group"><label>Fecha de recepción</label><input type="date" id="f_fecha_recibido" value="${hoy()}"></div>
 
         <div class="form-group span2 ac-wrap">
           <label>Proveedor *</label>
@@ -8058,7 +8059,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-group span2"><label>Notas</label><input type="text" id="f_obra_notas" placeholder="Observaciones opcionales"></div>
     </div>`;
         document.getElementById('modalNueva').classList.add('visible');
-      // ── VARIOS ──
+        // ── VARIOS ──
       } else if (tabla === 'varios') {
         document.getElementById('modalTitulo').textContent = 'Nuevo registro en Varios';
         cont.innerHTML = `<div class="form-grid-2">
