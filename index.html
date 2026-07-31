@@ -4575,7 +4575,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } else if (tablaActual === 'facturas_almacen') {
         hdr.innerHTML = `<tr>
           <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
-      <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th>
+      <th>Nº Int. Emp</th><th>Fecha</th><th>Recibido</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th>
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
@@ -4594,7 +4594,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
           return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(35, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(36, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -4602,7 +4602,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
         <td><strong>${f.numero_factura || '—'}</strong>${f.veces_reenviada ? `<span title="Reenviada ${f.veces_reenviada} vez${f.veces_reenviada > 1 ? 'es' : ''}${f.ultimo_reenvio ? ' — última vez: ' + new Date(f.ultimo_reenvio).toLocaleString('es-ES') : ''}" style="margin-left:5px;font-size:.68rem;background:#fff3e0;color:#c47a00;padding:1px 6px;border-radius:20px;font-weight:600"><i class="fa-solid fa-clone"></i> ${f.veces_reenviada}</span>` : ''}</td>
@@ -4689,7 +4689,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } else if (tablaActual === 'facturas_obra') {
         hdr.innerHTML = `<tr>
           <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
-      <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
+      <th>Nº Int. Emp</th><th>Fecha</th><th>Recibido</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
       <th>Nº Factura</th><th>Concepto</th>
 <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
@@ -4717,7 +4717,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         } else {
           resumenEl.style.display = 'none';
         }
-        if (!lista.length) { bdy.innerHTML = emptyRow(37, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(38, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -4725,7 +4725,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
         <td class="td-nombre">${f.nombre_obra || '—'}</td>
@@ -4807,7 +4807,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } else if (tablaActual === 'facturas_csg') {
         hdr.innerHTML = `<tr>
           <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
-  <th>Nº Int. Emp</th><th>Fecha</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
+  <th>Nº Int. Emp</th><th>Fecha</th><th>Recibido</th><th>Vencimiento</th><th>NIF</th><th>Proveedor</th><th>Obra</th>
   <th>Nº Factura</th><th>Concepto</th>
       <th>Albaranes</th>
       <th class="num-cell">Base 1</th><th class="pct-cell">%IVA1</th><th class="num-cell">IVA1</th>
@@ -4827,7 +4827,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
           return mQ && mObra && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(36, 'No se encontraron facturas'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(37, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -4835,7 +4835,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+        <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
         <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
         <td class="td-nombre">${f.proveedor || '—'}</td>
 <td class="td-nombre">${f.nombre_obra || '—'}</td>
@@ -5190,7 +5190,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } else if (tablaActual === 'ingresos') {
         hdr.innerHTML = `<tr>
           <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
-    <th>Nº Int.</th><th>Fecha</th><th>Cobro previsto</th><th>NIF</th><th>Cliente</th><th>Obra</th>
+    <th>Nº Int.</th><th>Fecha</th><th>Recibido</th><th>Cobro previsto</th><th>NIF</th><th>Cliente</th><th>Obra</th>
     <th>Nº Factura</th><th>Concepto</th>
     <th class="num-cell">Base</th><th class="pct-cell">%IVA</th><th class="num-cell">IVA</th>
     <th class="num-cell">Total</th><th>Estado</th><th>Archivo</th><th>Revisión</th><th>Editar</th><th>Acción</th><th>Cobros</th>
@@ -5205,7 +5205,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
           return mQ && mObra && (!fEst || fEst === estReal);
         });
-        if (!lista.length) { bdy.innerHTML = emptyRow(17, 'No se encontraron ingresos'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(18, 'No se encontraron ingresos'); return; }
         bdy.innerHTML = lista.map(f => {
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
@@ -5213,7 +5213,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           return `<tr data-id="${f.id}">
             <td>${celdaCheck(f.id)}</td>
       <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
-      <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
+      <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
       <td style="font-size:.78rem;color:#888">${f.nif || '—'}</td>
       <td class="td-nombre">${f.cliente || '—'}</td>
       <td class="td-nombre">${f.nombre_obra || '—'}</td>
@@ -5327,7 +5327,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       window._prellenado = {
         proveedor: p.remitente || '',
         concepto: p.asunto || '',
-        archivo_url: p.archivo_url || ''
+        archivo_url: p.archivo_url || '',
+        fecha_recibido: p.fecha_recibido ? p.fecha_recibido.split('T')[0] : ''
       };
 
       if (p.archivo_url) {
@@ -5427,6 +5428,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       set('f_base_ret', p.base_retencion);
       set('f_pct_ret', p.pct_retencion);
       set('f_total_ret', p.total_retencion);
+      set('f_fecha_recibido', p.fecha_recibido);
 
       // Si el proveedor detectado ya existe en la base de datos, su NIF
       // guardado manda sobre el que haya podido leer la IA.
@@ -5951,6 +5953,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             numero_interno: document.getElementById('f_num_interno').value.trim() || null,
             numero_factura: numFactura || null,
             fecha,
+            fecha_recibido: document.getElementById('f_fecha_recibido').value || null,
             proveedor: prov,
             nif: document.getElementById('f_nif').value.trim() || null,
             concepto: document.getElementById('f_concepto').value.trim() || null,
@@ -6234,9 +6237,10 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
           const payload = {
             numero_interno: document.getElementById('f_num_interno').value.trim() || null,
-            numero_ingreso: document.getElementById('f_num').value.trim() || null,
-            fecha,
-            cliente,
+  numero_ingreso: document.getElementById('f_num').value.trim() || null,
+  fecha,
+  fecha_recibido: document.getElementById('f_fecha_recibido').value || null,
+  cliente,
             nif: document.getElementById('f_nif').value.trim() || null,
             nombre_obra: obra,
             concepto: document.getElementById('f_concepto').value.trim() || null,
@@ -7114,6 +7118,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       set('f_pct_iva_permisos', p.pct_iva_permisos);
       set('f_total_iva_permisos', p.total_iva_permisos);
       set('f_total_con_permisos', p.total_con_permisos);
+      set('f_fecha_recibido', p.fecha_recibido);
     }
 
 
@@ -7565,6 +7570,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           set('f_num_interno', f.numero_interno);
           set('f_num', f.numero_ingreso);
           set('f_fecha', f.fecha);
+          set('f_fecha_recibido', f.fecha_recibido);
           set('f_nif', f.nif);
           set('f_cliente', f.cliente);
           set('f_obra', f.nombre_obra);
@@ -7581,6 +7587,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           set('f_pct_iva_permisos', f.pct_iva_permisos);
           set('f_total_iva_permisos', f.total_iva_permisos);
           set('f_total_con_permisos', f.total_con_permisos);
+          set('f_fecha_recibido', f.fecha_recibido);
 
           renderChipsRevisionModal('ingresos', f);
 
@@ -7608,6 +7615,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         set('f_num_interno', f.numero_interno);
         set('f_num', f.numero_factura);
         set('f_fecha', f.fecha);
+        set('f_fecha_recibido', f.fecha_recibido);
         set('f_prov', f.proveedor);
         set('f_nif', f.nif);
         set('f_concepto', f.concepto);
@@ -7706,7 +7714,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-grid">
         <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
         <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FA-2026-001"></div>
-        <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+        <div class="form-group"><label>Fecha de recepción</label><input type="date" id="f_fecha_recibido" value="${hoy()}"></div>
 
         <div class="form-group span2 ac-wrap">
           <label>Proveedor *</label>
@@ -7774,6 +7782,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
         <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FO-2026-001"></div>
         <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+        <div class="form-group"><label>Fecha de recepción</label><input type="date" id="f_fecha_recibido" value="${hoy()}"></div>
 
         <div class="form-group span2 ac-wrap">
   <label>Proveedor *</label>
@@ -7842,6 +7851,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <div class="form-group"><label>Nº Interno Empresa</label><input type="text" id="f_num_interno" placeholder="Ej: 2026-001"></div>
         <div class="form-group"><label>Nº Factura</label><input type="text" id="f_num" placeholder="FC-2026-001"></div>
         <div class="form-group"><label>Fecha *</label><input type="date" id="f_fecha" value="${hoy()}"></div>
+        <div class="form-group"><label>Fecha de recepción</label><input type="date" id="f_fecha_recibido" value="${hoy()}"></div>
 
         <div class="form-group span2 ac-wrap">
           <label>Proveedor *</label>
@@ -8493,8 +8503,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const obraFiltro = tablaActual === 'ingresos' ? document.getElementById('exportObraFiltro').value : '';
 
       const filtrados = registros.filter(f => {
-        if (!f.fecha) return false;
-        const [y, m] = f.fecha.split('-').map(Number);
+        const fechaRef = f.fecha_recibido || f.fecha;
+        if (!fechaRef) return false;
+        const [y, m] = fechaRef.split('-').map(Number);
         if (y !== year) return false;
         if (meses.length && !meses.includes(m)) return false;
         if (obraFiltro && f.nombre_obra !== obraFiltro) return false;
@@ -8648,8 +8659,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const meses = Array.from(document.querySelectorAll('#exportArchivosMeses input:checked')).map(i => parseInt(i.value));
 
       const filtrados = registros.filter(f => {
-        if (!f.fecha) return false;
-        const [y, m] = f.fecha.split('-').map(Number);
+        const fechaRef = f.fecha_recibido || f.fecha;
+        if (!fechaRef) return false;
+        const [y, m] = fechaRef.split('-').map(Number);
         if (y !== year) return false;
         if (meses.length && !meses.includes(m)) return false;
         return true;
@@ -8660,7 +8672,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         _archivosDeRegistro(f).forEach((url, i) => {
           const base = (f.proveedor || f.empresa || f.cliente || f.numero_factura || f.numero_albaran || f.numero_ingreso || 'archivo')
             .toString().replace(/[^a-zA-Z0-9_\-]+/g, '_');
-          const fechaTxt = (f.fecha || '').replace(/-/g, '');
+          const fechaTxt = ((f.fecha_recibido || f.fecha) || '').replace(/-/g, '');
           const sufijo = _archivosDeRegistro(f).length > 1 ? `_${i + 1}` : '';
           tareas.push({ url, nombre: `${fechaTxt}_${base}${sufijo}.${_extensionDeUrl(url)}` });
         });
