@@ -6956,7 +6956,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
     function exportarMaterialesExcel() {
       const obraSel = document.getElementById('exportObraSelect').value;
-      const filtrados = obraSel ? registros.filter(r => r.nombre_obra === obraSel) : registros;
+      const filtrados = (obraSel ? registros.filter(r => r.nombre_obra === obraSel) : registros)
+        .slice()
+        .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')); // más reciente primero
       if (!filtrados.length) { toast('No hay datos para exportar', 'err'); return; }
 
       const filas = [];
@@ -8543,6 +8545,10 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         if (meses.length && !meses.includes(m)) return false;
         if (obraFiltro && f.nombre_obra !== obraFiltro) return false;
         return true;
+      }).sort((a, b) => {
+        const fa = a.fecha_recibido || a.fecha || '';
+        const fb = b.fecha_recibido || b.fecha || '';
+        return fb.localeCompare(fa); // más reciente primero
       });
 
       if (!filtrados.length) { toast('No hay datos para ese filtro', 'err'); return; }
