@@ -8142,6 +8142,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         addLineaMaterial();
         addLineaMaterialExclusivo();
         return;
+      }
         if (tabla === 'albaranes_venta') {
         modalDestinoTabla = 'albaranes_venta';
         document.getElementById('modalTitulo').textContent = 'Nuevo Albarán de Venta';
@@ -8183,7 +8184,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }, 50);
         return;
       }
-      }
+      
 
       modalDestinoTabla = tabla;
       lineasFacturaCount = 0;
