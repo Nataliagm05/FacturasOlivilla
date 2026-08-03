@@ -7538,6 +7538,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <i class="fa-solid fa-xmark"></i>
     </button>`;
       document.getElementById('lineasAlbaranVenta').appendChild(div);
+      document.getElementById(`lav_cant_${idx}`).addEventListener('input', recalcBaseDesdeLineasAlbaranVenta);
       document.getElementById(`lav_precio_${idx}`).addEventListener('input', recalcBaseDesdeLineasAlbaranVenta);
     }
 
@@ -7574,9 +7575,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
     function recalcTotalAlbaranVenta() {
       const base = parseFloat(document.getElementById('f_av_base')?.value || 0);
+      const pctDto = parseFloat(document.getElementById('f_av_descuento')?.value || 0);
+      const baseConDto = base - (base * pctDto / 100);
       const pct = parseFloat(document.getElementById('f_av_pct_iva')?.value || 0);
-      const iva = base * pct / 100;
-      const total = base + iva;
+      const iva = baseConDto * pct / 100;
+      const total = baseConDto + iva;
       document.getElementById('f_av_total').value = total.toFixed(2);
       document.getElementById('totalPuntosAlbaranVenta').textContent = calcularPuntosPorTotal(total) + ' pts';
     }
@@ -7595,16 +7598,19 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       return lineas;
     }
 
-    async function guardarAlbaranVenta() {
+    async function guardarAlbaranVenta(conPuntos = true) {
       const numero_albaran = document.getElementById('f_av_num').value.trim() || null;
       const fecha = document.getElementById('f_av_fecha').value;
       const cliente_nombre = document.getElementById('f_av_cliente').value.trim();
       const nif = document.getElementById('f_av_nif').value.trim() || null;
       const cliente_id = clienteVentaSelId;
       const base_imponible = parseFloat(document.getElementById('f_av_base').value || 0);
+      const descuento_pct = parseFloat(document.getElementById('f_av_descuento')?.value || 0);
+      const importe_descuento = +(base_imponible * descuento_pct / 100).toFixed(2);
+      const base_con_descuento = +(base_imponible - importe_descuento).toFixed(2);
       const pct_iva = parseFloat(document.getElementById('f_av_pct_iva').value || 0);
-      const importe_iva = base_imponible * pct_iva / 100;
-      const total = base_imponible + importe_iva;
+      const importe_iva = +(base_con_descuento * pct_iva / 100).toFixed(2);
+      const total = +(base_con_descuento + importe_iva).toFixed(2);
       const notas = document.getElementById('f_av_notas').value.trim() || null;
 
       if (!fecha) { toast('La fecha es obligatoria', 'err'); return; }
@@ -7614,7 +7620,6 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const lineasInput = _leerLineasAlbaranVenta();
       if (!lineasInput.length) { toast('Añade al menos un producto', 'err'); return; }
 
-      // Resolver/crear productos y comprobar stock
       const lineasFinales = [];
       for (const l of lineasInput) {
         let prod = buscarProductoPorNombre(l.nombre);
@@ -7639,13 +7644,19 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         });
       }
 
-      const puntosNuevos = calcularPuntosPorTotal(total);
+      const puntosNuevos = conPuntos ? calcularPuntosPorTotal(total) : 0;
+      const btnsWrap = document.querySelector('#modalNueva .modal-btns');
+      btnsWrap.querySelectorAll('button').forEach(b => b.disabled = true);
 
       try {
         let headerId;
+        const headerPayload = {
+          numero_albaran, fecha, cliente_id, cliente_nombre, nif,
+          base_imponible: base_con_descuento, descuento_pct, importe_descuento,
+          pct_iva, importe_iva, total, puntos_generados: puntosNuevos, notas
+        };
 
         if (modalEditId) {
-          // Revertir stock y puntos del albarán anterior antes de aplicar el nuevo
           const anterior = registros.find(r => r.id === modalEditId);
           const itemsAntiguos = (anterior && anterior.albaranes_venta_items) || [];
           for (const it of itemsAntiguos) {
@@ -7658,17 +7669,18 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           }
           for (const it of itemsAntiguos) await apiDelete('albaranes_venta_items', it.id);
 
-          await apiPatch('albaranes_venta', modalEditId, { numero_albaran, fecha, cliente_id, cliente_nombre, nif, total, base_imponible, pct_iva, importe_iva, puntos_generados: puntosNuevos, notas });
+          await apiPatch('albaranes_venta', modalEditId, headerPayload);
           headerId = modalEditId;
         } else {
           const numsExistentes = registros.filter(r => r.numero_factusol).map(r => r.numero_factusol);
           const siguienteNumFactusol = numsExistentes.length ? Math.max(...numsExistentes) + 1 : 1;
-          const [header] = await apiPost('albaranes_venta', { numero_albaran, fecha, cliente_id, cliente_nombre, nif, total, base_imponible, pct_iva, importe_iva, numero_factusol: siguienteNumFactusol, puntos_generados: puntosNuevos, notas });
+          const [header] = await apiPost('albaranes_venta', { ...headerPayload, numero_factusol: siguienteNumFactusol });
           headerId = header.id;
         }
 
         await apiPost('albaranes_venta_items', lineasFinales.map(l => ({
-          albaran_venta_id: headerId, producto_id: l.producto_id, producto_nombre: l.producto_nombre, cantidad: l.cantidad
+          albaran_venta_id: headerId, producto_id: l.producto_id, producto_nombre: l.producto_nombre,
+          cantidad: l.cantidad, precio_unitario: l.precio_unitario, importe_total: l.importe_total
         })));
 
         for (const l of lineasFinales) {
@@ -7676,29 +7688,35 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           await apiPatch('inventario', l.producto_id, { stock: Number(prod.stock) - Number(l.cantidad) });
         }
 
-        const cliente = clientesDB.find(c => c.id === cliente_id);
-        const ahora = new Date().toISOString();
-        const puntosFinales = (cliente?.puntos || 0) + puntosNuevos;
-        await apiPatch('clientes', cliente_id, {
-          puntos: puntosFinales,
-          ultima_compra: ahora,
-          puntos_desde: cliente?.puntos_desde || ahora
-        });
-        if (cliente?.email) await enviarEmailPuntos(cliente.email, cliente.nombre, puntosFinales, 'compra');
+        if (conPuntos) {
+          const cliente = clientesDB.find(c => c.id === cliente_id);
+          const ahora = new Date().toISOString();
+          const puntosFinales = (cliente?.puntos || 0) + puntosNuevos;
+          await apiPatch('clientes', cliente_id, {
+            puntos: puntosFinales,
+            ultima_compra: ahora,
+            puntos_desde: cliente?.puntos_desde || ahora
+          });
+          if (cliente?.email) await enviarEmailPuntos(cliente.email, cliente.nombre, puntosFinales, 'compra');
 
-        registrarHistorial('compra_cliente', {
-          cliente: cliente_nombre,
-          productos: lineasFinales.map(l => ({ nombre: l.producto_nombre, cantidad: l.cantidad })),
-          total, puntos: puntosNuevos
-        });
+          registrarHistorial('compra_cliente', {
+            cliente: cliente_nombre,
+            productos: lineasFinales.map(l => ({ nombre: l.producto_nombre, cantidad: l.cantidad })),
+            total, puntos: puntosNuevos
+          });
+        }
 
-        toast(modalEditId ? 'Albarán de venta actualizado' : `Albarán guardado — +${puntosNuevos} pts para ${cliente_nombre}`);
+        toast(modalEditId
+          ? 'Albarán de venta actualizado'
+          : (conPuntos ? `Albarán guardado — +${puntosNuevos} pts para ${cliente_nombre}` : 'Albarán guardado sin puntos ni aviso'));
         modalEditId = null;
         modalDestinoTabla = null;
         cerrarModal('modalNueva');
         cargarDatos();
       } catch (e) {
         toast('Error al guardar el albarán: ' + e.message, 'err');
+      } finally {
+        btnsWrap.querySelectorAll('button').forEach(b => b.disabled = false);
       }
     }
 
@@ -7716,6 +7734,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         document.getElementById('f_av_cliente_id').value = f.cliente_id || '';
         clienteVentaSelId = f.cliente_id || null;
         document.getElementById('f_av_base').value = f.base_imponible || 0;
+        document.getElementById('f_av_descuento').value = f.descuento_pct || 0;   // ← añadir
         document.getElementById('f_av_pct_iva').value = f.pct_iva != null ? f.pct_iva : 21;
         document.getElementById('f_av_notas').value = f.notas || '';
         recalcTotalAlbaranVenta();
@@ -7728,6 +7747,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             addLineaAlbaranVenta();
             document.getElementById(`lav_prod_${lineasAlbaranVentaCount}`).value = item.producto_nombre || '';
             document.getElementById(`lav_cant_${lineasAlbaranVentaCount}`).value = item.cantidad;
+            document.getElementById(`lav_precio_${lineasAlbaranVentaCount}`).value = item.precio_unitario || 0; // ← añadir
             actualizarUnidadLinea('lav', lineasAlbaranVentaCount);
           });
         } else {
@@ -7911,36 +7931,36 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     async function exportarAlbaranesVentaExcel(filtrados) {
-  const sinNumero = filtrados.filter(f => !f.numero_factusol);
-  if (sinNumero.length) {
-    toast(`${sinNumero.length} albarán(es) sin número interno de FactuSol asignado — revísalos antes de exportar`, 'err');
-  }
+      const sinNumero = filtrados.filter(f => !f.numero_factusol);
+      if (sinNumero.length) {
+        toast(`${sinNumero.length} albarán(es) sin número interno de FactuSol asignado — revísalos antes de exportar`, 'err');
+      }
 
-  const filasALB = [ALB_HEADERS, ...filtrados.map(_filaALB)];
-  const filasLAL = [LAL_HEADERS, ...filtrados.flatMap(_filasLAL)];
+      const filasALB = [ALB_HEADERS, ...filtrados.map(_filaALB)];
+      const filasLAL = [LAL_HEADERS, ...filtrados.flatMap(_filasLAL)];
 
-  const wbAlb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wbAlb, XLSX.utils.aoa_to_sheet(filasALB), 'ALB');
-  const albBuffer = XLSX.write(wbAlb, { bookType: 'xlsx', type: 'array' });
+      const wbAlb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wbAlb, XLSX.utils.aoa_to_sheet(filasALB), 'ALB');
+      const albBuffer = XLSX.write(wbAlb, { bookType: 'xlsx', type: 'array' });
 
-  const wbLal = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wbLal, XLSX.utils.aoa_to_sheet(filasLAL), 'LAL');
-  const lalBuffer = XLSX.write(wbLal, { bookType: 'xlsx', type: 'array' });
+      const wbLal = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wbLal, XLSX.utils.aoa_to_sheet(filasLAL), 'LAL');
+      const lalBuffer = XLSX.write(wbLal, { bookType: 'xlsx', type: 'array' });
 
-  const zip = new JSZip();
-  zip.file('ALB.xlsx', albBuffer);
-  zip.file('LAL.xlsx', lalBuffer);
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zip = new JSZip();
+      zip.file('ALB.xlsx', albBuffer);
+      zip.file('LAL.xlsx', lalBuffer);
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
 
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(zipBlob);
-  a.download = `factusol_albaranes_venta_${new Date().toISOString().split('T')[0]}.zip`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(zipBlob);
+      a.download = `factusol_albaranes_venta_${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
 
-  toast('<i class="fa-solid fa-file-zipper me-1"></i>Descargado el ZIP con <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — descomprímelos y llévalos juntos a la carpeta de importación de FactuSol', 'ok');
-}
+      toast('<i class="fa-solid fa-file-zipper me-1"></i>Descargado el ZIP con <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — descomprímelos y llévalos juntos a la carpeta de importación de FactuSol', 'ok');
+    }
 
 
 
@@ -8273,10 +8293,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div id="lineasAlbaranVenta"></div>
       <button type="button" class="btn-add-linea" onclick="addLineaAlbaranVenta()"><i class="fa-solid fa-plus me-1"></i>Añadir producto</button>
       <div class="form-grid" style="margin-top:14px;padding-top:12px;border-top:1.5px solid #ede5f5">
-        <div class="form-group"><label>Base imponible (€) *</label><input type="number" id="f_av_base" step="0.01" min="0" oninput="recalcTotalAlbaranVenta()"></div>
-        <div class="form-group"><label>% IVA</label><input type="number" id="f_av_pct_iva" step="0.01" value="21" oninput="recalcTotalAlbaranVenta()"></div>
-        <div class="form-group"><label>Total (€)</label><input type="number" id="f_av_total" step="0.01" readonly style="background:#f7f0f5;font-weight:700"></div>
-      </div>
+  <div class="form-group"><label>Base imponible (€) *</label><input type="number" id="f_av_base" step="0.01" min="0" oninput="recalcTotalAlbaranVenta()"></div>
+  <div class="form-group"><label>Descuento (%)</label><input type="number" id="f_av_descuento" step="0.01" min="0" max="100" value="0" oninput="recalcTotalAlbaranVenta()"></div>
+  <div class="form-group"><label>% IVA</label><input type="number" id="f_av_pct_iva" step="0.01" value="21" oninput="recalcTotalAlbaranVenta()"></div>
+  <div class="form-group"><label>Total (€)</label><input type="number" id="f_av_total" step="0.01" readonly style="background:#f7f0f5;font-weight:700"></div>
+</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:10px;border-top:1.5px solid #ede5f5">
         <span style="font-size:.85rem;color:#888;font-weight:600">Puntos que se añadirán:</span>
         <span id="totalPuntosAlbaranVenta" style="font-size:1.3rem;font-weight:700;color:#b53987">0 pts</span>
@@ -8290,6 +8311,16 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           setupClienteVentaAC('f_av_cliente', 'f_av_nif', 'f_av_cliente_id');
           addLineaAlbaranVenta();
           ocultarPdfModal();
+
+          document.querySelector('#modalNueva .modal-btns').innerHTML = `
+    <button class="btn-cancelar" onclick="cerrarModal('modalNueva')">Cancelar</button>
+    <button class="btn-toggle-pago pendiente" style="padding:9px 16px" onclick="guardarAlbaranVenta(false)">
+      <i class="fa-solid fa-floppy-disk me-1"></i>Guardar sin puntos ni aviso
+    </button>
+    <button class="btn-guardar" onclick="guardarAlbaranVenta(true)">
+      <i class="fa-solid fa-star me-1"></i>Guardar con puntos y aviso
+    </button>
+  `;
         }, 50);
         return;
       }
@@ -8298,6 +8329,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       modalDestinoTabla = tabla;
       lineasFacturaCount = 0;
       const cont = document.getElementById('modalFormContenido');
+
+      // Restaura los botones estándar (por si el modal se usó antes para un albarán de venta)
+      document.querySelector('#modalNueva .modal-btns').innerHTML = `
+  <button class="btn-cancelar" onclick="cerrarModal('modalNueva')">Cancelar</button>
+  <button class="btn-guardar" id="btnGuardar" onclick="guardarRegistro()"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar</button>
+`;
 
       // ── BANDEJA DE CLASIFICACIÓN (añadir manualmente) ──
       if (tabla === 'clasificacion') {
