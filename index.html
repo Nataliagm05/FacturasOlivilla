@@ -7504,6 +7504,37 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       inpN.addEventListener('blur', () => setTimeout(() => lista.style.display = 'none', 160));
     }
 
+    // NUMERACIÓN AUTOMÁTICA DE ALBARANES DE VENTA (formato "A 000624")
+function parseNumAlbaranVenta(num) {
+  if (!num) return null;
+  const m = String(num).match(/A\s*0*([0-9]+)/i);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+async function siguienteNumeroAlbaranVenta() {
+  const BASE_MINIMA = 623; // el último emitido antes de activar esto fue A 000623
+  try {
+    const todos = await apiGetAll('albaranes_venta', 'select=numero_albaran');
+    let max = BASE_MINIMA;
+    todos.forEach(a => {
+      const n = parseNumAlbaranVenta(a.numero_albaran);
+      if (n && n > max) max = n;
+    });
+    return 'A ' + String(max + 1).padStart(6, '0');
+  } catch (e) {
+    console.error('No se pudo calcular el siguiente número de albarán de venta:', e);
+    return '';
+  }
+}
+
+async function asignarSiguienteNumeroAlbaranVenta() {
+  const input = document.getElementById('f_av_num');
+  if (!input) return;
+  input.value = 'Calculando...';
+  const numero = await siguienteNumeroAlbaranVenta();
+  if (input) input.value = numero || '';
+}
+
     function addLineaAlbaranVenta() {
       lineasAlbaranVentaCount++;
       const idx = lineasAlbaranVentaCount;
@@ -8278,7 +8309,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         const cont2 = document.getElementById('modalFormContenido');
         cont2.innerHTML = `
       <div class="form-grid">
-        <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_av_num" placeholder="ALB-V-2026-001"></div>
+        <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_av_num" readonly style="background:#f7f0f5;font-weight:600" placeholder="Calculando..."></div>
         <div class="form-group"><label>Fecha *</label><input type="date" id="f_av_fecha" value="${hoy()}"></div>
         <div class="form-group span2 ac-wrap">
           <label>Cliente *</label>
@@ -8310,6 +8341,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         setTimeout(() => {
           setupClienteVentaAC('f_av_cliente', 'f_av_nif', 'f_av_cliente_id');
           addLineaAlbaranVenta();
+          if (!modalEditId) asignarSiguienteNumeroAlbaranVenta();
           ocultarPdfModal();
 
           document.querySelector('#modalNueva .modal-btns').innerHTML = `
