@@ -8316,7 +8316,6 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         setTimeout(() => {
           setupClienteVentaAC('f_av_cliente', 'f_av_nif', 'f_av_cliente_id');
           addLineaAlbaranVenta();
-          if (!modalEditId) asignarSiguienteNumeroAlbaranVenta();
           ocultarPdfModal();
 
           document.querySelector('#modalNueva .modal-btns').innerHTML = `
