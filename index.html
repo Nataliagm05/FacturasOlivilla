@@ -2053,6 +2053,8 @@
             class="fa-solid fa-file-invoice-dollar"></i>Presupuestos</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
             class="fa-solid fa-file-signature"></i>Albaranes</button>
+            <button class="btn-nav" onclick="cambiarSeccion('albaranes_venta')"><i
+            class="fa-solid fa-file-invoice"></i>Albaranes Venta</button>
         <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
         <button class="btn-nav" onclick="cambiarSeccion('inventario')"><i
             class="fa-solid fa-boxes-stacked"></i>Inventario</button>
@@ -2587,7 +2589,7 @@
     const TABLAS_REALTIME = [
       'facturas_pendientes', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
       'albaranes', 'clientes', 'inventario', 'proveedores', 'materiales_obra', 'citas',
-      'ingresos', 'varios'
+      'ingresos', 'varios', 'albaranes_venta'
     ];
 
     let _refrescoPendiente = null;  // Crea una variable vacia para guardar el temporizador de refresco, para que no se ejecute varias veces seguidas si llegan varios cambios en poco tiempo.
@@ -2676,7 +2678,8 @@
       materiales_obra: ['cynthia', 'juandavid', 'jose', 'emilio'],
       calendario_pagos: ['cynthia', 'angel', 'emilio'],
       ingresos: ['natalia', 'angel', 'emilio'],
-      varios: ['cynthia', 'emilio']
+      varios: ['cynthia', 'emilio'],
+      albaranes_venta: ['cynthia', 'emilio', 'jose'],
     };
 
     // Personas con acceso EXCLUSIVO a una lista concreta de secciones
@@ -2715,10 +2718,10 @@
 
     // Todas las secciones que existen en el menú.
     const TODAS_LAS_SECCIONES = [
-      'clasificacion', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
-      'revisadas_facturadas', 'obras', 'calendario_pagos', 'presupuestos',
-      'albaranes', 'clientes', 'inventario', 'materiales_obra', 'ingresos', 'varios'
-    ];
+  'clasificacion', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
+  'revisadas_facturadas', 'obras', 'calendario_pagos', 'presupuestos',
+  'albaranes', 'albaranes_venta', 'clientes', 'inventario', 'materiales_obra', 'ingresos', 'varios'
+];
 
 
     // Qué campos se buscan en cada tabla, y cómo se pinta cada resultado
@@ -2902,6 +2905,8 @@
     let lineasCompraCount = 0;
     let lineasFacturaCount = 0;
     let lineasMaterialCount = 0;
+    let clienteVentaSelId = null;
+let lineasAlbaranVentaCount = 0;
 
     // Datos que se llevan de una factura pendiente a su formulario de clasificación
     window._pendienteOrigenId = null;
@@ -3010,7 +3015,8 @@
       inventario: ['Inventario', 'fa-boxes-stacked', false],
       materiales_obra: ['Material de Obra', 'fa-boxes-stacked', false],
       ingresos: ['Ingresos', 'fa-sack-dollar', true],
-      varios: ['Varios', 'fa-ellipsis', false]
+      varios: ['Varios', 'fa-ellipsis', false],
+      albaranes_venta: ['Albaranes de Venta', 'fa-file-invoice', false],
     };
 
     function aplicarPermisosMenu() { // creo que no es necesaria
@@ -3211,7 +3217,7 @@
       const esRevisadas = sec === 'revisadas_facturadas';
       const esObras = sec === 'obras';
       // si estamos en facturas, revisadas o materiales, le ponemos el botón de exportar, si no, ese boton se queda oculto
-      document.getElementById('btnExportar').style.display = (esFacturas || esRevisadas || sec === 'materiales_obra' || sec === 'ingresos') ? 'flex' : 'none';
+      document.getElementById('btnExportar').style.display = (esFacturas || esRevisadas || sec === 'materiales_obra' || sec === 'ingresos' || sec === 'albaranes_venta') ? 'flex' : 'none';
       document.getElementById('btnDescargarArchivos').style.display = SECCIONES_CON_ARCHIVOS.includes(sec) ? 'flex' : 'none';
       // si estamos en facturas o albaranes, saldrá el boton de duplicados
       document.getElementById('btnDuplicados').style.display = (esFacturas || sec === 'albaranes') ? 'flex' : 'none';
@@ -3221,7 +3227,7 @@
 
       const btnTxt = document.getElementById('btnNuevaTxt');
       // si estamos en clasificación,obras, presupuestos saldra el boton de añadir manualmente 
-      btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : sec === 'obras' ? 'Nueva obra' : sec === 'presupuestos' ? 'Nuevo presupuesto' : 'Añadir Nuevo';
+      btnTxt.textContent = sec === 'clasificacion' ? 'Añadir manualmente' : sec === 'obras' ? 'Nueva obra' : sec === 'presupuestos' ? 'Nuevo presupuesto' : sec === 'albaranes_venta' ? 'Nuevo albarán' : 'Añadir Nuevo';
 
       const sel = document.getElementById('filtroEstado');  // barra de busqueda
       const sp = document.getElementById('searchInput');
@@ -3255,6 +3261,9 @@
       } else if (sec === 'materiales_obra') {
         sel.innerHTML = `<option value="">Todas</option>`;
         sp.placeholder = 'Buscar por obra o empleado...';
+        } else if (sec === 'albaranes_venta') {
+        sel.innerHTML = `<option value="">Todos</option>`;
+        sp.placeholder = 'Buscar por nº albarán o cliente...';
       } else if (sec === 'presupuestos') {
         sel.innerHTML = `<option value="">Todos los estados</option>
       <option value="pendiente">Pendiente de respuesta</option>
@@ -4073,6 +4082,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           facturas_csg: 'order=fecha.desc',
           albaranes: 'order=fecha.desc', clientes: 'order=nombre', inventario: 'order=nombre',
           materiales_obra: 'select=*,materiales_obra_items(*),materiales_exclusivos_obra_items(*)&order=fecha.desc',
+          albaranes_venta: 'select=*,albaranes_venta_items(*)&order=fecha.desc',
           obras: 'order=nombre', presupuestos: 'order=fecha_recordatorio.asc',
           ingresos: 'order=fecha.desc',
           varios: 'order=fecha_recibido.desc'
@@ -5187,6 +5197,31 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 </td>
       </tr>`;
         }).join('');
+        } else if (tablaActual === 'albaranes_venta') {
+        hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Fecha</th><th>Cliente</th><th>NIF</th><th class="num-cell">Total</th><th>Puntos</th><th>Documento</th><th></th></tr>`;
+        const lista = registros.filter(f => [f.numero_albaran, f.cliente_nombre].some(v => (v || '').toLowerCase().includes(q)));
+        if (!lista.length) { bdy.innerHTML = emptyRow(8, 'No hay albaranes de venta registrados'); return; }
+        bdy.innerHTML = lista.map(f => `<tr data-id="${f.id}">
+        <td><strong>${f.numero_albaran || '—'}</strong></td>
+        <td>${fmtF(f.fecha)}</td>
+        <td class="td-nombre">${f.cliente_nombre || '—'}</td>
+        <td style="font-size:.8rem;color:#888">${f.nif || '—'}</td>
+        <td class="td-total">${fmt(f.total)}</td>
+        <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${f.puntos_generados || 0} pts</span></td>
+        <td>
+          <button class="btn-toggle-pago pendiente" onclick="imprimirAlbaranVenta(${f.id})" title="Imprimir / descargar PDF">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        </td>
+        <td>
+          <button class="btn-toggle-pago pendiente" onclick="abrirModalEditarAlbaranVenta(${f.id})" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn-eliminar" onclick="eliminarAlbaranVenta(${f.id})" title="Eliminar (revierte stock y puntos)">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>`).join('');
       } else if (tablaActual === 'ingresos') {
         hdr.innerHTML = `<tr>
           <th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th>
@@ -6138,7 +6173,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             nif: document.getElementById('f_nif').value.trim() || null,
             telefono: document.getElementById('f_tel').value.trim() || null,
             email: document.getElementById('f_email').value.trim() || null,
-            puntos: parseInt(document.getElementById('f_puntos').value || 0)
+            puntos: parseInt(document.getElementById('f_puntos').value || 0),
+            domicilio: document.getElementById('f_domicilio').value.trim() || null,
+            poblacion: document.getElementById('f_poblacion').value.trim() || null,
+            codigo_postal: document.getElementById('f_cp').value.trim() || null,
+            provincia: document.getElementById('f_provincia').value.trim() || null
           };
 
           if (modalEditId) {
@@ -7410,6 +7449,392 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         cargarDatos();
       } catch (e) { toast('Error al guardar compra: ' + e.message, 'err'); }
     }
+
+// AUTOCOMPLETADO DE CLIENTES (para albaranes de venta)
+    function setupClienteVentaAC(inputNombreId, inputNifId, inputIdId) {
+      const inpN = document.getElementById(inputNombreId);
+      const inpF = document.getElementById(inputNifId);
+      const inpId = document.getElementById(inputIdId);
+      if (!inpN || !inpF || !inpId) return;
+
+      inpN.parentElement.style.position = 'relative';
+      const lista = _crearLista('ac_cliente_' + inputNombreId, inpN.parentElement);
+
+      function filtrar(q) {
+        return clientesDB.filter(c =>
+          (c.nombre || '').toLowerCase().includes(q) ||
+          (c.nif || '').toLowerCase().includes(q)
+        ).slice(0, 10);
+      }
+      function seleccionar(c) {
+        inpN.value = c.nombre || '';
+        inpF.value = c.nif || '';
+        inpId.value = c.id;
+        clienteVentaSelId = c.id;
+        lista.style.display = 'none';
+      }
+      function render(items) {
+        if (!items.length) { lista.style.display = 'none'; return; }
+        lista.innerHTML = items.map(c =>
+          `<div class="ac-item" data-id="${c.id}">
+        <span class="ac-nombre">${c.nombre || '—'}</span>
+        <span class="ac-nif">${c.nif || 'Sin NIF'}</span>
+      </div>`).join('');
+        lista.style.display = 'block';
+        lista.querySelectorAll('.ac-item').forEach(el => {
+          el.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const c = clientesDB.find(x => x.id == el.dataset.id);
+            if (c) seleccionar(c);
+          });
+        });
+      }
+      inpN.addEventListener('input', () => {
+        inpId.value = ''; clienteVentaSelId = null; // obliga a re-seleccionar si cambia el texto
+        render(filtrar(inpN.value.toLowerCase().trim()));
+      });
+      inpN.addEventListener('focus', () => { if (inpN.value.trim()) render(filtrar(inpN.value.toLowerCase().trim())); });
+      inpN.addEventListener('blur', () => setTimeout(() => lista.style.display = 'none', 160));
+    }
+
+    function addLineaAlbaranVenta() {
+      lineasAlbaranVentaCount++;
+      const idx = lineasAlbaranVentaCount;
+      const div = document.createElement('div');
+      div.id = `lav_${idx}`;
+      div.className = 'linea-prod';
+      div.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Producto</label>
+      <input type="text" id="lav_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo..." oninput="actualizarUnidadLinea('lav',${idx})">
+    </div>
+    <div class="form-group" style="margin:0">
+      <label style="font-size:.75rem">Cantidad <span id="lav_uni_${idx}" style="color:#b53987;font-weight:600"></span></label>
+      <div style="display:flex;gap:4px;align-items:center">
+  <input type="number" id="lav_cant_${idx}" value="1" min="0.01" step="0.01" style="text-align:center;width:100%">
+  <select id="lav_unidadnueva_${idx}" title="Unidad (solo si el producto es nuevo)" style="width:62px;font-size:.72rem;padding:4px;border:1.5px solid #ddd;border-radius:6px">
+    <option value="unidades">uds.</option>
+    <option value="metros">m</option>
+  </select>
+  <button type="button" title="Añadir como producto nuevo al inventario" onclick="crearProductoRapidoDesdeLineaAlbaranVenta(${idx})"
+    style="background:#2d7a4f;border:none;color:#fff;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer">
+    <i class="fa-solid fa-plus"></i>
+  </button>
+</div>
+    </div>
+    <div style="width:80px"></div>
+    <button type="button" onclick="document.getElementById('lav_${idx}').remove()"
+      style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`;
+      document.getElementById('lineasAlbaranVenta').appendChild(div);
+    }
+
+    async function crearProductoRapidoDesdeLineaAlbaranVenta(idx) {
+      const inp = document.getElementById(`lav_prod_${idx}`);
+      if (!inp) return;
+      const nombre = inp.value.trim();
+      if (!nombre) { toast('Escribe primero el nombre del producto', 'err'); return; }
+      if (buscarProductoPorNombre(nombre)) { toast(`"${nombre}" ya existe en el inventario`, 'err'); return; }
+      const unidad = document.getElementById(`lav_unidadnueva_${idx}`)?.value || 'unidades';
+      try {
+        const [nuevo] = await apiPost('inventario', { nombre, stock: 0, unidad, puntos_por_unidad: 0 });
+        inventarioDB.push(nuevo);
+        actualizarDatalistProductos();
+        actualizarUnidadLinea('lav', idx);
+        toast(`Producto "${nombre}" añadido al inventario`, 'ok');
+      } catch (e) {
+        toast(`No se pudo crear el producto "${nombre}": ` + e.message, 'err');
+      }
+    }
+
+    function recalcTotalAlbaranVenta() {
+      const base = parseFloat(document.getElementById('f_av_base')?.value || 0);
+      const pct = parseFloat(document.getElementById('f_av_pct_iva')?.value || 0);
+      const iva = base * pct / 100;
+      const total = base + iva;
+      document.getElementById('f_av_total').value = total.toFixed(2);
+      document.getElementById('totalPuntosAlbaranVenta').textContent = calcularPuntosPorTotal(total) + ' pts';
+    }
+
+    function _leerLineasAlbaranVenta() {
+      const lineas = [];
+      for (const inp of document.querySelectorAll('[id^="lav_prod_"]')) {
+        const nombre = inp.value.trim();
+        if (!nombre) continue;
+        const idx = inp.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lav_cant_${idx}`)?.value || 0);
+        if (cant <= 0) continue;
+        lineas.push({ nombre, cantidad: cant, idx });
+      }
+      return lineas;
+    }
+
+    async function guardarAlbaranVenta() {
+      const numero_albaran = document.getElementById('f_av_num').value.trim() || null;
+      const fecha = document.getElementById('f_av_fecha').value;
+      const cliente_nombre = document.getElementById('f_av_cliente').value.trim();
+      const nif = document.getElementById('f_av_nif').value.trim() || null;
+      const cliente_id = clienteVentaSelId;
+      const base_imponible = parseFloat(document.getElementById('f_av_base').value || 0);
+      const pct_iva = parseFloat(document.getElementById('f_av_pct_iva').value || 0);
+      const importe_iva = base_imponible * pct_iva / 100;
+      const total = base_imponible + importe_iva;
+      const notas = document.getElementById('f_av_notas').value.trim() || null;
+
+      if (!fecha) { toast('La fecha es obligatoria', 'err'); return; }
+      if (!cliente_id) { toast('Selecciona un cliente de la lista (créalo primero en Clientes si es nuevo)', 'err'); return; }
+      if (!total || total <= 0) { toast('Indica el total del albarán', 'err'); return; }
+
+      const lineasInput = _leerLineasAlbaranVenta();
+      if (!lineasInput.length) { toast('Añade al menos un producto', 'err'); return; }
+
+      // Resolver/crear productos y comprobar stock
+      const lineasFinales = [];
+      for (const l of lineasInput) {
+        let prod = buscarProductoPorNombre(l.nombre);
+        const unidadSeleccionada = document.getElementById(`lav_unidadnueva_${l.idx}`)?.value || 'unidades';
+        if (!prod) {
+          try {
+            const [nuevo] = await apiPost('inventario', { nombre: l.nombre, stock: 0, unidad: unidadSeleccionada, puntos_por_unidad: 0 });
+            inventarioDB.push(nuevo);
+            actualizarDatalistProductos();
+            prod = nuevo;
+          } catch (e) {
+            toast(`No se pudo crear el producto "${l.nombre}": ` + e.message, 'err');
+            return;
+          }
+        }
+        lineasFinales.push({ producto_id: prod.id, producto_nombre: l.nombre, cantidad: l.cantidad });
+      }
+
+      const puntosNuevos = calcularPuntosPorTotal(total);
+
+      try {
+        let headerId;
+
+        if (modalEditId) {
+          // Revertir stock y puntos del albarán anterior antes de aplicar el nuevo
+          const anterior = registros.find(r => r.id === modalEditId);
+          const itemsAntiguos = (anterior && anterior.albaranes_venta_items) || [];
+          for (const it of itemsAntiguos) {
+            const prod = inventarioDB.find(p => p.id == it.producto_id);
+            if (prod) await apiPatch('inventario', it.producto_id, { stock: Number(prod.stock) + Number(it.cantidad) });
+          }
+          const clienteAnterior = clientesDB.find(c => c.id === anterior?.cliente_id);
+          if (clienteAnterior) {
+            await apiPatch('clientes', clienteAnterior.id, { puntos: Math.max(0, (clienteAnterior.puntos || 0) - (anterior.puntos_generados || 0)) });
+          }
+          for (const it of itemsAntiguos) await apiDelete('albaranes_venta_items', it.id);
+
+          await apiPatch('albaranes_venta', modalEditId, { numero_albaran, fecha, cliente_id, cliente_nombre, nif, total, base_imponible, pct_iva, importe_iva, puntos_generados: puntosNuevos, notas });
+          headerId = modalEditId;
+        } else {
+          const numsExistentes = registros.filter(r => r.numero_factusol).map(r => r.numero_factusol);
+          const siguienteNumFactusol = numsExistentes.length ? Math.max(...numsExistentes) + 1 : 1;
+          const [header] = await apiPost('albaranes_venta', { numero_albaran, fecha, cliente_id, cliente_nombre, nif, total, base_imponible, pct_iva, importe_iva, numero_factusol: siguienteNumFactusol, puntos_generados: puntosNuevos, notas });
+          headerId = header.id;
+        }
+
+        await apiPost('albaranes_venta_items', lineasFinales.map(l => ({
+          albaran_venta_id: headerId, producto_id: l.producto_id, producto_nombre: l.producto_nombre, cantidad: l.cantidad
+        })));
+
+        for (const l of lineasFinales) {
+          const prod = inventarioDB.find(p => p.id == l.producto_id);
+          await apiPatch('inventario', l.producto_id, { stock: Number(prod.stock) - Number(l.cantidad) });
+        }
+
+        const cliente = clientesDB.find(c => c.id === cliente_id);
+        const ahora = new Date().toISOString();
+        const puntosFinales = (cliente?.puntos || 0) + puntosNuevos;
+        await apiPatch('clientes', cliente_id, {
+          puntos: puntosFinales,
+          ultima_compra: ahora,
+          puntos_desde: cliente?.puntos_desde || ahora
+        });
+        if (cliente?.email) await enviarEmailPuntos(cliente.email, cliente.nombre, puntosFinales, 'compra');
+
+        registrarHistorial('compra_cliente', {
+          cliente: cliente_nombre,
+          productos: lineasFinales.map(l => ({ nombre: l.producto_nombre, cantidad: l.cantidad })),
+          total, puntos: puntosNuevos
+        });
+
+        toast(modalEditId ? 'Albarán de venta actualizado' : `Albarán guardado — +${puntosNuevos} pts para ${cliente_nombre}`);
+        modalEditId = null;
+        modalDestinoTabla = null;
+        cerrarModal('modalNueva');
+        cargarDatos();
+      } catch (e) {
+        toast('Error al guardar el albarán: ' + e.message, 'err');
+      }
+    }
+
+    function abrirModalEditarAlbaranVenta(id) {
+      const f = registros.find(r => r.id === id);
+      if (!f) { toast('No se ha encontrado el albarán', 'err'); return; }
+      modalEditId = id;
+      abrirModalNuevo('albaranes_venta');
+      setTimeout(() => {
+        document.getElementById('modalTitulo').textContent = 'Editar Albarán de Venta';
+        document.getElementById('f_av_num').value = f.numero_albaran || '';
+        document.getElementById('f_av_fecha').value = f.fecha || '';
+        document.getElementById('f_av_cliente').value = f.cliente_nombre || '';
+        document.getElementById('f_av_nif').value = f.nif || '';
+        document.getElementById('f_av_cliente_id').value = f.cliente_id || '';
+        clienteVentaSelId = f.cliente_id || null;
+        document.getElementById('f_av_base').value = f.base_imponible || 0;
+        document.getElementById('f_av_pct_iva').value = f.pct_iva != null ? f.pct_iva : 21;
+        document.getElementById('f_av_notas').value = f.notas || '';
+        recalcTotalAlbaranVenta();
+
+        document.getElementById('lineasAlbaranVenta').innerHTML = '';
+        lineasAlbaranVentaCount = 0;
+        const items = f.albaranes_venta_items || [];
+        if (items.length) {
+          items.forEach(item => {
+            addLineaAlbaranVenta();
+            document.getElementById(`lav_prod_${lineasAlbaranVentaCount}`).value = item.producto_nombre || '';
+            document.getElementById(`lav_cant_${lineasAlbaranVentaCount}`).value = item.cantidad;
+            actualizarUnidadLinea('lav', lineasAlbaranVentaCount);
+          });
+        } else {
+          addLineaAlbaranVenta();
+        }
+      }, 60);
+    }
+
+    async function eliminarAlbaranVenta(id) {
+      if (!confirm('¿Eliminar este albarán? Se devolverá el stock descontado y se restarán los puntos del cliente. No se puede deshacer.')) return;
+      const f = registros.find(r => r.id === id);
+      if (!f) return;
+      try {
+        const items = f.albaranes_venta_items || (await apiGet('albaranes_venta_items', `albaran_venta_id=eq.${id}`));
+        for (const it of items) {
+          const prod = inventarioDB.find(p => p.id == it.producto_id);
+          if (prod) await apiPatch('inventario', it.producto_id, { stock: Number(prod.stock) + Number(it.cantidad) });
+          await apiDelete('albaranes_venta_items', it.id);
+        }
+        const cliente = clientesDB.find(c => c.id === f.cliente_id);
+        if (cliente) {
+          await apiPatch('clientes', cliente.id, { puntos: Math.max(0, (cliente.puntos || 0) - (f.puntos_generados || 0)) });
+        }
+        await apiDelete('albaranes_venta', id);
+        toast('Albarán eliminado, stock y puntos revertidos');
+        cargarDatos();
+      } catch (e) {
+        toast('Error al eliminar: ' + e.message, 'err');
+      }
+    }
+
+    // IMPRIMIR / DESCARGAR PDF DEL ALBARÁN
+    function imprimirAlbaranVenta(id) {
+      const f = registros.find(r => r.id === id);
+      if (!f) { toast('No se ha encontrado el albarán', 'err'); return; }
+      const items = f.albaranes_venta_items || [];
+      const filas = items.map(i => `<tr><td>${i.producto_nombre || ''}</td><td style="text-align:right">${fmtStock(i.cantidad)}</td></tr>`).join('');
+      const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Albarán ${f.numero_albaran || ''}</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#333;padding:40px}
+      h1{color:#b53987;font-size:1.4rem;margin-bottom:2px}
+      .meta{margin-bottom:24px;font-size:.9rem;color:#555}
+      table{width:100%;border-collapse:collapse;margin-top:20px}
+      th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left;font-size:.9rem}
+      th{background:#f7f0f5;color:#4a3b68}
+      .total{margin-top:20px;text-align:right;font-size:1.2rem;font-weight:700;color:#4a3b68}
+      @media print{ button{display:none} }
+    </style></head><body>
+    <h1>Almacén Olivilla Tres</h1>
+    <div class="meta">
+      <strong>Albarán:</strong> ${f.numero_albaran || '—'}<br>
+      <strong>Fecha:</strong> ${fmtF(f.fecha)}<br>
+      <strong>Cliente:</strong> ${f.cliente_nombre || '—'} ${f.nif ? '(' + f.nif + ')' : ''}
+    </div>
+    <table><thead><tr><th>Producto</th><th style="text-align:right">Cantidad</th></tr></thead>
+    <tbody>${filas || '<tr><td colspan="2">Sin líneas</td></tr>'}</tbody></table>
+    <div class="total">Total: ${fmt(f.total)}</div>
+    ${f.notas ? `<p style="margin-top:20px;font-size:.85rem;color:#777">${f.notas}</p>` : ''}
+    <button onclick="window.print()" style="margin-top:30px;padding:10px 20px;background:#b53987;color:#fff;border:none;border-radius:8px;cursor:pointer">Imprimir / Guardar PDF</button>
+    </body></html>`;
+      const w = window.open('', '_blank');
+      w.document.write(html);
+      w.document.close();
+    }
+
+    // EXPORTAR EXCEL PARA IMPORTAR EN FACTUSOL
+// ⚠️ Confirmar con FactuSol (o mirando un albarán de venta ya creado)
+    // qué valor va en "Tipo de documento" para un albarán de VENTA.
+    const FACTUSOL_TIPO_DOC_ALBARAN_VENTA = 1; // TODO: verificar
+
+    const ALB_HEADERS = ['Tipo de documento','Número de documento','Referencia','Fecha','Estado','Almacén','Agente','Código del proveedor','Código de cliente','Nombre del cliente','Domicilio del cliente','Población','Código postal','Provincia','N.I.F.','Tipo de IVA','Recargo de equivalencia','Teléfono del cliente','Importe neto 1','Importe neto 2','Importe neto 3','Porcentaje de descuento 1','Porcentaje de descuento 2','Porcentaje de descuento 3','Importe de descuento 1','Importe de descuento 2','Importe de descuento 3','Porcentaje pronto pago 1','Porcentaje pronto pago 2','Porcentaje pronto pago 3','Importe pronto pago 1','Importe pronto pago 2','Importe pronto pago 3','Porcentaje portes 1','Porcentaje portes 2','Porcentaje portes 3','Importe portes 1','Importe portes 2','Importe portes 3','Porcentaje de financiación 1','Porcentaje de financiación 2','Porcentaje de financiación 3','Importe de financiación 1','Importe de financiación 2','Importe de financiación 3','Base imponible 1','Base imponible 2','Base imponible 3','Porcentaje de IVA 1','Porcentaje de IVA 2','Porcentaje de IVA 3','Importe de IVA 1','Importe de IVA 2','Importe de IVA 3','Porcentaje de recargo de equivalencia 1','Porcentaje de recargo de equivalencia 2','Porcentaje de recargo de equivalencia 3','Importe de recargo de equivalencia 1','Importe de recargo de equivalencia 2','Importe de recargo de equivalencia 3','Porcentaje de la retención','Importe de la retención','Total','Forma de pago','Portes','Texto de portes','1ª línea de observaciones','2ª línea de observaciones','Obra de entrega','Remitido por','Embalado por','A la atención de','Referencia','Nº de su pedido','Fecha de su pedido','Cobrado','Traspasado a contabilidad','Impreso','Transportista','Número expedición 1','Número expedición 2','Anotaciones privadas','Documentos asociados al documento','Banco del cliente','Enviado a través del fichero','Hora de creación','Comentarios después de las líneas de detalle','Usuario que creó el documento','Último usuario que modificó el documento','Fax','Importe neto exento','Porcentaje de descuento exento','Importe de descuento exento','Porcentaje de pronto pago exento','Importe de pronto pago exento','Porcentaje de portes exento','Importe de portes exento','Porcentaje de financiación exento','Importe de financiación exento','Base imponible exento','Enviado por mail','Permisos y contraseña del documento','Ticket, porcentaje de descuento','Ticket, importe de descuento','Caja en que se creó el documento','IBAN del banco','BIC del banco','Nombre del banco','Entidad de la cuenta','Oficina de la cuenta del cliente','Dígitos de control de la cuenta del cliente','Número de la cuenta del cliente'];
+
+    const LAL_HEADERS = ['Tipo de documento','Número de documento','Posición de la línea','Artículo','Descripción','Cantidad','Porcentaje descuento 1','Porcentaje descuento 2','Porcentaje descuento 3','Precio del artículo','Total','Tipo de IVA','Documento que creó el pedido','Tipo de documento (origen)','Código del documento','Precio de costo','Bultos','Comisión del agente','Campo de uso interno','Ejercicio de que proviene la validación','Alto','Ancho','Fondo','Campo de uso interno','Campo de uso interno','IVA incluido en la línea','Precio IVA incluido en la línea','Total IVA incluido en la línea','Talla','Color','Imagen asociada'];
+
+    const FACTUSOL_ALMACEN = ''; // TODO: código de almacén en FactuSol, si lo usáis
+    const FACTUSOL_AGENTE = '';  // TODO: código de agente/comercial, si lo usáis
+    function _filaALB(f) {
+      const cliente = clientesDB.find(c => c.id === f.cliente_id) || {};
+      const fila = new Array(ALB_HEADERS.length).fill('');
+      fila[0] = FACTUSOL_TIPO_DOC_ALBARAN_VENTA;                  // A Tipo de documento
+      fila[1] = f.numero_factusol || '';                          // B Número de documento
+      fila[2] = (f.numero_albaran || '').substring(0, 12);         // C Referencia
+      fila[3] = f.fecha ? f.fecha.split('-').reverse().join('/') : ''; // D Fecha
+      fila[4] = 0;                                                  // E Estado: 0=Pendiente
+      fila[5] = FACTUSOL_ALMACEN;                                   // F Almacén
+      fila[6] = FACTUSOL_AGENTE;                                    // G Agente
+      fila[9] = (f.cliente_nombre || cliente.nombre || '').substring(0, 50); // J Nombre del cliente
+      fila[10] = (cliente.domicilio || '').substring(0, 100);       // K Domicilio del cliente
+      fila[11] = (cliente.poblacion || '').substring(0, 30);        // L Población
+      fila[12] = (cliente.codigo_postal || '').substring(0, 10);    // M Código postal
+      fila[13] = (cliente.provincia || '').substring(0, 40);        // N Provincia
+      fila[14] = (f.nif || cliente.nif || '').substring(0, 18);     // O N.I.F.
+      fila[15] = 0;                                                  // P Tipo de IVA: 0=Con IVA
+      fila[17] = (cliente.telefono || '').substring(0, 20);         // R Teléfono del cliente
+      fila[18] = f.base_imponible || 0;                              // S Importe neto 1
+      fila[45] = f.base_imponible || 0;                              // AT Base imponible 1
+      fila[48] = f.pct_iva != null ? f.pct_iva : 21;                 // AW Porcentaje de IVA 1
+      fila[51] = f.importe_iva || 0;                                 // AZ Importe de IVA 1
+      fila[60] = f.total || 0;                                       // BK Total
+      fila[71] = (f.notas || '').substring(0, 100);                  // BO 1ª línea de observaciones
+      return fila;
+    }
+
+    function _filasLAL(f) {
+      const items = f.albaranes_venta_items || [];
+      return items.map((it, i) => {
+        const fila = new Array(LAL_HEADERS.length).fill('');
+        fila[0] = FACTUSOL_TIPO_DOC_ALBARAN_VENTA; // A Tipo de documento
+        fila[1] = f.numero_factusol || '';          // B Número de documento
+        fila[2] = i + 1;                            // C Posición de la línea
+        fila[4] = (it.producto_nombre || '').substring(0, 65000); // E Descripción
+        fila[5] = it.cantidad != null ? parseFloat(it.cantidad) : 0; // F Cantidad
+        return fila;
+      });
+    }
+
+    function exportarAlbaranesVentaExcel(filtrados) {
+      const sinNumero = filtrados.filter(f => !f.numero_factusol);
+      if (sinNumero.length) {
+        toast(`${sinNumero.length} albarán(es) sin número interno de FactuSol asignado — revísalos antes de exportar`, 'err');
+      }
+
+      const filasALB = [ALB_HEADERS, ...filtrados.map(_filaALB)];
+      const filasLAL = [LAL_HEADERS, ...filtrados.flatMap(_filasLAL)];
+
+      const wbAlb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wbAlb, XLSX.utils.aoa_to_sheet(filasALB), 'ALB');
+      XLSX.writeFile(wbAlb, 'ALB.xlsx');
+
+      const wbLal = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wbLal, XLSX.utils.aoa_to_sheet(filasLAL), 'LAL');
+      XLSX.writeFile(wbLal, 'LAL.xlsx');
+
+      toast('<i class="fa-solid fa-file-excel me-1"></i>Descargados <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — cópialos juntos a la carpeta de importación de FactuSol', 'ok');
+    }
+
+
+
     function addLineaMaterial() {
       lineasMaterialCount++;
       const idx = lineasMaterialCount;
@@ -7471,6 +7896,10 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           document.getElementById("f_tel").value = f.telefono || "";
           document.getElementById("f_email").value = f.email || "";
           document.getElementById("f_puntos").value = f.puntos || 0;
+          document.getElementById("f_domicilio").value = f.domicilio || "";
+          document.getElementById("f_poblacion").value = f.poblacion || "";
+          document.getElementById("f_cp").value = f.codigo_postal || "";
+          document.getElementById("f_provincia").value = f.provincia || "";
         }, 100);
         return;
       }
@@ -7713,6 +8142,47 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         addLineaMaterial();
         addLineaMaterialExclusivo();
         return;
+        if (tabla === 'albaranes_venta') {
+        modalDestinoTabla = 'albaranes_venta';
+        document.getElementById('modalTitulo').textContent = 'Nuevo Albarán de Venta';
+        const cont2 = document.getElementById('modalFormContenido');
+        cont2.innerHTML = `
+      <div class="form-grid">
+        <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_av_num" placeholder="ALB-V-2026-001"></div>
+        <div class="form-group"><label>Fecha *</label><input type="date" id="f_av_fecha" value="${hoy()}"></div>
+        <div class="form-group span2 ac-wrap">
+          <label>Cliente *</label>
+          <input type="text" id="f_av_cliente" placeholder="Escribe el nombre para buscar...">
+          <input type="hidden" id="f_av_cliente_id">
+          <p style="font-size:.72rem;color:#888;margin-top:4px">Si el cliente es nuevo, créalo primero en la pestaña Clientes.</p>
+        </div>
+        <div class="form-group"><label>NIF</label><input type="text" id="f_av_nif" readonly style="background:#f7f0f5"></div>
+      </div>
+      <div class="form-seccion" style="border-top:none;padding-top:0;margin-top:0">Productos que se lleva</div>
+      <p style="font-size:.78rem;color:#888;margin-top:-8px"><i class="fa-solid fa-info-circle me-1"></i>Cada producto descuenta stock automáticamente.</p>
+      <div id="lineasAlbaranVenta"></div>
+      <button type="button" class="btn-add-linea" onclick="addLineaAlbaranVenta()"><i class="fa-solid fa-plus me-1"></i>Añadir producto</button>
+      <div class="form-grid" style="margin-top:14px;padding-top:12px;border-top:1.5px solid #ede5f5">
+        <div class="form-group"><label>Base imponible (€) *</label><input type="number" id="f_av_base" step="0.01" min="0" oninput="recalcTotalAlbaranVenta()"></div>
+        <div class="form-group"><label>% IVA</label><input type="number" id="f_av_pct_iva" step="0.01" value="21" oninput="recalcTotalAlbaranVenta()"></div>
+        <div class="form-group"><label>Total (€)</label><input type="number" id="f_av_total" step="0.01" readonly style="background:#f7f0f5;font-weight:700"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-top:10px;border-top:1.5px solid #ede5f5">
+        <span style="font-size:.85rem;color:#888;font-weight:600">Puntos que se añadirán:</span>
+        <span id="totalPuntosAlbaranVenta" style="font-size:1.3rem;font-weight:700;color:#b53987">0 pts</span>
+      </div>
+      <div class="form-group" style="margin-top:12px"><label>Notas</label><input type="text" id="f_av_notas" placeholder="Observaciones opcionales"></div>`;
+        document.getElementById('lineasAlbaranVenta').innerHTML = '';
+        lineasAlbaranVentaCount = 0;
+        clienteVentaSelId = null;
+        document.getElementById('modalNueva').classList.add('visible');
+        setTimeout(() => {
+          setupClienteVentaAC('f_av_cliente', 'f_av_nif', 'f_av_cliente_id');
+          addLineaAlbaranVenta();
+          ocultarPdfModal();
+        }, 50);
+        return;
+      }
       }
 
       modalDestinoTabla = tabla;
@@ -8016,6 +8486,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <div class="form-group"><label>Teléfono</label><input type="text" id="f_tel" placeholder="612345678"></div>
       <div class="form-group span2"><label>Email</label><input type="email" id="f_email" placeholder="correo@ejemplo.com"></div>
       <div class="form-group"><label>Puntos iniciales</label><input type="number" id="f_puntos" value="0" min="0"></div>
+      <div class="form-seccion span2" style="border-top:none;padding-top:0;margin-top:0">Dirección <span style="font-weight:400;font-size:.75rem;color:#888">(opcional — se usa al exportar a FactuSol)</span></div>
+      <div class="form-group span2"><label>Domicilio</label><input type="text" id="f_domicilio" placeholder="Calle, número..."></div>
+      <div class="form-group"><label>Población</label><input type="text" id="f_poblacion" placeholder="Toledo"></div>
+      <div class="form-group"><label>Código postal</label><input type="text" id="f_cp" placeholder="45001"></div>
+      <div class="form-group span2"><label>Provincia</label><input type="text" id="f_provincia" placeholder="Toledo"></div>
     </div>`;
         document.getElementById('modalNueva').classList.add('visible');
 
@@ -8499,7 +8974,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         abrirModalExportarMateriales();
         return;
       }
-      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos') {
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos' && tablaActual !== 'albaranes_venta') {
         toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG, Revisadas y Facturadas, Ingresos y Material de Obra', 'err');
         return;
       }
@@ -8528,8 +9003,23 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     function exportarExcel() {
-      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos') {
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos'&& tablaActual !== 'albaranes_venta') {
         toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG, Revisadas y Facturadas e Ingresos', 'err');
+        return;
+      }
+      if (tablaActual === 'albaranes_venta') {
+        const year = parseInt(document.getElementById('exportYear').value);
+        const meses = Array.from(document.querySelectorAll('#exportMeses input:checked')).map(i => parseInt(i.value));
+        const filtrados = registros.filter(f => {
+          if (!f.fecha) return false;
+          const [y, m] = f.fecha.split('-').map(Number);
+          if (y !== year) return false;
+          if (meses.length && !meses.includes(m)) return false;
+          return true;
+        });
+        if (!filtrados.length) { toast('No hay albaranes para ese filtro', 'err'); return; }
+        exportarAlbaranesVentaExcel(filtrados);
+        cerrarModal('modalExportar');
         return;
       }
       if (!registros.length) { toast('No hay datos para exportar', 'err'); return; }
