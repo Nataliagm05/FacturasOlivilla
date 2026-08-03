@@ -7529,12 +7529,29 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
   </button>
 </div>
     </div>
-    <div style="width:80px"></div>
-    <button type="button" onclick="document.getElementById('lav_${idx}').remove()"
+    <div class="form-group" style="margin:0;width:90px">
+      <label style="font-size:.75rem">Precio Ud. (€)</label>
+      <input type="number" id="lav_precio_${idx}" step="0.01" min="0" value="0" style="text-align:right">
+    </div>
+    <button type="button" onclick="document.getElementById('lav_${idx}').remove(); recalcBaseDesdeLineasAlbaranVenta();"
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
     </button>`;
       document.getElementById('lineasAlbaranVenta').appendChild(div);
+      document.getElementById(`lav_precio_${idx}`).addEventListener('input', recalcBaseDesdeLineasAlbaranVenta);
+    }
+
+    // Suma el subtotal de todas las líneas y lo mete en la base imponible automáticamente
+    function recalcBaseDesdeLineasAlbaranVenta() {
+      let base = 0;
+      document.querySelectorAll('[id^="lav_prod_"]').forEach(inp => {
+        const idx = inp.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lav_cant_${idx}`)?.value || 0);
+        const precio = parseFloat(document.getElementById(`lav_precio_${idx}`)?.value || 0);
+        base += cant * precio;
+      });
+      const baseInput = document.getElementById('f_av_base');
+      if (baseInput) { baseInput.value = base.toFixed(2); recalcTotalAlbaranVenta(); }
     }
 
     async function crearProductoRapidoDesdeLineaAlbaranVenta(idx) {
@@ -7571,8 +7588,9 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         if (!nombre) continue;
         const idx = inp.id.split('_')[2];
         const cant = parseFloat(document.getElementById(`lav_cant_${idx}`)?.value || 0);
+        const precio = parseFloat(document.getElementById(`lav_precio_${idx}`)?.value || 0);
         if (cant <= 0) continue;
-        lineas.push({ nombre, cantidad: cant, idx });
+        lineas.push({ nombre, cantidad: cant, precio, idx });
       }
       return lineas;
     }
@@ -7612,7 +7630,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             return;
           }
         }
-        lineasFinales.push({ producto_id: prod.id, producto_nombre: l.nombre, cantidad: l.cantidad });
+        lineasFinales.push({
+          producto_id: prod.id,
+          producto_nombre: l.nombre,
+          cantidad: l.cantidad,
+          precio_unitario: l.precio,
+          importe_total: +(l.cantidad * l.precio).toFixed(2)
+        });
       }
 
       const puntosNuevos = calcularPuntosPorTotal(total);
@@ -7739,31 +7763,97 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     function imprimirAlbaranVenta(id) {
       const f = registros.find(r => r.id === id);
       if (!f) { toast('No se ha encontrado el albarán', 'err'); return; }
+      const cliente = clientesDB.find(c => c.id === f.cliente_id) || {};
       const items = f.albaranes_venta_items || [];
-      const filas = items.map(i => `<tr><td>${i.producto_nombre || ''}</td><td style="text-align:right">${fmtStock(i.cantidad)}</td></tr>`).join('');
+
+      const filas = items.map(i => {
+        const precio = i.precio_unitario != null ? parseFloat(i.precio_unitario) : 0;
+        const subtotal = i.importe_total != null ? parseFloat(i.importe_total) : (precio * (parseFloat(i.cantidad) || 0));
+        return `<tr>
+      <td>${i.producto_id || ''}</td>
+      <td>${i.producto_nombre || ''}</td>
+      <td style="text-align:right">${fmtStock(i.cantidad)}</td>
+      <td style="text-align:right">${fmtN(precio)}</td>
+      <td style="text-align:right">${fmtN(subtotal)}</td>
+      <td style="text-align:right">—</td>
+      <td style="text-align:right">${fmtN(subtotal)}</td>
+    </tr>`;
+      }).join('');
+
+      const domicilioCliente = cliente.domicilio || '';
+      const poblacionCliente = [cliente.codigo_postal, cliente.poblacion].filter(Boolean).join('   ');
+      const provinciaCliente = cliente.provincia || '';
+
       const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Albarán ${f.numero_albaran || ''}</title>
-    <style>
-      body{font-family:Arial,sans-serif;color:#333;padding:40px}
-      h1{color:#b53987;font-size:1.4rem;margin-bottom:2px}
-      .meta{margin-bottom:24px;font-size:.9rem;color:#555}
-      table{width:100%;border-collapse:collapse;margin-top:20px}
-      th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left;font-size:.9rem}
-      th{background:#f7f0f5;color:#4a3b68}
-      .total{margin-top:20px;text-align:right;font-size:1.2rem;font-weight:700;color:#4a3b68}
-      @media print{ button{display:none} }
-    </style></head><body>
-    <h1>Almacén Olivilla Tres</h1>
-    <div class="meta">
-      <strong>Albarán:</strong> ${f.numero_albaran || '—'}<br>
-      <strong>Fecha:</strong> ${fmtF(f.fecha)}<br>
-      <strong>Cliente:</strong> ${f.cliente_nombre || '—'} ${f.nif ? '(' + f.nif + ')' : ''}
+  <style>
+    body{font-family:Arial,sans-serif;color:#222;padding:36px;font-size:.85rem}
+    .cabecera{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+    .cabecera img{height:70px}
+    .caja{border:1.5px solid #333;border-radius:10px;padding:12px 16px;margin-bottom:6px}
+    .datos-cliente h3{margin:0 0 6px;font-size:.9rem}
+    .doc-info{display:flex;gap:10px;margin-top:14px}
+    .doc-info div{border:1.5px solid #333;border-radius:8px;padding:8px 14px;text-align:center;font-size:.8rem}
+    .doc-info div b{display:block;font-size:.9rem;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin-top:20px}
+    th,td{border-bottom:1px solid #ccc;padding:8px 6px;text-align:left;font-size:.82rem}
+    th{background:#f7f0f5;font-weight:700}
+    .pie{display:flex;justify-content:space-between;gap:16px;margin-top:24px;align-items:flex-start}
+    .iva-tabla{border:1.5px solid #333;border-radius:10px;padding:10px 14px;font-size:.82rem}
+    .iva-tabla table{margin:0}
+    .iva-tabla th, .iva-tabla td{border:none;padding:4px 10px}
+    .total-box{border:1.5px solid #333;border-radius:10px;padding:14px 24px;font-size:1.1rem;font-weight:700;display:flex;justify-content:space-between;gap:20px;align-items:center;min-width:220px}
+    .observaciones{border:1.5px solid #333;border-radius:10px;padding:12px 16px;margin-top:20px;min-height:60px}
+    @media print{ button{display:none} }
+  </style></head><body>
+  <div class="cabecera">
+    <img src="logo.png" alt="Olivilla Tres" onerror="this.style.display='none'">
+    <div class="datos-cliente" style="text-align:right">
+      <h3>DATOS DEL CLIENTE</h3>
+      <b>${f.cliente_nombre || cliente.nombre || '—'}</b><br>
+      ${domicilioCliente}<br>
+      ${poblacionCliente}<br>
+      ${provinciaCliente}<br>
+      <b>N.I.F.</b> ${f.nif || cliente.nif || '—'}
     </div>
-    <table><thead><tr><th>Producto</th><th style="text-align:right">Cantidad</th></tr></thead>
-    <tbody>${filas || '<tr><td colspan="2">Sin líneas</td></tr>'}</tbody></table>
-    <div class="total">Total: ${fmt(f.total)}</div>
-    ${f.notas ? `<p style="margin-top:20px;font-size:.85rem;color:#777">${f.notas}</p>` : ''}
-    <button onclick="window.print()" style="margin-top:30px;padding:10px 20px;background:#b53987;color:#fff;border:none;border-radius:8px;cursor:pointer">Imprimir / Guardar PDF</button>
-    </body></html>`;
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+    <div class="caja" style="max-width:340px">
+      <b>OLIVILLA TRES S.L.U</b><br>
+      Avenida de Madrid, 41<br>
+      45003 TOLEDO<br>
+      B45813284<br>
+      925233454<br>
+      info@olivillatres.com
+    </div>
+    <div class="doc-info">
+      <div>DOCUMENTO<br><b>Albarán</b></div>
+      <div>NÚMERO<br><b>${f.numero_albaran || '—'}</b></div>
+      <div>PÁGINA<br><b>1</b></div>
+      <div>FECHA<br><b>${fmtF(f.fecha)}</b></div>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>ARTÍCULO</th><th>DESCRIPCIÓN</th><th style="text-align:right">CANTIDAD</th><th style="text-align:right">PRECIO UD.</th><th style="text-align:right">SUBTOTAL</th><th style="text-align:right">DTO.</th><th style="text-align:right">TOTAL</th></tr></thead>
+    <tbody>${filas || '<tr><td colspan="7">Sin líneas</td></tr>'}</tbody>
+  </table>
+  <div class="pie">
+    <div class="iva-tabla">
+      <table>
+        <thead><tr><th>TIPO</th><th>IMPORTE</th><th>DESCUENTO</th><th>BASE</th><th>I.V.A.</th></tr></thead>
+        <tbody><tr>
+          <td>${f.pct_iva != null ? fmtN(f.pct_iva) : '21,00'}</td>
+          <td>${fmtN(f.base_imponible)}</td>
+          <td>—</td>
+          <td>${fmtN(f.base_imponible)}</td>
+          <td>${fmtN(f.importe_iva)}</td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div class="total-box"><span>TOTAL:</span><span>${fmt(f.total)}</span></div>
+  </div>
+  <div class="observaciones"><b>OBSERVACIONES:</b><br>${f.notas || ''}</div>
+  <button onclick="window.print()" style="margin-top:24px;padding:10px 20px;background:#b53987;color:#fff;border:none;border-radius:8px;cursor:pointer">Imprimir / Guardar PDF</button>
+  </body></html>`;
       const w = window.open('', '_blank');
       w.document.write(html);
       w.document.close();
