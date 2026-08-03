@@ -7504,36 +7504,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       inpN.addEventListener('blur', () => setTimeout(() => lista.style.display = 'none', 160));
     }
 
-    // NUMERACIÓN AUTOMÁTICA DE ALBARANES DE VENTA (formato "A 000624")
-function parseNumAlbaranVenta(num) {
-  if (!num) return null;
-  const m = String(num).match(/A\s*0*([0-9]+)/i);
-  return m ? parseInt(m[1], 10) : null;
-}
 
-async function siguienteNumeroAlbaranVenta() {
-  const BASE_MINIMA = 623; // el último emitido antes de activar esto fue A 000623
-  try {
-    const todos = await apiGetAll('albaranes_venta', 'select=numero_albaran');
-    let max = BASE_MINIMA;
-    todos.forEach(a => {
-      const n = parseNumAlbaranVenta(a.numero_albaran);
-      if (n && n > max) max = n;
-    });
-    return 'A ' + String(max + 1).padStart(6, '0');
-  } catch (e) {
-    console.error('No se pudo calcular el siguiente número de albarán de venta:', e);
-    return '';
-  }
-}
-
-async function asignarSiguienteNumeroAlbaranVenta() {
-  const input = document.getElementById('f_av_num');
-  if (!input) return;
-  input.value = 'Calculando...';
-  const numero = await siguienteNumeroAlbaranVenta();
-  if (input) input.value = numero || '';
-}
 
     function addLineaAlbaranVenta() {
       lineasAlbaranVentaCount++;
@@ -7630,7 +7601,6 @@ async function asignarSiguienteNumeroAlbaranVenta() {
     }
 
     async function guardarAlbaranVenta(conPuntos = true) {
-      const numero_albaran = document.getElementById('f_av_num').value.trim() || null;
       const fecha = document.getElementById('f_av_fecha').value;
       const cliente_nombre = document.getElementById('f_av_cliente').value.trim();
       const nif = document.getElementById('f_av_nif').value.trim() || null;
@@ -7681,13 +7651,17 @@ async function asignarSiguienteNumeroAlbaranVenta() {
 
       try {
         let headerId;
+        let numeroAlbaranAsignado = null;
         const headerPayload = {
-          numero_albaran, fecha, cliente_id, cliente_nombre, nif,
+          fecha, cliente_id, cliente_nombre, nif,
           base_imponible: base_con_descuento, descuento_pct, importe_descuento,
           pct_iva, importe_iva, total, puntos_generados: puntosNuevos, notas
         };
 
         if (modalEditId) {
+          headerPayload.numero_albaran = document.getElementById('f_av_num').value.trim() || null;
+          numeroAlbaranAsignado = headerPayload.numero_albaran;
+
           const anterior = registros.find(r => r.id === modalEditId);
           const itemsAntiguos = (anterior && anterior.albaranes_venta_items) || [];
           for (const it of itemsAntiguos) {
@@ -7707,6 +7681,7 @@ async function asignarSiguienteNumeroAlbaranVenta() {
           const siguienteNumFactusol = numsExistentes.length ? Math.max(...numsExistentes) + 1 : 1;
           const [header] = await apiPost('albaranes_venta', { ...headerPayload, numero_factusol: siguienteNumFactusol });
           headerId = header.id;
+          numeroAlbaranAsignado = header.numero_albaran;
         }
 
         await apiPost('albaranes_venta_items', lineasFinales.map(l => ({
@@ -7739,7 +7714,7 @@ async function asignarSiguienteNumeroAlbaranVenta() {
 
         toast(modalEditId
           ? 'Albarán de venta actualizado'
-          : (conPuntos ? `Albarán guardado — +${puntosNuevos} pts para ${cliente_nombre}` : 'Albarán guardado sin puntos ni aviso'));
+          : (conPuntos ? `Albarán ${numeroAlbaranAsignado || ''} guardado — +${puntosNuevos} pts para ${cliente_nombre}` : `Albarán ${numeroAlbaranAsignado || ''} guardado sin puntos ni aviso`));
         modalEditId = null;
         modalDestinoTabla = null;
         cerrarModal('modalNueva');
@@ -8309,7 +8284,7 @@ async function asignarSiguienteNumeroAlbaranVenta() {
         const cont2 = document.getElementById('modalFormContenido');
         cont2.innerHTML = `
       <div class="form-grid">
-        <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_av_num" readonly style="background:#f7f0f5;font-weight:600" placeholder="Calculando..."></div>
+        <div class="form-group"><label>Nº Albarán</label><input type="text" id="f_av_num" readonly style="background:#f7f0f5;font-weight:600" placeholder="Se asignará automáticamente al guardar"></div>
         <div class="form-group"><label>Fecha *</label><input type="date" id="f_av_fecha" value="${hoy()}"></div>
         <div class="form-group span2 ac-wrap">
           <label>Cliente *</label>
