@@ -6959,7 +6959,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const filtrados = (obraSel ? registros.filter(r => r.nombre_obra === obraSel) : registros)
         .slice()
         .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '')); // más antigua primero
-        
+
       if (!filtrados.length) { toast('No hay datos para exportar', 'err'); return; }
 
       const filas = [];
@@ -8546,7 +8546,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         if (meses.length && !meses.includes(m)) return false;
         if (obraFiltro && f.nombre_obra !== obraFiltro) return false;
         return true;
-        }).sort((a, b) => {
+      }).sort((a, b) => {
         const fa = a.fecha_recibido || a.fecha || '';
         const fb = b.fecha_recibido || b.fecha || '';
         return fa.localeCompare(fb); // más antigua primero
@@ -8574,18 +8574,18 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             'Obra': f.nombre_obra || '',
             'Nº Factura': f.numero_ingreso || '',
             'Concepto': f.concepto || '',
-            'Base': f.base1 != null ? parseFloat(f.base1) : '',
-            '%IVA': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
-            'Total IVA': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
+            'Base': f.base1 != null ? parseFloat(f.base1) : 0,
+            '%IVA': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : 0,
+            'Total IVA': f.total_iva1 != null ? parseFloat(f.total_iva1) : 0,
             'Total': f.total != null ? parseFloat(f.total) : 0,
             'Cobrado': cobrado,
             'Pendiente': (parseFloat(f.total || 0) - cobrado),
             'Detalle cobros': detalle,
-            'Descuento': f.descuento != null ? parseFloat(f.descuento) : '',
-            'Pago permisos': f.pago_permisos != null ? parseFloat(f.pago_permisos) : '',
-            '%IVA permisos': f.pct_iva_permisos != null ? parseFloat(f.pct_iva_permisos) : '',
-            'Total IVA permisos': f.total_iva_permisos != null ? parseFloat(f.total_iva_permisos) : '',
-            'Total con permisos': f.total_con_permisos != null ? parseFloat(f.total_con_permisos) : ''
+            'Descuento': f.descuento != null ? parseFloat(f.descuento) : 0,
+            'Pago permisos': f.pago_permisos != null ? parseFloat(f.pago_permisos) : 0,
+            '%IVA permisos': f.pct_iva_permisos != null ? parseFloat(f.pct_iva_permisos) : 0,
+            'Total IVA permisos': f.total_iva_permisos != null ? parseFloat(f.total_iva_permisos) : 0,
+            'Total con permisos': f.total_con_permisos != null ? parseFloat(f.total_con_permisos) : 0
           };
         });
 
@@ -8623,29 +8623,29 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         'NOMBRE': f.proveedor || '',
         'FACTURA': f.numero_factura || '',
         'CONCEPTO': f.concepto || '',
-        'Base 1': f.base1 != null ? parseFloat(f.base1) : '',
-        '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : '',
-        'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : '',
-        '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : '',
-        'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : '',
-        'TASAS': f.tasas != null ? parseFloat(f.tasas) : '',
-        'Base 2': f.base2 != null ? parseFloat(f.base2) : '',
-        '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : '',
-        'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : '',
-        'Base3': f.base3 != null ? parseFloat(f.base3) : '',
-        '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : '',
-        'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : '',
-        'Base4': '',
-        '%IVA4': '',
-        'Total IVA4': '',
-        'Base5': '',
-        '%IVA5': '',
-        'Total IVA5': '',
-        'Exento': f.exento != null ? parseFloat(f.exento) : '',
-        'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : '',
-        'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : '',
-        '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : '',
-        'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : '',
+        'Base 1': f.base1 != null ? parseFloat(f.base1) : 0,
+        '%IVA1': f.pct_iva1 != null ? parseFloat(f.pct_iva1) : 0,
+        'Total IVA1': f.total_iva1 != null ? parseFloat(f.total_iva1) : 0,
+        '%RE1': f.pct_re1 != null ? parseFloat(f.pct_re1) : 0,
+        'Total RE1': f.total_re1 != null ? parseFloat(f.total_re1) : 0,
+        'TASAS': f.tasas != null ? parseFloat(f.tasas) : 0,
+        'Base 2': f.base2 != null ? parseFloat(f.base2) : 0,
+        '%IVA2': f.pct_iva2 != null ? parseFloat(f.pct_iva2) : 0,
+        'Total IVA2': f.total_iva2 != null ? parseFloat(f.total_iva2) : 0,
+        'Base3': f.base3 != null ? parseFloat(f.base3) : 0,
+        '%IVA3': f.pct_iva3 != null ? parseFloat(f.pct_iva3) : 0,
+        'Total IVA3': f.total_iva3 != null ? parseFloat(f.total_iva3) : 0,
+        'Base4': 0,
+        '%IVA4': 0,
+        'Total IVA4': 0,
+        'Base5': 0,
+        '%IVA5': 0,
+        'Total IVA5': 0,
+        'Exento': f.exento != null ? parseFloat(f.exento) : 0,
+        'DESCUENTO': f.descuento != null ? parseFloat(f.descuento) : 0,
+        'Base Retención': f.base_retencion != null ? parseFloat(f.base_retencion) : 0,
+        '% Retención': f.pct_retencion != null ? parseFloat(f.pct_retencion) : 0,
+        'Total Retención': f.total_retencion != null ? parseFloat(f.total_retencion) : 0,
         'Total': f.total != null ? parseFloat(f.total) : 0
       }));
 
