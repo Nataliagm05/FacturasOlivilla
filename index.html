@@ -7910,25 +7910,37 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       });
     }
 
-    function exportarAlbaranesVentaExcel(filtrados) {
-      const sinNumero = filtrados.filter(f => !f.numero_factusol);
-      if (sinNumero.length) {
-        toast(`${sinNumero.length} albarán(es) sin número interno de FactuSol asignado — revísalos antes de exportar`, 'err');
-      }
+    async function exportarAlbaranesVentaExcel(filtrados) {
+  const sinNumero = filtrados.filter(f => !f.numero_factusol);
+  if (sinNumero.length) {
+    toast(`${sinNumero.length} albarán(es) sin número interno de FactuSol asignado — revísalos antes de exportar`, 'err');
+  }
 
-      const filasALB = [ALB_HEADERS, ...filtrados.map(_filaALB)];
-      const filasLAL = [LAL_HEADERS, ...filtrados.flatMap(_filasLAL)];
+  const filasALB = [ALB_HEADERS, ...filtrados.map(_filaALB)];
+  const filasLAL = [LAL_HEADERS, ...filtrados.flatMap(_filasLAL)];
 
-      const wbAlb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wbAlb, XLSX.utils.aoa_to_sheet(filasALB), 'ALB');
-      XLSX.writeFile(wbAlb, 'ALB.xlsx');
+  const wbAlb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbAlb, XLSX.utils.aoa_to_sheet(filasALB), 'ALB');
+  const albBuffer = XLSX.write(wbAlb, { bookType: 'xlsx', type: 'array' });
 
-      const wbLal = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wbLal, XLSX.utils.aoa_to_sheet(filasLAL), 'LAL');
-      XLSX.writeFile(wbLal, 'LAL.xlsx');
+  const wbLal = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbLal, XLSX.utils.aoa_to_sheet(filasLAL), 'LAL');
+  const lalBuffer = XLSX.write(wbLal, { bookType: 'xlsx', type: 'array' });
 
-      toast('<i class="fa-solid fa-file-excel me-1"></i>Descargados <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — cópialos juntos a la carpeta de importación de FactuSol', 'ok');
-    }
+  const zip = new JSZip();
+  zip.file('ALB.xlsx', albBuffer);
+  zip.file('LAL.xlsx', lalBuffer);
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(zipBlob);
+  a.download = `factusol_albaranes_venta_${new Date().toISOString().split('T')[0]}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  toast('<i class="fa-solid fa-file-zipper me-1"></i>Descargado el ZIP con <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — descomprímelos y llévalos juntos a la carpeta de importación de FactuSol', 'ok');
+}
 
 
 
