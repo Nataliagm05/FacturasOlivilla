@@ -2053,7 +2053,7 @@
             class="fa-solid fa-file-invoice-dollar"></i>Presupuestos</button>
         <button class="btn-nav" onclick="cambiarSeccion('albaranes')"><i
             class="fa-solid fa-file-signature"></i>Albaranes</button>
-            <button class="btn-nav" onclick="cambiarSeccion('albaranes_venta')"><i
+        <button class="btn-nav" onclick="cambiarSeccion('albaranes_venta')"><i
             class="fa-solid fa-file-invoice"></i>Albaranes Venta</button>
         <button class="btn-nav" onclick="cambiarSeccion('clientes')"><i class="fa-solid fa-users"></i>Clientes</button>
         <button class="btn-nav" onclick="cambiarSeccion('inventario')"><i
@@ -2718,10 +2718,10 @@
 
     // Todas las secciones que existen en el menú.
     const TODAS_LAS_SECCIONES = [
-  'clasificacion', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
-  'revisadas_facturadas', 'obras', 'calendario_pagos', 'presupuestos',
-  'albaranes', 'albaranes_venta', 'clientes', 'inventario', 'materiales_obra', 'ingresos', 'varios'
-];
+      'clasificacion', 'facturas_almacen', 'facturas_obra', 'facturas_csg',
+      'revisadas_facturadas', 'obras', 'calendario_pagos', 'presupuestos',
+      'albaranes', 'albaranes_venta', 'clientes', 'inventario', 'materiales_obra', 'ingresos', 'varios'
+    ];
 
 
     // Qué campos se buscan en cada tabla, y cómo se pinta cada resultado
@@ -2906,7 +2906,7 @@
     let lineasFacturaCount = 0;
     let lineasMaterialCount = 0;
     let clienteVentaSelId = null;
-let lineasAlbaranVentaCount = 0;
+    let lineasAlbaranVentaCount = 0;
 
     // Datos que se llevan de una factura pendiente a su formulario de clasificación
     window._pendienteOrigenId = null;
@@ -3261,7 +3261,7 @@ let lineasAlbaranVentaCount = 0;
       } else if (sec === 'materiales_obra') {
         sel.innerHTML = `<option value="">Todas</option>`;
         sp.placeholder = 'Buscar por obra o empleado...';
-        } else if (sec === 'albaranes_venta') {
+      } else if (sec === 'albaranes_venta') {
         sel.innerHTML = `<option value="">Todos</option>`;
         sp.placeholder = 'Buscar por nº albarán o cliente...';
       } else if (sec === 'presupuestos') {
@@ -5197,7 +5197,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 </td>
       </tr>`;
         }).join('');
-        } else if (tablaActual === 'albaranes_venta') {
+      } else if (tablaActual === 'albaranes_venta') {
         hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Fecha</th><th>Cliente</th><th>NIF</th><th class="num-cell">Total</th><th>Puntos</th><th>Documento</th><th></th></tr>`;
         const lista = registros.filter(f => [f.numero_albaran, f.cliente_nombre].some(v => (v || '').toLowerCase().includes(q)));
         if (!lista.length) { bdy.innerHTML = emptyRow(8, 'No hay albaranes de venta registrados'); return; }
@@ -5939,6 +5939,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Guardando...';
       const tabla = modalDestinoTabla || tablaActual;
+
+      if (tabla === 'albaranes_venta') {
+        await guardarAlbaranVenta();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i>Guardar';
+        return;
+      }
       try {
 
         if (tabla === 'clasificacion') {
@@ -7450,7 +7457,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } catch (e) { toast('Error al guardar compra: ' + e.message, 'err'); }
     }
 
-// AUTOCOMPLETADO DE CLIENTES (para albaranes de venta)
+    // AUTOCOMPLETADO DE CLIENTES (para albaranes de venta)
     function setupClienteVentaAC(inputNombreId, inputNifId, inputIdId) {
       const inpN = document.getElementById(inputNombreId);
       const inpF = document.getElementById(inputNifId);
@@ -7763,13 +7770,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     // EXPORTAR EXCEL PARA IMPORTAR EN FACTUSOL
-// ⚠️ Confirmar con FactuSol (o mirando un albarán de venta ya creado)
+    // ⚠️ Confirmar con FactuSol (o mirando un albarán de venta ya creado)
     // qué valor va en "Tipo de documento" para un albarán de VENTA.
     const FACTUSOL_TIPO_DOC_ALBARAN_VENTA = 1; // TODO: verificar
 
-    const ALB_HEADERS = ['Tipo de documento','Número de documento','Referencia','Fecha','Estado','Almacén','Agente','Código del proveedor','Código de cliente','Nombre del cliente','Domicilio del cliente','Población','Código postal','Provincia','N.I.F.','Tipo de IVA','Recargo de equivalencia','Teléfono del cliente','Importe neto 1','Importe neto 2','Importe neto 3','Porcentaje de descuento 1','Porcentaje de descuento 2','Porcentaje de descuento 3','Importe de descuento 1','Importe de descuento 2','Importe de descuento 3','Porcentaje pronto pago 1','Porcentaje pronto pago 2','Porcentaje pronto pago 3','Importe pronto pago 1','Importe pronto pago 2','Importe pronto pago 3','Porcentaje portes 1','Porcentaje portes 2','Porcentaje portes 3','Importe portes 1','Importe portes 2','Importe portes 3','Porcentaje de financiación 1','Porcentaje de financiación 2','Porcentaje de financiación 3','Importe de financiación 1','Importe de financiación 2','Importe de financiación 3','Base imponible 1','Base imponible 2','Base imponible 3','Porcentaje de IVA 1','Porcentaje de IVA 2','Porcentaje de IVA 3','Importe de IVA 1','Importe de IVA 2','Importe de IVA 3','Porcentaje de recargo de equivalencia 1','Porcentaje de recargo de equivalencia 2','Porcentaje de recargo de equivalencia 3','Importe de recargo de equivalencia 1','Importe de recargo de equivalencia 2','Importe de recargo de equivalencia 3','Porcentaje de la retención','Importe de la retención','Total','Forma de pago','Portes','Texto de portes','1ª línea de observaciones','2ª línea de observaciones','Obra de entrega','Remitido por','Embalado por','A la atención de','Referencia','Nº de su pedido','Fecha de su pedido','Cobrado','Traspasado a contabilidad','Impreso','Transportista','Número expedición 1','Número expedición 2','Anotaciones privadas','Documentos asociados al documento','Banco del cliente','Enviado a través del fichero','Hora de creación','Comentarios después de las líneas de detalle','Usuario que creó el documento','Último usuario que modificó el documento','Fax','Importe neto exento','Porcentaje de descuento exento','Importe de descuento exento','Porcentaje de pronto pago exento','Importe de pronto pago exento','Porcentaje de portes exento','Importe de portes exento','Porcentaje de financiación exento','Importe de financiación exento','Base imponible exento','Enviado por mail','Permisos y contraseña del documento','Ticket, porcentaje de descuento','Ticket, importe de descuento','Caja en que se creó el documento','IBAN del banco','BIC del banco','Nombre del banco','Entidad de la cuenta','Oficina de la cuenta del cliente','Dígitos de control de la cuenta del cliente','Número de la cuenta del cliente'];
+    const ALB_HEADERS = ['Tipo de documento', 'Número de documento', 'Referencia', 'Fecha', 'Estado', 'Almacén', 'Agente', 'Código del proveedor', 'Código de cliente', 'Nombre del cliente', 'Domicilio del cliente', 'Población', 'Código postal', 'Provincia', 'N.I.F.', 'Tipo de IVA', 'Recargo de equivalencia', 'Teléfono del cliente', 'Importe neto 1', 'Importe neto 2', 'Importe neto 3', 'Porcentaje de descuento 1', 'Porcentaje de descuento 2', 'Porcentaje de descuento 3', 'Importe de descuento 1', 'Importe de descuento 2', 'Importe de descuento 3', 'Porcentaje pronto pago 1', 'Porcentaje pronto pago 2', 'Porcentaje pronto pago 3', 'Importe pronto pago 1', 'Importe pronto pago 2', 'Importe pronto pago 3', 'Porcentaje portes 1', 'Porcentaje portes 2', 'Porcentaje portes 3', 'Importe portes 1', 'Importe portes 2', 'Importe portes 3', 'Porcentaje de financiación 1', 'Porcentaje de financiación 2', 'Porcentaje de financiación 3', 'Importe de financiación 1', 'Importe de financiación 2', 'Importe de financiación 3', 'Base imponible 1', 'Base imponible 2', 'Base imponible 3', 'Porcentaje de IVA 1', 'Porcentaje de IVA 2', 'Porcentaje de IVA 3', 'Importe de IVA 1', 'Importe de IVA 2', 'Importe de IVA 3', 'Porcentaje de recargo de equivalencia 1', 'Porcentaje de recargo de equivalencia 2', 'Porcentaje de recargo de equivalencia 3', 'Importe de recargo de equivalencia 1', 'Importe de recargo de equivalencia 2', 'Importe de recargo de equivalencia 3', 'Porcentaje de la retención', 'Importe de la retención', 'Total', 'Forma de pago', 'Portes', 'Texto de portes', '1ª línea de observaciones', '2ª línea de observaciones', 'Obra de entrega', 'Remitido por', 'Embalado por', 'A la atención de', 'Referencia', 'Nº de su pedido', 'Fecha de su pedido', 'Cobrado', 'Traspasado a contabilidad', 'Impreso', 'Transportista', 'Número expedición 1', 'Número expedición 2', 'Anotaciones privadas', 'Documentos asociados al documento', 'Banco del cliente', 'Enviado a través del fichero', 'Hora de creación', 'Comentarios después de las líneas de detalle', 'Usuario que creó el documento', 'Último usuario que modificó el documento', 'Fax', 'Importe neto exento', 'Porcentaje de descuento exento', 'Importe de descuento exento', 'Porcentaje de pronto pago exento', 'Importe de pronto pago exento', 'Porcentaje de portes exento', 'Importe de portes exento', 'Porcentaje de financiación exento', 'Importe de financiación exento', 'Base imponible exento', 'Enviado por mail', 'Permisos y contraseña del documento', 'Ticket, porcentaje de descuento', 'Ticket, importe de descuento', 'Caja en que se creó el documento', 'IBAN del banco', 'BIC del banco', 'Nombre del banco', 'Entidad de la cuenta', 'Oficina de la cuenta del cliente', 'Dígitos de control de la cuenta del cliente', 'Número de la cuenta del cliente'];
 
-    const LAL_HEADERS = ['Tipo de documento','Número de documento','Posición de la línea','Artículo','Descripción','Cantidad','Porcentaje descuento 1','Porcentaje descuento 2','Porcentaje descuento 3','Precio del artículo','Total','Tipo de IVA','Documento que creó el pedido','Tipo de documento (origen)','Código del documento','Precio de costo','Bultos','Comisión del agente','Campo de uso interno','Ejercicio de que proviene la validación','Alto','Ancho','Fondo','Campo de uso interno','Campo de uso interno','IVA incluido en la línea','Precio IVA incluido en la línea','Total IVA incluido en la línea','Talla','Color','Imagen asociada'];
+    const LAL_HEADERS = ['Tipo de documento', 'Número de documento', 'Posición de la línea', 'Artículo', 'Descripción', 'Cantidad', 'Porcentaje descuento 1', 'Porcentaje descuento 2', 'Porcentaje descuento 3', 'Precio del artículo', 'Total', 'Tipo de IVA', 'Documento que creó el pedido', 'Tipo de documento (origen)', 'Código del documento', 'Precio de costo', 'Bultos', 'Comisión del agente', 'Campo de uso interno', 'Ejercicio de que proviene la validación', 'Alto', 'Ancho', 'Fondo', 'Campo de uso interno', 'Campo de uso interno', 'IVA incluido en la línea', 'Precio IVA incluido en la línea', 'Total IVA incluido en la línea', 'Talla', 'Color', 'Imagen asociada'];
 
     const FACTUSOL_ALMACEN = ''; // TODO: código de almacén en FactuSol, si lo usáis
     const FACTUSOL_AGENTE = '';  // TODO: código de agente/comercial, si lo usáis
@@ -8143,7 +8150,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         addLineaMaterialExclusivo();
         return;
       }
-        if (tabla === 'albaranes_venta') {
+      if (tabla === 'albaranes_venta') {
         modalDestinoTabla = 'albaranes_venta';
         document.getElementById('modalTitulo').textContent = 'Nuevo Albarán de Venta';
         const cont2 = document.getElementById('modalFormContenido');
@@ -8184,7 +8191,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         }, 50);
         return;
       }
-      
+
 
       modalDestinoTabla = tabla;
       lineasFacturaCount = 0;
@@ -9004,7 +9011,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     function exportarExcel() {
-      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos'&& tablaActual !== 'albaranes_venta') {
+      if (tablaActual !== 'facturas_almacen' && tablaActual !== 'facturas_obra' && tablaActual !== 'facturas_csg' && tablaActual !== 'revisadas_facturadas' && tablaActual !== 'ingresos' && tablaActual !== 'albaranes_venta') {
         toast('La exportación solo está disponible en Facturas Almacén, Facturas Obra, Facturas CSG, Revisadas y Facturadas e Ingresos', 'err');
         return;
       }
