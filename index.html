@@ -3821,6 +3821,32 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       return /\.(png|jpe?g|gif|webp|bmp)(\?|#|$)/i.test((url || '').split('#')[0].split('?')[0]);
     }
 
+    // Redimensiona y comprime una imagen (File o Blob) usando un canvas.
+// Los PDFs no se tocan, solo entra aquí si es una imagen.
+function comprimirImagenBlob(blob, maxAncho = 1600, calidad = 0.72) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxAncho) {
+        height = Math.round(height * (maxAncho / width));
+        width = maxAncho;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(nuevoBlob => {
+        URL.revokeObjectURL(url);
+        resolve(nuevoBlob || blob); // si algo falla, se queda con el original
+      }, 'image/jpeg', calidad);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(blob); };
+    img.src = url;
+  });
+}
+
     // Construye el contenido del visor (dentro del div#<contenedorId>) según el tipo de archivo:
     // - PDF real: iframe con el visor nativo del navegador (con su propia barra si el navegador la da).
     // - Imagen: <img> con nuestra propia barra de zoom +/- y botón de descarga, porque las imágenes
@@ -9442,8 +9468,13 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           try {
             const r = await fetch(t.url);
             if (!r.ok) throw new Error('HTTP ' + r.status);
-            const blob = await r.blob();
-            zip.file(t.nombre, blob);
+            let blob = await r.blob();
+            let nombreFinal = t.nombre;
+            if (esImagen(t.url)) {
+              blob = await comprimirImagenBlob(blob, 1600, 0.72);
+              nombreFinal = nombreFinal.replace(/\.[a-zA-Z0-9]+$/, '.jpg');
+            }
+            zip.file(nombreFinal, blob);
             ok++;
           } catch (e) {
             console.error('No se pudo descargar', t.url, e);
