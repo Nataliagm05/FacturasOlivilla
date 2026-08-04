@@ -7916,21 +7916,19 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       const items = f.albaranes_venta_items || [];
 
       const filas = items.map(i => {
-  const precio = i.precio_unitario != null ? parseFloat(i.precio_unitario) : 0;
-  const subtotal = i.importe_total != null ? parseFloat(i.importe_total) : (precio * (parseFloat(i.cantidad) || 0));
-  const pctDescuento = f.descuento_pct || 0;
-  const importeDescuentoLinea = +(subtotal * pctDescuento / 100).toFixed(2);
-  const totalLinea = +(subtotal - importeDescuentoLinea).toFixed(2);
-  return `<tr>
+        const precio = i.precio_unitario != null ? parseFloat(i.precio_unitario) : 0;
+        const subtotal = i.importe_total != null ? parseFloat(i.importe_total) : (precio * (parseFloat(i.cantidad) || 0));
+        const pctDescuento = f.descuento_pct || 0;
+        return `<tr>
     <td>${i.producto_id || ''}</td>
     <td>${i.producto_nombre || ''}</td>
     <td style="text-align:right">${fmtStock(i.cantidad)}</td>
     <td style="text-align:right">${fmtN(precio)}</td>
     <td style="text-align:right">${fmtN(subtotal)}</td>
     <td style="text-align:right">${pctDescuento ? pctDescuento + '%' : '—'}</td>
-    <td style="text-align:right">${fmtN(totalLinea)}</td>
+    <td style="text-align:right">${fmtN(subtotal)}</td>
   </tr>`;
-}).join('');
+      }).join('');
 
       const domicilioCliente = cliente.domicilio || '';
       const poblacionCliente = [cliente.codigo_postal, cliente.poblacion].filter(Boolean).join('   ');
