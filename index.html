@@ -7929,6 +7929,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     </tr>`;
       }).join('');
 
+
       const domicilioCliente = cliente.domicilio || '';
       const poblacionCliente = [cliente.codigo_postal, cliente.poblacion].filter(Boolean).join('   ');
       const provinciaCliente = cliente.provincia || '';
@@ -7996,10 +7997,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       <table>
         <thead><tr><th>TIPO</th><th>IMPORTE</th><th>DESCUENTO</th><th>BASE</th><th>I.V.A.</th></tr></thead>
         <tbody><tr>
-          <td>${fmtN((f.base_imponible || 0) + (f.importe_descuento || 0))}</td>
-<td>${f.descuento_pct ? fmtN(f.descuento_pct) + '%' : '—'}</td>
-<td>${fmtN(f.base_imponible)}</td>
-<td>${fmtN(f.importe_iva)}</td>
+          <td>${f.pct_iva != null ? fmtN(f.pct_iva) : '21,00'}</td>
+          <td>${fmtN(f.base_imponible)}</td>
+          <td>${f.descuento_pct ? f.descuento_pct + '% (' + fmtN(f.importe_descuento) + '€)' : '—'}</td>
+          <td>${fmtN(f.base_imponible)}</td>
+          <td>${fmtN(f.importe_iva)}</td>
         </tr></tbody>
       </table>
     </div>
