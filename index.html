@@ -7862,8 +7862,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         document.getElementById('f_av_nif').value = f.nif || '';
         document.getElementById('f_av_cliente_id').value = f.cliente_id || '';
         clienteVentaSelId = f.cliente_id || null;
-        document.getElementById('f_av_base').value = f.base_imponible || 0;
-        document.getElementById('f_av_descuento').value = f.descuento_pct || 0;   // ← añadir
+        document.getElementById('f_av_base').value = (f.base_imponible || 0) + (f.importe_descuento || 0);
+        document.getElementById('f_av_descuento').value = f.descuento_pct || 0;
         document.getElementById('f_av_pct_iva').value = f.pct_iva != null ? f.pct_iva : 21;
         document.getElementById('f_av_notas').value = f.notas || '';
         recalcTotalAlbaranVenta();
