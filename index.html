@@ -3831,20 +3831,20 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     // Sube el ZIP generado a Supabase Storage y devuelve un enlace público
-async function subirZipStorage(blob, nombreArchivo) {
-  const ruta = `${Date.now()}_${nombreArchivo.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/zips-temporales/${ruta}`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/zip'
-    },
-    body: blob
-  });
-  if (!r.ok) throw new Error(await r.text());
-  return `${SUPABASE_URL}/storage/v1/object/public/zips-temporales/${ruta}`;
-}
+    async function subirZipStorage(blob, nombreArchivo) {
+      const ruta = `${Date.now()}_${nombreArchivo.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/zips-temporales/${ruta}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/zip'
+        },
+        body: blob
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return `${SUPABASE_URL}/storage/v1/object/public/zips-temporales/${ruta}`;
+    }
 
 
     // Detecta si el archivo es una imagen (fotos/escaneos con el móvil) en vez de un PDF real.
@@ -7935,7 +7935,8 @@ async function subirZipStorage(blob, nombreArchivo) {
 
       const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Albarán ${f.numero_albaran || ''}</title>
   <style>
-    body{font-family:Arial,sans-serif;color:#222;padding:36px;font-size:.85rem}
+    @page{ margin-bottom: 110px; }
+    body{font-family:Arial,sans-serif;color:#222;padding:36px 36px 130px;font-size:.85rem}
     .cabecera{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
     .cabecera img{height:130px}
     .caja{border:1.5px solid #333;border-radius:10px;padding:12px 16px;margin-bottom:6px}
@@ -7951,8 +7952,13 @@ async function subirZipStorage(blob, nombreArchivo) {
     .iva-tabla table{margin:0}
     .iva-tabla th, .iva-tabla td{border:none;padding:4px 10px}
     .total-box{border:1.5px solid #333;border-radius:10px;padding:14px 24px;font-size:1.1rem;font-weight:700;display:flex;justify-content:space-between;gap:20px;align-items:center;min-width:220px}
-    .observaciones{border:1.5px solid #333;border-radius:10px;padding:12px 16px;margin-top:20px;min-height:60px}
-    @media print{ button{display:none} }
+    .observaciones{
+      position:fixed; left:36px; right:36px; bottom:36px;
+      border:1.5px solid #333;border-radius:10px;padding:12px 16px;
+      min-height:60px;background:#fff;font-size:.82rem
+    }
+    .btn-imprimir{position:fixed; top:16px; right:16px}
+    @media print{ .btn-imprimir{display:none} }
   </style></head><body>
   <div class="cabecera">
     <img src="logo.png" alt="Olivilla Tres" onerror="this.style.display='none'">
@@ -7972,7 +7978,7 @@ async function subirZipStorage(blob, nombreArchivo) {
       45003 TOLEDO<br>
       B45813284<br>
       925233454<br>
-      info@olivillatres.com
+      almacen@olivillatres.com
     </div>
     <div class="doc-info">
       <div>DOCUMENTO<br><b>Albarán</b></div>
@@ -8001,7 +8007,7 @@ async function subirZipStorage(blob, nombreArchivo) {
     <div class="total-box"><span>TOTAL:</span><span>${fmt(f.total)}</span></div>
   </div>
   <div class="observaciones"><b>OBSERVACIONES:</b><br>${f.notas || ''}</div>
-  <button onclick="window.print()" style="margin-top:24px;padding:10px 20px;background:#b53987;color:#fff;border:none;border-radius:8px;cursor:pointer">Imprimir / Guardar PDF</button>
+  <button class="btn-imprimir" onclick="window.print()" style="padding:10px 20px;background:#b53987;color:#fff;border:none;border-radius:8px;cursor:pointer">Imprimir / Guardar PDF</button>
   </body></html>`;
       const w = window.open('', '_blank');
       w.document.write(html);
@@ -9524,7 +9530,7 @@ async function subirZipStorage(blob, nombreArchivo) {
           // Si pesa mucho, lo subimos y damos un enlace para compartir
           btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Subiendo ZIP (' + pesoMB + ' MB)...';
           const url = await subirZipStorage(contenido, nombreZip);
-          await navigator.clipboard.writeText(url).catch(() => {});
+          await navigator.clipboard.writeText(url).catch(() => { });
           document.getElementById('modalDetalleTitulo').innerHTML =
             `<i class="fa-solid fa-link" style="color:#b53987"></i>Enlace del ZIP (${pesoMB} MB)`;
           document.getElementById('modalDetalleContenido').innerHTML = `
