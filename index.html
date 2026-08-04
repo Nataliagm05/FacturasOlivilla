@@ -777,6 +777,34 @@
       background: #1a4d32;
     }
 
+    .btn-revisar {
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .btn-revisar:hover {
+      background: #0d47a1;
+    }
+
+    .btn-revisar.activo {
+      background: #c0392b;
+    }
+
+    .btn-revisar.activo:hover {
+      background: #96281f;
+    }
+
     /* TABLAS */
     .split-wrap {
       display: flex;
@@ -2118,6 +2146,9 @@
         <button class="btn-exportar" id="btnDuplicados" onclick="verDuplicados()" style="display:none">
           <i class="fa-solid fa-clone"></i>Duplicados
         </button>
+        <button class="btn-revisar" id="btnPorRevisar" onclick="togglePorRevisar()" style="display:none">
+          <i class="fa-solid fa-magnifying-glass"></i><span>Por revisar</span>
+        </button>
         <button class="btn-historial" id="btnHistorial" onclick="abrirHistorialMovimientos()" style="display:none">
           <i class="fa-solid fa-clock-rotate-left"></i>Historial
         </button>
@@ -2962,6 +2993,26 @@
       return !!campos && campos.every(c => !!f[c.campo] || !!f[c.campo.replace('revisado_', 'no_corresponde_')]);
     }
 
+    // ── FILTRO "POR REVISAR" ───────────────────────────────────
+// Activo: en Facturas Almacén/Obra/CSG e Ingresos solo se muestran las
+// facturas que a la persona conectada le falta revisar (su propia
+// casilla sin marcar y sin exención de "no corresponde").
+let filtroPorRevisar = false;
+
+function faltaPorRevisar(f, tabla) {
+  const campos = CAMPOS_REVISION[tabla];
+  if (!campos) return false;
+  const c = campos.find(c => c.campo.replace('revisado_', '') === currentPersona);
+  if (!c) return false; // esta persona no tiene casilla de revisión en esta tabla
+  return !f[c.campo] && !f[c.campo.replace('revisado_', 'no_corresponde_')];
+}
+
+function togglePorRevisar() {
+  filtroPorRevisar = !filtroPorRevisar;
+  const btn = document.getElementById('btnPorRevisar');
+  if (btn) btn.classList.toggle('activo', filtroPorRevisar);
+  renderTablaConScroll();
+}
 
     // ── UTILIDADES ────────────────────────────────────────────
     function simboloMoneda(m) { return m === 'USD' ? '$' : '€'; }
@@ -3221,6 +3272,14 @@
       document.getElementById('btnDescargarArchivos').style.display = SECCIONES_CON_ARCHIVOS.includes(sec) ? 'flex' : 'none';
       // si estamos en facturas o albaranes, saldrá el boton de duplicados
       document.getElementById('btnDuplicados').style.display = (esFacturas || sec === 'albaranes') ? 'flex' : 'none';
+      // Solo se ve si la persona conectada tiene una casilla de revisión en esta sección
+      filtroPorRevisar = false;
+      const campoRevisionMio = (CAMPOS_REVISION[sec] || []).find(c => c.campo.replace('revisado_', '') === currentPersona);
+      const btnRev = document.getElementById('btnPorRevisar');
+      if (btnRev) {
+        btnRev.style.display = campoRevisionMio ? 'flex' : 'none';
+        btnRev.classList.remove('activo');
+      }
       document.getElementById('btnHistorial').style.display = (sec === 'clientes' || sec === 'inventario' || sec === 'materiales_obra') ? 'flex' : 'none';
       // si estamos en revisadas no sale el boton de añadir nueva
       document.getElementById('btnNuevo').style.display = esRevisadas ? 'none' : 'flex';
@@ -4602,7 +4661,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const mQ = [f.numero_factura, f.proveedor, f.nif, f.numero_interno, f.concepto].some(v => (v || '').toLowerCase().includes(q));
           const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
-          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
+          return mQ && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado)) && (!filtroPorRevisar || faltaPorRevisar(f, 'facturas_almacen'));
         });
         if (!lista.length) { bdy.innerHTML = emptyRow(36, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
@@ -4717,7 +4776,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const mObra = !fObra || f.nombre_obra === fObra;
           const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
-          return mQ && mObra && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
+          return mQ && mObra && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado)) && (!filtroPorRevisar || faltaPorRevisar(f, 'facturas_obra'));
         });
         const resumenEl = document.getElementById('resumenObra');
         if (fObra) {
@@ -4835,7 +4894,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const mObra = !fObra || f.nombre_obra === fObra;
           const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const estReal = f.imputado ? 'imputado' : (esVenc ? 'vencido' : (f.estado || 'pendiente'));
-          return mQ && mObra && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado));
+          return mQ && mObra && (!fEst || fEst === estReal || (fEst === 'vencido' && esVenc && !f.imputado)) && (!filtroPorRevisar || faltaPorRevisar(f, 'facturas_csg'));
         });
         if (!lista.length) { bdy.innerHTML = emptyRow(37, 'No se encontraron facturas'); return; }
         bdy.innerHTML = lista.map(f => {
@@ -5235,7 +5294,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const mObra = !fObraIng || f.nombre_obra === fObraIng;
           const esVenc = f.estado === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const estReal = esVenc ? 'vencido' : (f.estado || 'pendiente');
-          return mQ && mObra && (!fEst || fEst === estReal);
+          return mQ && mObra && (!fEst || fEst === estReal) && (!filtroPorRevisar || faltaPorRevisar(f, 'ingresos'));
         });
         if (!lista.length) { bdy.innerHTML = emptyRow(18, 'No se encontraron ingresos'); return; }
         bdy.innerHTML = lista.map(f => {
