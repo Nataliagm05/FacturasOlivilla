@@ -4295,20 +4295,20 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     function mensajeVencimiento(dias) {
-  return dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
-}
+      return dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
+    }
 
-// Clase CSS para colorear la fila según si está vencida o vence pronto
-// (próximos 7 días). No se aplica si la factura está imputada.
-function claseFilaVencimiento(f, est, esVenc, hoyRef) {
-  if (f.imputado) return '';
-  if (esVenc) return 'fila-vencida';
-  if (est === 'pendiente' && f.fecha_vencimiento) {
-    const dias = Math.ceil((new Date(f.fecha_vencimiento) - hoyRef) / 86400000);
-    if (dias >= 0 && dias <= 7) return 'fila-porvencer';
-  }
-  return '';
-}
+    // Clase CSS para colorear la fila según si está vencida o vence pronto
+    // (próximos 7 días). No se aplica si la factura está imputada.
+    function claseFilaVencimiento(f, est, esVenc, hoyRef) {
+      if (f.imputado) return '';
+      if (esVenc) return 'fila-vencida';
+      if (est === 'pendiente' && f.fecha_vencimiento) {
+        const dias = Math.ceil((new Date(f.fecha_vencimiento) - hoyRef) / 86400000);
+        if (dias >= 0 && dias <= 7) return 'fila-porvencer';
+      }
+      return '';
+    }
 
     function renderAlertas() {
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
@@ -5864,50 +5864,25 @@ function claseFilaVencimiento(f, est, esVenc, hoyRef) {
       return mensajeError.includes('23505') || /duplicate key value/i.test(mensajeError);
     }
 
-    async function buscarFacturaDuplicada(numFactura, nif, fecha, total, idExcluir) {
-      const tablas = ['facturas_almacen', 'facturas_obra', 'facturas_csg'];
-
-      if (numFactura) {
-        for (const tabla of tablas) {
-          const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
-          const encontrado = dup.find(d => d.id !== idExcluir);
-          if (encontrado) return { tabla, id: encontrado.id };
-        }
-        // Hay número de factura pero no coincide con ninguna existente:
-        // NO caer al respaldo por NIF+fecha+total, o daría falsos
-        // positivos con dos facturas distintas del mismo proveedor el
-        // mismo día (p.ej. mismo importe recurrente).
-        return null;
-      }
-
-      if (nif && fecha && total != null) {
-        for (const tabla of tablas) {
-          const dup = await apiGet(tabla, `nif=eq.${encodeURIComponent(nif)}&fecha=eq.${fecha}&total=eq.${total}`);
-          const encontrado = dup.find(d => d.id !== idExcluir);
-          if (encontrado) return { tabla, id: encontrado.id };
-        }
-      }
-
-      return null;
-    }
-
-
     async function buscarFacturaDuplicada(numFactura, nif, proveedor, fecha, total, idExcluir) {
       const tablas = ['facturas_almacen', 'facturas_obra', 'facturas_csg'];
       const norm = s => (s || '').toLowerCase().trim();
 
-      // Mismo proveedor: por NIF si ambas facturas lo tienen, si no por nombre
-      const mismoProveedor = (d) => {
-        if (nif && d.nif) return norm(nif) === norm(d.nif);
-        return norm(proveedor) === norm(d.proveedor);
-      };
-
       if (numFactura) {
         for (const tabla of tablas) {
-          const dup = await apiGet(tabla, `numero_factura=eq.${encodeURIComponent(numFactura)}`);
-          const encontrado = dup.find(d => d.id !== idExcluir && mismoProveedor(d));
+          // Primero se comprueba por Nº de factura + NIF juntos
+          let filtro = `numero_factura=eq.${encodeURIComponent(numFactura)}`;
+          if (nif) filtro += `&nif=eq.${encodeURIComponent(nif)}`;
+          const dup = await apiGet(tabla, filtro);
+          // Si no hay NIF todavía (aún no se ha rellenado en el formulario),
+          // exigimos al menos que coincida el nombre del proveedor
+          const encontrado = nif
+            ? dup.find(d => d.id !== idExcluir)
+            : dup.find(d => d.id !== idExcluir && norm(d.proveedor) === norm(proveedor));
           if (encontrado) return { tabla, id: encontrado.id };
         }
+        // Si hay número y no coincide (con NIF o proveedor), no seguimos al
+        // respaldo de fecha+total: es una factura distinta.
         return null;
       }
 
@@ -6761,11 +6736,14 @@ function claseFilaVencimiento(f, est, esVenc, hoyRef) {
 
     async function buscarAlbaranDuplicado(numAlbaran, nif, fecha, total, idExcluir) {
       if (numAlbaran) {
-        const dup = await apiGet('albaranes', `numero_albaran=eq.${encodeURIComponent(numAlbaran)}`);
+        // Primero se comprueba por Nº de albarán + NIF juntos
+        let filtro = `numero_albaran=eq.${encodeURIComponent(numAlbaran)}`;
+        if (nif) filtro += `&nif=eq.${encodeURIComponent(nif)}`;
+        const dup = await apiGet('albaranes', filtro);
         const encontrado = dup.find(d => d.id !== idExcluir);
         if (encontrado) return { tabla: 'albaranes', id: encontrado.id };
-        // Igual que en facturas: si hay numero_albaran y no coincide,
-        // no usamos el respaldo NIF+fecha+total.
+        // Si hay número y no coincide (con o sin NIF), no seguimos al
+        // respaldo de fecha+total: es un albarán distinto.
         return null;
       }
 
