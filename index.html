@@ -873,6 +873,22 @@
       vertical-align: middle;
     }
 
+    tbody tr.fila-vencida {
+      background: #fdeaea;
+    }
+
+    tbody tr.fila-porvencer {
+      background: #fff3e0;
+    }
+
+    tbody tr.fila-vencida:hover {
+      background: #fbd7d7;
+    }
+
+    tbody tr.fila-porvencer:hover {
+      background: #ffe9c7;
+    }
+
     .td-nombre {
       font-weight: 500;
       max-width: 160px;
@@ -2994,25 +3010,25 @@
     }
 
     // ── FILTRO "POR REVISAR" ───────────────────────────────────
-// Activo: en Facturas Almacén/Obra/CSG e Ingresos solo se muestran las
-// facturas que a la persona conectada le falta revisar (su propia
-// casilla sin marcar y sin exención de "no corresponde").
-let filtroPorRevisar = false;
+    // Activo: en Facturas Almacén/Obra/CSG e Ingresos solo se muestran las
+    // facturas que a la persona conectada le falta revisar (su propia
+    // casilla sin marcar y sin exención de "no corresponde").
+    let filtroPorRevisar = false;
 
-function faltaPorRevisar(f, tabla) {
-  const campos = CAMPOS_REVISION[tabla];
-  if (!campos) return false;
-  const c = campos.find(c => c.campo.replace('revisado_', '') === currentPersona);
-  if (!c) return false; // esta persona no tiene casilla de revisión en esta tabla
-  return !f[c.campo] && !f[c.campo.replace('revisado_', 'no_corresponde_')];
-}
+    function faltaPorRevisar(f, tabla) {
+      const campos = CAMPOS_REVISION[tabla];
+      if (!campos) return false;
+      const c = campos.find(c => c.campo.replace('revisado_', '') === currentPersona);
+      if (!c) return false; // esta persona no tiene casilla de revisión en esta tabla
+      return !f[c.campo] && !f[c.campo.replace('revisado_', 'no_corresponde_')];
+    }
 
-function togglePorRevisar() {
-  filtroPorRevisar = !filtroPorRevisar;
-  const btn = document.getElementById('btnPorRevisar');
-  if (btn) btn.classList.toggle('activo', filtroPorRevisar);
-  renderTablaConScroll();
-}
+    function togglePorRevisar() {
+      filtroPorRevisar = !filtroPorRevisar;
+      const btn = document.getElementById('btnPorRevisar');
+      if (btn) btn.classList.toggle('activo', filtroPorRevisar);
+      renderTablaConScroll();
+    }
 
     // ── UTILIDADES ────────────────────────────────────────────
     function simboloMoneda(m) { return m === 'USD' ? '$' : '€'; }
@@ -4279,8 +4295,20 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
     }
 
     function mensajeVencimiento(dias) {
-      return dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
-    }
+  return dias < 0 ? `Vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`;
+}
+
+// Clase CSS para colorear la fila según si está vencida o vence pronto
+// (próximos 7 días). No se aplica si la factura está imputada.
+function claseFilaVencimiento(f, est, esVenc, hoyRef) {
+  if (f.imputado) return '';
+  if (esVenc) return 'fila-vencida';
+  if (est === 'pendiente' && f.fecha_vencimiento) {
+    const dias = Math.ceil((new Date(f.fecha_vencimiento) - hoyRef) / 86400000);
+    if (dias >= 0 && dias <= 7) return 'fila-porvencer';
+  }
+  return '';
+}
 
     function renderAlertas() {
       const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0);
@@ -4668,7 +4696,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
-          return `<tr data-id="${f.id}">
+          const claseFila = claseFilaVencimiento(f, est, esVenc, hoyD);
+          return `<tr data-id="${f.id}" class="${claseFila}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
@@ -4791,7 +4820,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
-          return `<tr data-id="${f.id}">
+          const claseFila = claseFilaVencimiento(f, est, esVenc, hoyD);
+          return `<tr data-id="${f.id}" class="${claseFila}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
@@ -4901,7 +4931,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = f.imputado ? 'imputado' : (esVenc ? 'vencido' : est);
-          return `<tr data-id="${f.id}">
+          const claseFila = claseFilaVencimiento(f, est, esVenc, hoyD);
+          return `<tr data-id="${f.id}" class="${claseFila}">
             <td>${celdaCheck(f.id)}</td>
         <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
         <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
@@ -5301,7 +5332,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const est = f.estado || 'pendiente';
           const esVenc = est === 'pendiente' && f.fecha_vencimiento && new Date(f.fecha_vencimiento) < hoyD;
           const eR = esVenc ? 'vencido' : est;
-          return `<tr data-id="${f.id}">
+          const claseFila = claseFilaVencimiento(f, est, esVenc, hoyD);
+          return `<tr data-id="${f.id}" class="${claseFila}">
             <td>${celdaCheck(f.id)}</td>
       <td style="font-size:.78rem;color:#888">${nvl(f.numero_interno)}</td>
       <td>${fmtF(f.fecha)}</td><td>${fmtF(f.fecha_recibido)}</td><td>${fmtF(f.fecha_vencimiento)}</td>
