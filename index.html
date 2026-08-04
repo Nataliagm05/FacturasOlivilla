@@ -8021,7 +8021,7 @@ async function subirZipStorage(blob, nombreArchivo) {
     const FACTUSOL_AGENTE = '';  // TODO: código de agente/comercial, si lo usáis
     function _filaALB(f) {
       const cliente = clientesDB.find(c => c.id === f.cliente_id) || {};
-      const fila = new Array(ALB_HEADERS.length).fill('');
+      const fila = new Array(ALB_HEADERS.length).fill(null);
       fila[0] = FACTUSOL_TIPO_DOC_ALBARAN_VENTA;                  // A Tipo de documento
       fila[1] = f.numero_factusol || '';                          // B Número de documento
       fila[2] = (f.numero_albaran || '').substring(0, 12);         // C Referencia
@@ -8049,7 +8049,7 @@ async function subirZipStorage(blob, nombreArchivo) {
     function _filasLAL(f) {
       const items = f.albaranes_venta_items || [];
       return items.map((it, i) => {
-        const fila = new Array(LAL_HEADERS.length).fill('');
+        const fila = new Array(LAL_HEADERS.length).fill(null);
         fila[0] = FACTUSOL_TIPO_DOC_ALBARAN_VENTA; // A Tipo de documento
         fila[1] = f.numero_factusol || '';          // B Número de documento
         fila[2] = i + 1;                            // C Posición de la línea
@@ -8059,36 +8059,27 @@ async function subirZipStorage(blob, nombreArchivo) {
       });
     }
 
-    async function exportarAlbaranesVentaExcel(filtrados) {
+    function exportarAlbaranesVentaExcel(filtrados) {
       const sinNumero = filtrados.filter(f => !f.numero_factusol);
       if (sinNumero.length) {
         toast(`${sinNumero.length} albarán(es) sin número interno de FactuSol asignado — revísalos antes de exportar`, 'err');
       }
 
-      const filasALB = [ALB_HEADERS, ...filtrados.map(_filaALB)];
-      const filasLAL = [LAL_HEADERS, ...filtrados.flatMap(_filasLAL)];
+      // Sin fila de cabecera: FactuSol identifica los campos por posición
+      // de columna (A, B, C...), no por nombre — incluir los títulos hacía
+      // que los leyera como si fueran datos de un albarán real.
+      const filasALB = filtrados.map(_filaALB);
+      const filasLAL = filtrados.flatMap(_filasLAL);
 
       const wbAlb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wbAlb, XLSX.utils.aoa_to_sheet(filasALB), 'ALB');
-      const albBuffer = XLSX.write(wbAlb, { bookType: 'xlsx', type: 'array' });
+      XLSX.writeFile(wbAlb, 'ALB.xlsx');
 
       const wbLal = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wbLal, XLSX.utils.aoa_to_sheet(filasLAL), 'LAL');
-      const lalBuffer = XLSX.write(wbLal, { bookType: 'xlsx', type: 'array' });
+      XLSX.writeFile(wbLal, 'LAL.xlsx');
 
-      const zip = new JSZip();
-      zip.file('ALB.xlsx', albBuffer);
-      zip.file('LAL.xlsx', lalBuffer);
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(zipBlob);
-      a.download = `factusol_albaranes_venta_${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      toast('<i class="fa-solid fa-file-zipper me-1"></i>Descargado el ZIP con <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — descomprímelos y llévalos juntos a la carpeta de importación de FactuSol', 'ok');
+      toast('<i class="fa-solid fa-file-excel me-1"></i>Descargados <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — cópialos juntos a la carpeta de importación de FactuSol', 'ok');
     }
 
 
