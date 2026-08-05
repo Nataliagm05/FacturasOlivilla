@@ -5269,7 +5269,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
 
         // INVENTARIO
       } else if (tablaActual === 'inventario') {
-        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Producto</th><th>Stock</th><th>Pts/unidad</th><th></th></tr>`;
+        hdr.innerHTML = `<tr><th style="width:28px"><input type="checkbox" onchange="toggleSeleccionarTodos(this)"></th><th>Producto</th><th>Stock</th><th>Pts/unidad</th><th>Precio</th><th></th></tr>`;
         const lista = registros.filter(p => (p.nombre || '').toLowerCase().includes(q));
         if (!lista.length) { bdy.innerHTML = emptyRow(4, 'No se encontraron productos'); return; }
         bdy.innerHTML = lista.map(p => {
@@ -5282,6 +5282,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           ${agotado ? '<span style="margin-left:8px;font-size:.73rem;background:#fce4ec;color:#b53987;padding:2px 8px;border-radius:20px;font-weight:600">AGOTADO</span>' : ''}
         </td>
         <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${p.puntos_por_unidad || 0} pts</span></td>
+        <td>${p.precio != null ? fmt(p.precio) : '—'}</td>
         <td>
 
 <button class="btn-toggle-pago pagado"
@@ -6355,7 +6356,8 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             nombre,
             stock: nuevoStock,
             unidad: document.getElementById('f_unidad')?.value || 'unidades',
-            puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0)
+            puntos_por_unidad: parseInt(document.getElementById('f_pts').value || 0),
+            precio: parseFloat(document.getElementById('f_precio')?.value || 0)
           };
 
           if (modalEditId) {
@@ -7480,12 +7482,12 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
-      <input type="text" id="lc_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo..." oninput="actualizarUnidadLinea('lc',${idx})">
+      <input type="text" id="lc_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo..." oninput="actualizarUnidadLinea('lc',${idx}); autocompletarPrecioLineaCompra(${idx})">
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad <span id="lc_uni_${idx}" style="color:#b53987;font-weight:600"></span></label>
       <div style="display:flex;gap:4px;align-items:center">
-  <input type="number" id="lc_cant_${idx}" value="1" min="0.01" step="0.01" style="text-align:center;width:100%">
+  <input type="number" id="lc_cant_${idx}" value="1" min="0.01" step="0.01" style="text-align:center;width:100%" oninput="recalcTotalCompraDesdeLineas()">
   <select id="lc_unidadnueva_${idx}" title="Unidad (solo si el producto es nuevo)" style="width:62px;font-size:.72rem;padding:4px;border:1.5px solid #ddd;border-radius:6px">
     <option value="unidades">uds.</option>
     <option value="metros">m</option>
@@ -7496,15 +7498,41 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
   </button>
 </div>
     </div>
-    <div class="form-group" style="margin:0;width:70px">
-      <label style="font-size:.75rem">Puntos</label>
-      <input type="text" id="lc_pts_${idx}" readonly style="text-align:center;background:#f7f0f5;font-weight:600;color:#b53987" value="0">
+    <div class="form-group" style="margin:0;width:90px">
+      <label style="font-size:.75rem">Precio Ud. (€)</label>
+      <input type="number" id="lc_precio_${idx}" step="0.01" min="0" value="0" style="text-align:right" oninput="recalcTotalCompraDesdeLineas()">
     </div>
-    <button type="button" onclick="document.getElementById('lc_${idx}').remove()"
+    <button type="button" onclick="document.getElementById('lc_${idx}').remove(); recalcTotalCompraDesdeLineas();"
       style="background:transparent;border:none;color:#ccc;font-size:1rem;cursor:pointer;padding:8px 2px;align-self:flex-end">
       <i class="fa-solid fa-xmark"></i>
     </button>`;
       document.getElementById('lineasCompra').appendChild(div);
+    }
+
+    function autocompletarPrecioLineaCompra(idx) {
+      const inpNombre = document.getElementById(`lc_prod_${idx}`);
+      const inpPrecio = document.getElementById(`lc_precio_${idx}`);
+      if (!inpNombre || !inpPrecio) return;
+      const prod = buscarProductoPorNombre(inpNombre.value);
+      if (prod && prod.precio != null) {
+        inpPrecio.value = prod.precio;
+      }
+      recalcTotalCompraDesdeLineas();
+    }
+
+    function recalcTotalCompraDesdeLineas() {
+      let total = 0;
+      document.querySelectorAll('[id^="lc_prod_"]').forEach(inp => {
+        const idx = inp.id.split('_')[2];
+        const cant = parseFloat(document.getElementById(`lc_cant_${idx}`)?.value || 0);
+        const precio = parseFloat(document.getElementById(`lc_precio_${idx}`)?.value || 0);
+        total += cant * precio;
+      });
+      const totalInput = document.getElementById('f_total_compra');
+      if (totalInput) {
+        totalInput.value = total.toFixed(2);
+        recalcPuntosPorTotal(total);
+      }
     }
 
     function recalcPuntosPorTotal(val) {
@@ -7639,7 +7667,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       div.innerHTML = `
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Producto</label>
-      <input type="text" id="lav_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo..." oninput="actualizarUnidadLinea('lav',${idx})">
+      <input type="text" id="lav_prod_${idx}" list="dl_productos" placeholder="Escribe para buscar o crear nuevo..." oninput="actualizarUnidadLinea('lav',${idx}); autocompletarPrecioLinea(${idx})">
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.75rem">Cantidad <span id="lav_uni_${idx}" style="color:#b53987;font-weight:600"></span></label>
@@ -8090,6 +8118,17 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       toast('<i class="fa-solid fa-file-excel me-1"></i>Descargados <strong>ALB.xlsx</strong> y <strong>LAL.xlsx</strong> — cópialos juntos a la carpeta de importación de FactuSol', 'ok');
     }
 
+    function autocompletarPrecioLinea(idx) {
+      const inpNombre = document.getElementById(`lav_prod_${idx}`);
+      const inpPrecio = document.getElementById(`lav_precio_${idx}`);
+      if (!inpNombre || !inpPrecio) return;
+      const prod = buscarProductoPorNombre(inpNombre.value);
+      if (prod && prod.precio != null) {
+        inpPrecio.value = prod.precio;
+        recalcBaseDesdeLineasAlbaranVenta();
+      }
+    }
+
 
 
     function addLineaMaterial() {
@@ -8200,6 +8239,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           document.getElementById("f_stock").value = f.stock || 0;
           document.getElementById("f_unidad").value = f.unidad || "unidades";
           document.getElementById("f_pts").value = f.puntos_por_unidad || 0;
+          document.getElementById("f_precio").value = f.precio != null ? f.precio : 0;
 
         }, 100);
 
@@ -8791,6 +8831,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
   <div class="form-group"><label>Se mide por</label><select id="f_unidad"><option value="unidades">Unidades</option><option value="metros">Metros</option></select></div>
   <div class="form-group"><label>Stock inicial</label><input type="number" id="f_stock" value="0" step="0.01" min="0"></div>
   <div class="form-group"><label>Puntos por unidad</label><input type="number" id="f_pts" value="0" min="0"></div>
+  <div class="form-group"><label>Precio de venta (€)</label><input type="number" id="f_precio" value="0" step="0.01" min="0"></div>
 </div>
 <p style="font-size:.78rem;color:#888;margin-top:10px"><i class="fa-solid fa-info-circle me-1"></i>Si el producto se mide por metros, podrás usar decimales al restar/sumar stock (ej. 2,5 m).</p>`;
         document.getElementById('modalNueva').classList.add('visible');
