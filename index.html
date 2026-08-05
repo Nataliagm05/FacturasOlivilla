@@ -2732,7 +2732,7 @@
     // Personas con acceso EXCLUSIVO a una lista concreta de secciones
     // (en vez de "todo menos lo restringido", ven solo esto).
     const ACCESO_EXCLUSIVO = {
-      jose: ['clientes', 'inventario', 'materiales_obra'],
+      jose: ['clientes', 'inventario', 'materiales_obra', 'albaranes_venta'],
       juandavid: ['materiales_obra']
     };
 
@@ -5347,7 +5347,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       } else if (tablaActual === 'albaranes_venta') {
         hdr.innerHTML = `<tr><th>Nº Albarán</th><th>Fecha</th><th>Cliente</th><th>NIF</th><th class="num-cell">Total</th><th>Puntos</th><th>Documento</th><th></th></tr>`;
         const lista = registros.filter(f => [f.numero_albaran, f.cliente_nombre].some(v => (v || '').toLowerCase().includes(q)));
-        if (!lista.length) { bdy.innerHTML = emptyRow(8, 'No hay albaranes de venta registrados'); return; }
+        if (!lista.length) { bdy.innerHTML = emptyRow(9, 'No hay albaranes de venta registrados'); return; }
         bdy.innerHTML = lista.map(f => `<tr data-id="${f.id}">
         <td><strong>${f.numero_albaran || '—'}</strong></td>
         <td>${fmtF(f.fecha)}</td>
@@ -5355,6 +5355,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         <td style="font-size:.8rem;color:#888">${f.nif || '—'}</td>
         <td class="td-total">${fmt(f.total)}</td>
         <td><span class="badge-puntos"><i class="fa-solid fa-star" style="color:#c47a00;margin-right:3px"></i>${f.puntos_generados || 0} pts</span></td>
+        <td style="font-size:.82rem">${NOMBRES_PERSONAS[f.creado_por] || f.creado_por || '—'}</td>
         <td>
           <button class="btn-toggle-pago pendiente" onclick="imprimirAlbaranVenta(${f.id})" title="Imprimir / descargar PDF">
             <i class="fa-solid fa-print"></i>
@@ -7802,7 +7803,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         } else {
           const numsExistentes = registros.filter(r => r.numero_factusol).map(r => r.numero_factusol);
           const siguienteNumFactusol = numsExistentes.length ? Math.max(...numsExistentes) + 1 : 1;
-          const [header] = await apiPost('albaranes_venta', { ...headerPayload, numero_factusol: siguienteNumFactusol });
+          const [header] = await apiPost('albaranes_venta', { ...headerPayload, numero_factusol: siguienteNumFactusol, creado_por: currentPersona });
           headerId = header.id;
           numeroAlbaranAsignado = header.numero_albaran;
         }
