@@ -9589,13 +9589,34 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       });
 
       const tareas = [];
+      const contadorNombres = {};
       filtrados.forEach(f => {
-        _archivosDeRegistro(f).forEach((url, i) => {
-          const base = (f.proveedor || f.empresa || f.cliente || f.numero_factura || f.numero_albaran || f.numero_ingreso || 'archivo')
+        const archivosDelRegistro = _archivosDeRegistro(f);
+        archivosDelRegistro.forEach((url, i) => {
+          const base = (f.proveedor || f.empresa || f.cliente || 'archivo')
+            .toString().replace(/[^a-zA-Z0-9_\-]+/g, '_');
+          const numDoc = (f.numero_factura || f.numero_albaran || f.numero_ingreso || '')
             .toString().replace(/[^a-zA-Z0-9_\-]+/g, '_');
           const fechaTxt = ((f.fecha_recibido || f.fecha) || '').replace(/-/g, '');
-          const sufijo = _archivosDeRegistro(f).length > 1 ? `_${i + 1}` : '';
-          tareas.push({ url, nombre: `${fechaTxt}_${base}${sufijo}.${_extensionDeUrl(url)}` });
+          const sufijoArchivo = archivosDelRegistro.length > 1 ? `_${i + 1}` : '';
+
+          // Base del nombre: fecha_proveedor[_numFactura][_archivoN]
+          const nombreBase = `${fechaTxt}_${base}${numDoc ? '_' + numDoc : ''}${sufijoArchivo}`;
+          const ext = _extensionDeUrl(url);
+
+          // Si dos registros generan la misma base (mismo proveedor, misma fecha,
+          // sin nº de factura o con el mismo), añadimos un contador (_2, _3...)
+          // en vez de perder el archivo o pisarlo.
+          let nombreFinal;
+          if (!contadorNombres[nombreBase]) {
+            contadorNombres[nombreBase] = 1;
+            nombreFinal = `${nombreBase}.${ext}`;
+          } else {
+            contadorNombres[nombreBase]++;
+            nombreFinal = `${nombreBase}_${contadorNombres[nombreBase]}.${ext}`;
+          }
+
+          tareas.push({ url, nombre: nombreFinal, id: f.id });
         });
       });
 
@@ -9608,6 +9629,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
       try {
         const zip = new JSZip();
         let ok = 0, fallidos = 0;
+        const fallidosNombres = [];
         for (let idx = 0; idx < tareas.length; idx++) {
           const t = tareas[idx];
           btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Descargando ${idx + 1}/${tareas.length}...`;
@@ -9625,6 +9647,7 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           } catch (e) {
             console.error('No se pudo descargar', t.url, e);
             fallidos++;
+            fallidosNombres.push(t.nombre);
           }
         }
 
