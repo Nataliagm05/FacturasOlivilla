@@ -9389,11 +9389,16 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         const year = parseInt(document.getElementById('exportYear').value);
         const meses = Array.from(document.querySelectorAll('#exportMeses input:checked')).map(i => parseInt(i.value));
         const filtrados = registros.filter(f => {
-          if (!f.fecha) return false;
-          const [y, m] = f.fecha.split('-').map(Number);
+          const fechaRef = f.fecha_recibido || f.fecha;
+          if (!fechaRef) return false;
+          const [y, m] = fechaRef.split('-').map(Number);
           if (y !== year) return false;
           if (meses.length && !meses.includes(m)) return false;
           return true;
+        }).sort((a, b) => {
+          const fa = a.fecha_recibido || a.fecha || '';
+          const fb = b.fecha_recibido || b.fecha || '';
+          return fa.localeCompare(fb); // más antigua primero
         });
         if (!filtrados.length) { toast('No hay albaranes para ese filtro', 'err'); return; }
         exportarAlbaranesVentaExcel(filtrados);
@@ -9586,11 +9591,11 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         if (y !== year) return false;
         if (meses.length && !meses.includes(m)) return false;
         return true;
-      }); 
+      });
 
       const tareas = [];
       const contadorNombres = {};
-      filtrados.forEach(f => {
+      filtrados.forEach((f, indexOrden) => {
         const archivosDelRegistro = _archivosDeRegistro(f);
         archivosDelRegistro.forEach((url, i) => {
           const base = (f.proveedor || f.empresa || f.cliente || 'archivo')
@@ -9601,9 +9606,10 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
           const fechaTxt = fechaOriginal.includes('-')
             ? fechaOriginal.split('-').reverse().join('')  // YYYY-MM-DD → DDMMYYYY
             : fechaOriginal;
+          const orden = String(indexOrden + 1).padStart(4, '0');
           const sufijoArchivo = archivosDelRegistro.length > 1 ? `_${i + 1}` : '';
 
-          const nombreBase = `${fechaTxt}_${base}${numDoc ? '_' + numDoc : ''}${sufijoArchivo}`;
+          const nombreBase = `${orden}_${fechaTxt}_${base}${numDoc ? '_' + numDoc : ''}${sufijoArchivo}`;
           const ext = _extensionDeUrl(url);
 
           let nombreFinal;
