@@ -9597,16 +9597,15 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
             .toString().replace(/[^a-zA-Z0-9_\-]+/g, '_');
           const numDoc = (f.numero_factura || f.numero_albaran || f.numero_ingreso || '')
             .toString().replace(/[^a-zA-Z0-9_\-]+/g, '_');
-          const fechaTxt = ((f.fecha_recibido || f.fecha) || '').replace(/-/g, '');
+          const fechaOriginal = (f.fecha_recibido || f.fecha) || '';
+          const fechaTxt = fechaOriginal.includes('-')
+            ? fechaOriginal.split('-').reverse().join('')  // YYYY-MM-DD → DDMMYYYY
+            : fechaOriginal;
           const sufijoArchivo = archivosDelRegistro.length > 1 ? `_${i + 1}` : '';
 
-          // Base del nombre: fecha_proveedor[_numFactura][_archivoN]
           const nombreBase = `${fechaTxt}_${base}${numDoc ? '_' + numDoc : ''}${sufijoArchivo}`;
           const ext = _extensionDeUrl(url);
 
-          // Si dos registros generan la misma base (mismo proveedor, misma fecha,
-          // sin nº de factura o con el mismo), añadimos un contador (_2, _3...)
-          // en vez de perder el archivo o pisarlo.
           let nombreFinal;
           if (!contadorNombres[nombreBase]) {
             contadorNombres[nombreBase] = 1;
