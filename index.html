@@ -9591,6 +9591,10 @@ ${puedeBorrar ? `<button class="btn-eliminar" style="padding:8px 14px" onclick="
         if (y !== year) return false;
         if (meses.length && !meses.includes(m)) return false;
         return true;
+      }).sort((a, b) => {
+        const fa = a.fecha_recibido || a.fecha || '';
+        const fb = b.fecha_recibido || b.fecha || '';
+        return fa.localeCompare(fb); // más antigua primero
       });
 
       const tareas = [];
